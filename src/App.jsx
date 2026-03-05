@@ -26,6 +26,22 @@ function pf(v) {
   return parseFloat(String(v).replace(',', '.')) || 0
 }
 
+// GF/GA blend: λ = sqrt(Att * Def)
+// AttH = α*xGH + (1-α)*GFH_home
+// DefA = α*xGAA + (1-α)*GAA_away
+// AttA = α*xGA + (1-α)*GFA_away
+// DefH = α*xGAH + (1-α)*GAH_home
+function blendWithGoals(xgH, xgA, xgaH, xgaA, gfH, gaH, gfA, gaA, alpha) {
+  const a = alpha
+  const attH = a * xgH + (1 - a) * gfH
+  const defA = a * xgaA + (1 - a) * gaA
+  const attA = a * xgA + (1 - a) * gfA
+  const defH = a * xgaH + (1 - a) * gaH
+  const lH = Math.sqrt(attH * defA)
+  const lA = Math.sqrt(attA * defH)
+  return { lH, lA }
+}
+
 const css = `
   * { box-sizing: border-box; }
   .wrap { max-width: 720px; margin: 0 auto; padding: 20px 16px 60px; }
@@ -101,6 +117,11 @@ export default function App() {
   const [xgA, setXgA] = useState('')
   const [xgaH, setXgaH] = useState('')
   const [xgaA, setXgaA] = useState('')
+  const [gfH, setGfH] = useState('')
+  const [gaH, setGaH] = useState('')
+  const [gfA, setGfA] = useState('')
+  const [gaA, setGaA] = useState('')
+  const [alpha, setAlpha] = useState('0.70')
   const [backOver, setBackOver] = useState('')
   const [layOver, setLayOver] = useState('')
   const [backUnder, setBackUnder] = useState('')
@@ -130,8 +151,28 @@ export default function App() {
     const h = pf(xgH), a = pf(xgA)
     if (!h || !a) return
     const ha = pf(xgaH), aa = pf(xgaA)
-    let lH = h, lA = a
-    if (ha > 0 && aa > 0) { lH = blendLambda(h, aa); lA = blendLambda(a, ha) }
+    const gfHv = pf(gfH), gaHv = pf(gaH), gfAv = pf(gfA), gaAv = pf(gaA)
+    const alph = pf(alpha) || 0.70
+    let lH, lA
+
+    const hasGoals = gfHv > 0 && gaHv > 0 && gfAv > 0 && gaAv > 0
+    const hasXGA = ha > 0 && aa > 0
+
+    if (hasGoals && hasXGA) {
+      // Full blend: xG + xGA + GF/GA
+      const res = blendWithGoals(h, a, ha, aa, gfHv, gaHv, gfAv, gaAv, alph)
+      lH = res.lH; lA = res.lA
+    } else if (hasGoals) {
+      // No xGA — use xG as both attack and defense proxy
+      const res = blendWithGoals(h, a, h, a, gfHv, gaHv, gfAv, gaAv, alph)
+      lH = res.lH; lA = res.lA
+    } else if (hasXGA) {
+      // Original geometric mean blend
+      lH = blendLambda(h, aa); lA = blendLambda(a, ha)
+    } else {
+      lH = h; lA = a
+    }
+
     const { pOver, pUnder } = calcOverUnder(lH, lA)
     const ferOver = fairOdds(pOver)
     const ferUnder = fairOdds(pUnder)
@@ -151,6 +192,8 @@ export default function App() {
       evOLay: midO ? calcLayEV(pOver, midO, comm) : null,
       evULay: midU ? calcLayEV(pUnder, midU, comm) : null,
       matchName: matchName.trim() || null,
+      modelType: hasGoals ? (hasXGA ? 'full' : 'goals') : (hasXGA ? 'xga' : 'basic'),
+      alpha: alph.toFixed(2),
     })
   }
 
@@ -273,6 +316,22 @@ export default function App() {
               </div>
             </div>
             <div className="card">
+              <div className="label" style={{ marginBottom: 10 }}>GF / GA — reálne góly (opt)</div>
+              <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 10 }}>
+                Priemer gólov na zápas doma / vonku za sezónu
+              </div>
+              <div className="grid2">
+                <div><div className="label">GF Home (doma)</div><input className="inp" placeholder="1.60" value={gfH} onChange={e => setGfH(e.target.value)} /></div>
+                <div><div className="label">GA Home (doma)</div><input className="inp" placeholder="1.10" value={gaH} onChange={e => setGaH(e.target.value)} /></div>
+                <div><div className="label">GF Away (vonku)</div><input className="inp" placeholder="1.20" value={gfA} onChange={e => setGfA(e.target.value)} /></div>
+                <div><div className="label">GA Away (vonku)</div><input className="inp" placeholder="1.40" value={gaA} onChange={e => setGaA(e.target.value)} /></div>
+              </div>
+              <div style={{ marginTop: 10 }}>
+                <div className="label">α — váha xG vs góly <span style={{ color: 'var(--accent2)' }}>(0.70 = 70% xG, 30% góly)</span></div>
+                <input className="inp" placeholder="0.70" value={alpha} onChange={e => setAlpha(e.target.value)} />
+              </div>
+            </div>
+            <div className="card">
               <div className="grid2">
                 <div><div className="label">Stake (€)</div><input className="inp" placeholder="10" value={stake} onChange={e => setStake(e.target.value)} /></div>
                 <div><div className="label">Komisia (%)</div><input className="inp" placeholder="5" value={commission} onChange={e => setCommission(e.target.value)} /></div>
@@ -350,6 +409,11 @@ export default function App() {
               <span>λ Home: <b>{fmt2(calc.lH)}</b></span>
               <span>λ Away: <b>{fmt2(calc.lA)}</b></span>
               <span>λ Suma: <b>{fmt2(calc.lH + calc.lA)}</b></span>
+              <span style={{ color: 'var(--accent2)' }}>
+                {calc.modelType === 'full' ? `xG+GF/GA (α=${calc.alpha})` :
+                 calc.modelType === 'xga' ? 'xG+xGA' :
+                 calc.modelType === 'goals' ? `xG+GF/GA (α=${calc.alpha})` : 'xG only'}
+              </span>
             </div>}
           </div>
         )}
