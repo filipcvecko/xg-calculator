@@ -6,8 +6,6 @@ import {
   fmt2, fmt3, fmtPct, fmtSign, fmtSignPct
 } from './math'
 
-function parseNum(v) { return parseFloat(v.replace(",", ".")) || 0 }
-function fixVal(v) { return v.replace(",", ".") }
 function midPrice(back, lay) {
   if (!back || !lay || back <= 1 || lay <= 1) return null
   return (back + lay) / 2
@@ -22,6 +20,10 @@ function calcLayEV(prob, layOdds, comm = 0.05) {
 }
 function layLiability(odds, stake) {
   return stake * (odds - 1)
+}
+function pf(v) {
+  if (typeof v === 'number') return v
+  return parseFloat(String(v).replace(',', '.')) || 0
 }
 
 const css = `
@@ -45,15 +47,11 @@ const css = `
   .btn { cursor: pointer; border: none; font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; padding: 12px 20px; border-radius: 6px; transition: all 0.2s; width: 100%; }
   .btn-primary { background: var(--accent); color: #fff; }
   .btn-primary:hover { background: #7d6ff0; }
-  .btn-save-over { background: rgba(108,92,231,0.15); color: var(--accent2); border: 1px solid rgba(108,92,231,0.3); }
-  .btn-save-under { background: rgba(0,184,148,0.12); color: var(--green); border: 1px solid rgba(0,184,148,0.3); }
   .btn-ghost { cursor: pointer; background: transparent; border: 1px solid var(--border2); color: var(--text2); font-family: var(--mono); font-size: 11px; padding: 6px 12px; border-radius: 4px; }
   .btn-danger { cursor: pointer; background: transparent; border: 1px solid rgba(214,48,49,0.2); color: var(--red); font-family: var(--mono); font-size: 11px; padding: 6px 10px; border-radius: 4px; }
   .pos { color: var(--green); }
   .neg { color: var(--red); }
   .neu { color: var(--yellow); }
-
-  /* Market columns */
   .markets-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
   .market-col { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
   .market-col-over { border-top: 3px solid var(--accent); }
@@ -67,10 +65,11 @@ const css = `
   .mid-row { display: flex; align-items: center; gap: 8px; margin: 8px 0; padding: 7px 10px; background: var(--bg3); border-radius: 6px; font-size: 12px; }
   .mid-val { font-weight: 700; font-family: var(--mono); }
   .ev-big { font-size: 18px; font-weight: 800; margin-top: 6px; }
-  .edge-row { font-size: 11px; color: var(--text3); margin-top: 3px; }
   .ev-eur { font-size: 11px; color: var(--text3); margin-left: 5px; }
   .liability-note { font-size: 10px; color: var(--red); margin-top: 4px; }
-
+  .save-btns { display: flex; gap: 6px; margin-top: 12px; }
+  .btn-save-back { cursor: pointer; flex: 1; padding: 9px; border-radius: 6px; border: 1px solid rgba(108,92,231,0.4); background: rgba(108,92,231,0.15); font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--accent2); }
+  .btn-save-lay { cursor: pointer; flex: 1; padding: 9px; border-radius: 6px; border: 1px solid rgba(214,48,49,0.3); background: rgba(214,48,49,0.12); font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--red); }
   .bet-row { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin-bottom: 8px; }
   .badge { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 3px; letter-spacing: 0.05em; font-weight: 600; }
   .badge-pending { background: rgba(253,203,110,0.15); color: var(--yellow); }
@@ -79,6 +78,7 @@ const css = `
   .badge-back { background: rgba(108,92,231,0.15); color: var(--accent2); }
   .badge-lay { background: rgba(214,48,49,0.12); color: var(--red); }
   .settle-box { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 12px; margin-top: 10px; }
+  .clv-box { background: var(--bg3); border: 1px solid rgba(108,92,231,0.3); border-radius: 6px; padding: 12px; margin-top: 10px; }
   .stat-val { font-size: 20px; font-weight: 700; margin-top: 2px; }
   .hint { font-size: 10px; color: var(--text3); margin-top: 3px; }
   .section-title { font-size: 10px; color: var(--text3); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
@@ -88,8 +88,6 @@ const css = `
   .empty { text-align: center; padding: 60px 20px; color: var(--text3); line-height: 1.8; }
   .lambda-row { display: flex; gap: 16px; font-size: 12px; color: var(--text3); padding: 10px 14px; background: var(--bg3); border-radius: 6px; flex-wrap: wrap; margin-top: 10px; }
   .lambda-row span b { color: var(--text2); }
-  .interp { font-size: 11px; color: var(--text3); line-height: 2; }
-  .save-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
   @media(max-width:520px){ .markets-grid{grid-template-columns:1fr;} .grid3{grid-template-columns:1fr 1fr;} .tab{padding:10px 8px;font-size:10px;} }
 `
 
@@ -99,28 +97,25 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
-  // xG inputs
   const [xgH, setXgH] = useState('')
   const [xgA, setXgA] = useState('')
   const [xgaH, setXgaH] = useState('')
   const [xgaA, setXgaA] = useState('')
-
-  // Exchange kurzy — Over
   const [backOver, setBackOver] = useState('')
   const [layOver, setLayOver] = useState('')
-  // Exchange kurzy — Under
   const [backUnder, setBackUnder] = useState('')
   const [layUnder, setLayUnder] = useState('')
-
-  const [oddsClose, setOddsClose] = useState('')
   const [stake, setStake] = useState('10')
   const [commission, setCommission] = useState('5')
   const [matchName, setMatchName] = useState('')
   const [calc, setCalc] = useState(null)
-  const [savedMarket, setSavedMarket] = useState(null)
+  const [savedKey, setSavedKey] = useState(null)
+
+  // Settle: CLV first, then result
   const [settlingId, setSettlingId] = useState(null)
-  const [settleResult, setSettleResult] = useState('')
+  const [settleMode, setSettleMode] = useState('clv') // 'clv' or 'result'
   const [settleClose, setSettleClose] = useState('')
+  const [settleResult, setSettleResult] = useState('')
 
   useEffect(() => { loadBets() }, [])
 
@@ -132,70 +127,67 @@ export default function App() {
   }
 
   function handleCalc() {
-    const h = parseFloat(xgH), a = parseFloat(xgA)
-    if (isNaN(h) || h <= 0 || isNaN(a) || a <= 0) return
-    const ha = parseFloat(xgaH), aa = parseFloat(xgaA)
+    const h = pf(xgH), a = pf(xgA)
+    if (!h || !a) return
+    const ha = pf(xgaH), aa = pf(xgaA)
     let lH = h, lA = a
-    if (!isNaN(ha) && ha > 0 && !isNaN(aa) && aa > 0) {
-      lH = blendLambda(h, aa); lA = blendLambda(a, ha)
-    }
+    if (ha > 0 && aa > 0) { lH = blendLambda(h, aa); lA = blendLambda(a, ha) }
     const { pOver, pUnder } = calcOverUnder(lH, lA)
     const ferOver = fairOdds(pOver)
     const ferUnder = fairOdds(pUnder)
-    const comm = parseFloat(commission) / 100 || 0.05
-    const st = parseFloat(stake) || 10
-    const oc = parseFloat(oddsClose)
-
-    const bo = parseFloat(backOver) || null
-    const lo = parseFloat(layOver) || null
-    const bu = parseFloat(backUnder) || null
-    const lu = parseFloat(layUnder) || null
-
+    const comm = pf(commission) / 100 || 0.05
+    const st = pf(stake) || 10
+    const bo = pf(backOver) || null
+    const lo = pf(layOver) || null
+    const bu = pf(backUnder) || null
+    const lu = pf(layUnder) || null
     const midO = midPrice(bo, lo)
     const midU = midPrice(bu, lu)
-
-    // Back EV uses mid as "your odds"
-    const evOBack = midO ? calcBackEV(pOver, midO, comm) : null
-    const evUBack = midU ? calcBackEV(pUnder, midU, comm) : null
-    // Lay EV uses mid as lay odds
-    const evOLay = midO ? calcLayEV(pOver, midO, comm) : null
-    const evULay = midU ? calcLayEV(pUnder, midU, comm) : null
-
-    setSavedMarket(null)
+    setSavedKey(null)
     setCalc({
-      lH, lA, pOver, pUnder, ferOver, ferUnder,
-      midO, midU, bo, lo, bu, lu,
-      evOBack, evUBack, evOLay, evULay,
-      comm, st, matchName: matchName.trim() || null,
-      oc: isNaN(oc) ? null : oc,
+      lH, lA, pOver, pUnder, ferOver, ferUnder, midO, midU, comm, st,
+      evOBack: midO ? calcBackEV(pOver, midO, comm) : null,
+      evUBack: midU ? calcBackEV(pUnder, midU, comm) : null,
+      evOLay: midO ? calcLayEV(pOver, midO, comm) : null,
+      evULay: midU ? calcLayEV(pUnder, midU, comm) : null,
+      matchName: matchName.trim() || null,
     })
   }
 
   async function handleSave(market, betType) {
-    if (!calc) return
+    if (!calc || saving) return
     setSaving(true)
     const isOver = market === 'over2.5'
     const selProb = isOver ? calc.pOver : calc.pUnder
     const ferO = isOver ? calc.ferOver : calc.ferUnder
     const midOdds = isOver ? calc.midO : calc.midU
-    let ev
-    if (betType === 'back') ev = isOver ? calc.evOBack : calc.evUBack
-    else ev = isOver ? calc.evOLay : calc.evULay
-    const clv = calc.oc && midOdds ? calcCLV(midOdds, calc.oc) : null
+    if (!midOdds) { setSaving(false); return }
+    const ev = betType === 'back'
+      ? (isOver ? calc.evOBack : calc.evUBack)
+      : (isOver ? calc.evOLay : calc.evULay)
 
-    await supabase.from('bets').insert({
+    const { error } = await supabase.from('bets').insert({
       match_name: calc.matchName, market, bet_type: betType,
       lambda_h: calc.lH, lambda_a: calc.lA,
       p_over: calc.pOver, p_under: calc.pUnder,
       sel_prob: selProb, fer_odds: ferO,
-      odds_open: midOdds, odds_close: calc.oc,
+      odds_open: midOdds, odds_close: null,
       stake: calc.st, commission: calc.comm * 100,
       ev, ev_pct: ev != null ? ev * 100 : null,
-      clv, result: null, pnl: null, brier: null, log_loss: null,
+      clv: null, result: null, pnl: null, brier: null, log_loss: null,
     })
-    await loadBets()
-    setSavedMarket(market + '-' + betType)
+    if (!error) { await loadBets(); setSavedKey(market + '-' + betType) }
     setSaving(false)
+  }
+
+  async function handleSaveCLV(id) {
+    const oc = pf(settleClose)
+    if (!oc || oc <= 1) return
+    const bet = bets.find(b => b.id === id)
+    const clv = calcCLV(bet.odds_open, oc)
+    await supabase.from('bets').update({ odds_close: oc, clv }).eq('id', id)
+    setSettleMode('result')
+    await loadBets()
   }
 
   async function handleSettle(id) {
@@ -203,7 +195,6 @@ export default function App() {
     if (res !== 0 && res !== 1) return
     const bet = bets.find(b => b.id === id)
     if (!bet) return
-    const oc = parseFloat(settleClose)
     const odds = bet.odds_open
     const comm = (bet.commission || 5) / 100
     let pnl
@@ -212,15 +203,12 @@ export default function App() {
     } else {
       pnl = res === 1 ? bet.stake * (odds - 1) * (1 - comm) : -bet.stake
     }
-    const clvFinal = (!isNaN(oc) && oc > 1) ? calcCLV(odds, oc) : bet.clv
     await supabase.from('bets').update({
-      result: res,
-      odds_close: (!isNaN(oc) && oc > 1) ? oc : bet.odds_close,
-      clv: clvFinal, pnl,
+      result: res, pnl,
       brier: brierScore(bet.sel_prob, res),
       log_loss: logLoss(bet.sel_prob, res),
     }).eq('id', id)
-    setSettlingId(null); setSettleResult(''); setSettleClose('')
+    setSettlingId(null); setSettleResult(''); setSettleClose(''); setSettleMode('clv')
     await loadBets()
   }
 
@@ -249,7 +237,6 @@ export default function App() {
   const MARKET = { 'over2.5': 'Over 2.5', 'under2.5': 'Under 2.5' }
 
   function MarketCol({ isOver }) {
-    const label = isOver ? 'Over 2.5' : 'Under 2.5'
     const fer = isOver ? calc?.ferOver : calc?.ferUnder
     const prob = isOver ? calc?.pOver : calc?.pUnder
     const mid = isOver ? calc?.midO : calc?.midU
@@ -257,75 +244,58 @@ export default function App() {
     const evLay = isOver ? calc?.evOLay : calc?.evULay
     const st = calc?.st || 10
     const comm = calc?.comm || 0.05
-    const backVal = isOver ? backOver : backUnder
-    const setBack = isOver ? setBackOver : setBackUnder
-    const layVal = isOver ? layOver : layUnder
-    const setLay = isOver ? setLayOver : setLayUnder
-    const colClass = isOver ? 'market-col-over' : 'market-col-under'
-    const titleClass = isOver ? 'market-title-over' : 'market-title-under'
-    const ferClass = isOver ? 'fer-num-over' : 'fer-num-under'
     const mkt = isOver ? 'over2.5' : 'under2.5'
-
     const edge = mid && fer ? (mid / fer - 1) * 100 : null
-    const liability = mid ? layLiability(mid, st) : null
-
     return (
-      <div className={`market-col ${colClass}`}>
-        <div className={`market-title ${titleClass}`}>{label}</div>
-
+      <div className={`market-col ${isOver ? 'market-col-over' : 'market-col-under'}`}>
+        <div className={`market-title ${isOver ? 'market-title-over' : 'market-title-under'}`}>
+          {isOver ? 'Over 2.5' : 'Under 2.5'}
+        </div>
         {fer && <div style={{ marginBottom: 10 }}>
           <div className="label">FER kurz</div>
-          <div className={`fer-num ${ferClass}`}>{fmt3(fer)} <span style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 400 }}>({fmtPct(prob * 100)})</span></div>
+          <div className={`fer-num ${isOver ? 'fer-num-over' : 'fer-num-under'}`}>
+            {fmt3(fer)} <span style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 400 }}>({fmtPct(prob * 100)})</span>
+          </div>
         </div>}
-
         <div style={{ marginBottom: 8 }}>
           <div className="label">Best Back</div>
-          <input className="inp inp-sm" type="text" placeholder="1.85" value={backVal} onChange={e => setBack(fixVal(e.target.value))} />
+          <input className="inp inp-sm" placeholder="1.85" value={isOver ? backOver : backUnder}
+            onChange={e => isOver ? setBackOver(e.target.value) : setBackUnder(e.target.value)} />
         </div>
         <div style={{ marginBottom: 8 }}>
           <div className="label">Best Lay</div>
-          <input className="inp inp-sm" type="text" placeholder="1.88" value={layVal} onChange={e => setLay(fixVal(e.target.value))} />
+          <input className="inp inp-sm" placeholder="1.88" value={isOver ? layOver : layUnder}
+            onChange={e => isOver ? setLayOver(e.target.value) : setLayUnder(e.target.value)} />
         </div>
-
-        {mid && <>
+        {mid ? <>
           <div className="mid-row">
             <span style={{ color: 'var(--text3)' }}>Mid:</span>
             <span className="mid-val">{fmt3(mid)}</span>
             {edge != null && <span className={edge > 0 ? 'pos' : 'neg'} style={{ marginLeft: 'auto', fontSize: 11 }}>Edge {fmtSignPct(edge)}</span>}
           </div>
-
           {evBack != null && <div>
             <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 2 }}>▲ Back EV</div>
             <div className={`ev-big ${evBack > 0 ? 'pos' : 'neg'}`}>
-              {fmtSignPct(evBack * 100)}
-              <span className="ev-eur">{fmtSign(evBack * st)}€</span>
+              {fmtSignPct(evBack * 100)}<span className="ev-eur">{fmtSign(evBack * st)}€</span>
             </div>
           </div>}
           {evLay != null && <div style={{ marginTop: 6 }}>
             <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 2 }}>▼ Lay EV</div>
             <div className={`ev-big ${evLay > 0 ? 'pos' : 'neg'}`}>
-              {fmtSignPct(evLay * 100)}
-              <span className="ev-eur">{fmtSign(evLay * st)}€</span>
+              {fmtSignPct(evLay * 100)}<span className="ev-eur">{fmtSign(evLay * st)}€</span>
             </div>
-            {liability && <div className="liability-note">Liability: {fmt2(liability)}€</div>}
+            <div className="liability-note">Liability: {fmt2(layLiability(mid, st))}€</div>
           </div>}
-
-          <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
-            <button className="btn btn-save-over" style={{ flex: 1, padding: '8px', fontSize: 10 }}
-              onClick={() => handleSave(mkt, 'back')} disabled={saving}>
-              {savedMarket === mkt + '-back' ? '✓' : '+ Back'}
+          <div className="save-btns">
+            <button className="btn-save-back" onClick={() => handleSave(mkt, 'back')} disabled={saving}>
+              {savedKey === mkt + '-back' ? '✓ Uložené' : '+ Back'}
             </button>
-            <button className="btn btn-save-under" style={{ flex: 1, padding: '8px', fontSize: 10 }}
-              onClick={() => handleSave(mkt, 'lay')} disabled={saving}>
-              {savedMarket === mkt + '-lay' ? '✓' : '+ Lay'}
+            <button className="btn-save-lay" onClick={() => handleSave(mkt, 'lay')} disabled={saving}>
+              {savedKey === mkt + '-lay' ? '✓ Uložené' : '+ Lay'}
             </button>
           </div>
           <div style={{ fontSize: 9, color: 'var(--text3)', textAlign: 'center', marginTop: 4 }}>kom {(comm * 100).toFixed(0)}%</div>
-        </>}
-
-        {!mid && calc && <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 8 }}>
-          Zadaj Back aj Lay kurz pre mid price
-        </div>}
+        </> : calc && <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 8 }}>Zadaj Back aj Lay pre mid price</div>}
       </div>
     )
   }
@@ -349,42 +319,34 @@ export default function App() {
       </div>
 
       <div className="wrap">
-
         {tab === 'calc' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-
             <div className="card">
               <div className="label">Zápas (voliteľné)</div>
-              <input className="inp" placeholder="napr. Arsenal vs Chelsea" value={matchName} onChange={e => setMatchName(fixVal(e.target.value))} />
+              <input className="inp" placeholder="napr. Arsenal vs Chelsea" value={matchName} onChange={e => setMatchName(e.target.value)} />
             </div>
-
             <div className="card">
               <div className="label" style={{ marginBottom: 10 }}>xG hodnoty</div>
               <div className="grid2">
-                <div><div className="label">xG Home</div><input className="inp" type="text" placeholder="1.45" value={xgH} onChange={e => setXgH(fixVal(e.target.value))} /></div>
-                <div><div className="label">xG Away</div><input className="inp" type="text" placeholder="0.98" value={xgA} onChange={e => setXgA(fixVal(e.target.value))} /></div>
-                <div><div className="label">xGA Home <span style={{ color: 'var(--text3)' }}>(opt)</span></div><input className="inp" type="text" placeholder="1.20" value={xgaH} onChange={e => setXgaH(fixVal(e.target.value))} /></div>
-                <div><div className="label">xGA Away <span style={{ color: 'var(--text3)' }}>(opt)</span></div><input className="inp" type="text" placeholder="1.10" value={xgaA} onChange={e => setXgaA(fixVal(e.target.value))} /></div>
+                <div><div className="label">xG Home</div><input className="inp" placeholder="1.45" value={xgH} onChange={e => setXgH(e.target.value)} /></div>
+                <div><div className="label">xG Away</div><input className="inp" placeholder="0.98" value={xgA} onChange={e => setXgA(e.target.value)} /></div>
+                <div><div className="label">xGA Home (opt)</div><input className="inp" placeholder="1.20" value={xgaH} onChange={e => setXgaH(e.target.value)} /></div>
+                <div><div className="label">xGA Away (opt)</div><input className="inp" placeholder="1.10" value={xgaA} onChange={e => setXgaA(e.target.value)} /></div>
               </div>
             </div>
-
             <div className="card">
-              <div className="grid3">
-                <div><div className="label">Stake (€)</div><input className="inp" type="text" placeholder="10" value={stake} onChange={e => setStake(fixVal(e.target.value))} /></div>
-                <div><div className="label">Komisia (%)</div><input className="inp" type="text" max="15" placeholder="5" value={commission} onChange={e => setCommission(fixVal(e.target.value))} /></div>
-                <div><div className="label">Closing kurz <span style={{ color: 'var(--text3)' }}>(opt)</span></div><input className="inp" type="text" placeholder="1.82" value={oddsClose} onChange={e => setOddsClose(fixVal(e.target.value))} /></div>
+              <div className="grid2">
+                <div><div className="label">Stake (€)</div><input className="inp" placeholder="10" value={stake} onChange={e => setStake(e.target.value)} /></div>
+                <div><div className="label">Komisia (%)</div><input className="inp" placeholder="5" value={commission} onChange={e => setCommission(e.target.value)} /></div>
               </div>
             </div>
-
             <button className="btn btn-primary" onClick={handleCalc}>▶ Vypočítať</button>
-
             {calc && <>
               <div className="lambda-row">
                 <span>λ Home: <b>{fmt2(calc.lH)}</b></span>
                 <span>λ Away: <b>{fmt2(calc.lA)}</b></span>
                 <span>λ Suma: <b>{fmt2(calc.lH + calc.lA)}</b></span>
               </div>
-
               <div className="markets-grid">
                 <MarketCol isOver={true} />
                 <MarketCol isOver={false} />
@@ -423,26 +385,42 @@ export default function App() {
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                    {b.result == null && <button className="btn-ghost" onClick={() => { setSettlingId(settlingId === b.id ? null : b.id); setSettleResult(''); setSettleClose('') }}>Settle</button>}
+                    {b.result == null && (
+                      <button className="btn-ghost" onClick={() => {
+                        if (settlingId === b.id) { setSettlingId(null) }
+                        else { setSettlingId(b.id); setSettleMode(b.odds_close ? 'result' : 'clv'); setSettleClose(''); setSettleResult('') }
+                      }}>
+                        {b.odds_close ? 'Result' : 'CLV / Result'}
+                      </button>
+                    )}
                     <button className="btn-danger" onClick={() => handleDelete(b.id)}>✕</button>
                   </div>
                 </div>
-                {settlingId === b.id && (
-                  <div className="settle-box">
-                    <div className="grid2" style={{ marginBottom: 10 }}>
-                      <div>
-                        <div className="label">Výsledok</div>
-                        <select className="inp" value={settleResult} onChange={e => setSettleResult(fixVal(e.target.value))}>
-                          <option value="">— vyber —</option>
-                          <option value="1">{b.bet_type === 'lay' ? '✅ Lay Won (event NOT happened)' : '✅ Back Won'}</option>
-                          <option value="0">{b.bet_type === 'lay' ? '❌ Lay Lost (event happened)' : '❌ Back Lost'}</option>
-                        </select>
-                      </div>
-                      <div>
-                        <div className="label">Closing kurz <span style={{ color: 'var(--text3)' }}>(opt)</span></div>
-                        <input className="inp" type="text" placeholder="1.82" value={settleClose} onChange={e => setSettleClose(fixVal(e.target.value))} />
-                      </div>
+
+                {settlingId === b.id && settleMode === 'clv' && (
+                  <div className="clv-box">
+                    <div style={{ fontSize: 11, color: 'var(--accent2)', marginBottom: 8 }}>📌 Closing kurz (5 min pred zápasom)</div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <input className="inp" placeholder="napr. 1.82" value={settleClose} onChange={e => setSettleClose(e.target.value)} style={{ flex: 1 }} />
+                      <button className="btn btn-primary" style={{ width: 'auto', padding: '10px 16px' }} onClick={() => handleSaveCLV(b.id)}>Uložiť CLV</button>
                     </div>
+                    <div style={{ marginTop: 8 }}>
+                      <button style={{ background: 'none', border: 'none', color: 'var(--text3)', fontSize: 11, cursor: 'pointer', padding: 0 }} onClick={() => setSettleMode('result')}>
+                        Preskočiť → zadať len výsledok
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {settlingId === b.id && settleMode === 'result' && (
+                  <div className="settle-box">
+                    <div style={{ fontSize: 11, color: 'var(--yellow)', marginBottom: 8 }}>🏁 Výsledok zápasu</div>
+                    {b.clv != null && <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 8 }}>CLV: <b className={b.clv > 0 ? 'pos' : 'neg'}>{fmtSignPct(b.clv)}</b></div>}
+                    <select className="inp" value={settleResult} onChange={e => setSettleResult(e.target.value)} style={{ marginBottom: 8 }}>
+                      <option value="">— vyber výsledok —</option>
+                      <option value="1">{b.bet_type === 'lay' ? '✅ Lay Won (event NOT happened)' : '✅ Back Won'}</option>
+                      <option value="0">{b.bet_type === 'lay' ? '❌ Lay Lost (event happened)' : '❌ Back Lost'}</option>
+                    </select>
                     <button className="btn btn-primary" style={{ padding: '10px' }} onClick={() => handleSettle(b.id)}>Potvrdiť výsledok</button>
                   </div>
                 )}
@@ -453,9 +431,7 @@ export default function App() {
 
         {tab === 'stats' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            {settled.length === 0 ? (
-              <div className="empty">Žiadne uzavreté bety.<br />Settle aspoň jeden bet.</div>
-            ) : (<>
+            {settled.length === 0 ? <div className="empty">Žiadne uzavreté bety.<br />Settle aspoň jeden bet.</div> : (<>
               <div>
                 <div className="section-title">💰 Finance</div>
                 <div className="grid3">
@@ -475,10 +451,10 @@ export default function App() {
                 </div>
               </div>
               <div>
-                <div className="section-title">📈 Market Edge</div>
+                <div className="section-title">📈 Edge</div>
                 <div className="grid3">
                   {[
-                    { l: 'Avg CLV%', v: fmtSignPct(avgCLV), cls: avgCLV > 0 ? 'pos' : avgCLV < 0 ? 'neg' : '', hint: '> 0 = porážaš trh' },
+                    { l: 'Avg CLV%', v: fmtSignPct(avgCLV), cls: avgCLV > 0 ? 'pos' : 'neg', hint: '> 0 = porážaš trh' },
                     { l: 'Positive CLV', v: fmtPct(posCLV), cls: posCLV > 50 ? 'pos' : 'neg', hint: '> 50% = dobré' },
                     { l: 'Avg EV%', v: fmtSignPct(avgEV), cls: avgEV > 0 ? 'pos' : 'neg', hint: 'pred výsledkom' },
                     { l: 'Hit Rate', v: fmtPct(hitRate * 100), hint: 'skutočná %' },
@@ -499,7 +475,7 @@ export default function App() {
                   {[
                     { l: 'Brier Score', v: fmt2(avgBrier), hint: '< 0.25 = dobré' },
                     { l: 'Log Loss', v: fmt2(avgLL), hint: 'nižšie = lepšie' },
-                    { l: 'Vzorka', v: settled.length, hint: settled.length < 100 ? '⚠ potrebuješ 100+' : '✓ dostatočná' },
+                    { l: 'Vzorka', v: settled.length, hint: settled.length < 100 ? '⚠ potrebuješ 100+' : '✓ ok' },
                   ].map(({ l, v, hint }) => (
                     <div key={l} className="card" style={{ padding: 14 }}>
                       <div className="label">{l}</div>
@@ -523,7 +499,7 @@ export default function App() {
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text3)', marginTop: 6 }}>
                   <span>prvý bet</span>
-                  <span className={totalPnL >= 0 ? 'pos' : 'neg'}>{fmtSign(totalPnL)}€ celkom</span>
+                  <span className={totalPnL >= 0 ? 'pos' : 'neg'}>{fmtSign(totalPnL)}€</span>
                   <span>posledný</span>
                 </div>
               </div>
