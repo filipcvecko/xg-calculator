@@ -236,69 +236,7 @@ export default function App() {
   const calib = hitRate != null && avgProb != null ? (hitRate - avgProb) * 100 : null
   const MARKET = { 'over2.5': 'Over 2.5', 'under2.5': 'Under 2.5' }
 
-  function MarketCol({ isOver }) {
-    const fer = isOver ? calc?.ferOver : calc?.ferUnder
-    const prob = isOver ? calc?.pOver : calc?.pUnder
-    const mid = isOver ? calc?.midO : calc?.midU
-    const evBack = isOver ? calc?.evOBack : calc?.evUBack
-    const evLay = isOver ? calc?.evOLay : calc?.evULay
-    const st = calc?.st || 10
-    const comm = calc?.comm || 0.05
-    const mkt = isOver ? 'over2.5' : 'under2.5'
-    const edge = mid && fer ? (mid / fer - 1) * 100 : null
-    return (
-      <div className={`market-col ${isOver ? 'market-col-over' : 'market-col-under'}`}>
-        <div className={`market-title ${isOver ? 'market-title-over' : 'market-title-under'}`}>
-          {isOver ? 'Over 2.5' : 'Under 2.5'}
-        </div>
-        {fer && <div style={{ marginBottom: 10 }}>
-          <div className="label">FER kurz</div>
-          <div className={`fer-num ${isOver ? 'fer-num-over' : 'fer-num-under'}`}>
-            {fmt3(fer)} <span style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 400 }}>({fmtPct(prob * 100)})</span>
-          </div>
-        </div>}
-        <div style={{ marginBottom: 8 }}>
-          <div className="label">Best Back</div>
-          <input className="inp inp-sm" placeholder="1.85" value={isOver ? backOver : backUnder}
-            onChange={e => isOver ? setBackOver(e.target.value) : setBackUnder(e.target.value)} />
-        </div>
-        <div style={{ marginBottom: 8 }}>
-          <div className="label">Best Lay</div>
-          <input className="inp inp-sm" placeholder="1.88" value={isOver ? layOver : layUnder}
-            onChange={e => isOver ? setLayOver(e.target.value) : setLayUnder(e.target.value)} />
-        </div>
-        {mid ? <>
-          <div className="mid-row">
-            <span style={{ color: 'var(--text3)' }}>Mid:</span>
-            <span className="mid-val">{fmt3(mid)}</span>
-            {edge != null && <span className={edge > 0 ? 'pos' : 'neg'} style={{ marginLeft: 'auto', fontSize: 11 }}>Edge {fmtSignPct(edge)}</span>}
-          </div>
-          {evBack != null && <div>
-            <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 2 }}>▲ Back EV</div>
-            <div className={`ev-big ${evBack > 0 ? 'pos' : 'neg'}`}>
-              {fmtSignPct(evBack * 100)}<span className="ev-eur">{fmtSign(evBack * st)}€</span>
-            </div>
-          </div>}
-          {evLay != null && <div style={{ marginTop: 6 }}>
-            <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 2 }}>▼ Lay EV</div>
-            <div className={`ev-big ${evLay > 0 ? 'pos' : 'neg'}`}>
-              {fmtSignPct(evLay * 100)}<span className="ev-eur">{fmtSign(evLay * st)}€</span>
-            </div>
-            <div className="liability-note">Liability: {fmt2(layLiability(mid, st))}€</div>
-          </div>}
-          <div className="save-btns">
-            <button className="btn-save-back" onClick={() => handleSave(mkt, 'back')} disabled={saving}>
-              {savedKey === mkt + '-back' ? '✓ Uložené' : '+ Back'}
-            </button>
-            <button className="btn-save-lay" onClick={() => handleSave(mkt, 'lay')} disabled={saving}>
-              {savedKey === mkt + '-lay' ? '✓ Uložené' : '+ Lay'}
-            </button>
-          </div>
-          <div style={{ fontSize: 9, color: 'var(--text3)', textAlign: 'center', marginTop: 4 }}>kom {(comm * 100).toFixed(0)}%</div>
-        </> : calc && <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 8 }}>Zadaj Back aj Lay pre mid price</div>}
-      </div>
-    )
-  }
+
 
   return (
     <>
@@ -341,17 +279,78 @@ export default function App() {
               </div>
             </div>
             <button className="btn btn-primary" onClick={handleCalc}>▶ Vypočítať</button>
-            {calc && <>
-              <div className="lambda-row">
-                <span>λ Home: <b>{fmt2(calc.lH)}</b></span>
-                <span>λ Away: <b>{fmt2(calc.lA)}</b></span>
-                <span>λ Suma: <b>{fmt2(calc.lH + calc.lA)}</b></span>
-              </div>
-              <div className="markets-grid">
-                <MarketCol isOver={true} />
-                <MarketCol isOver={false} />
-              </div>
-            </>}
+            <div className="markets-grid">
+              {[true, false].map(isOver => {
+                const fer = isOver ? calc?.ferOver : calc?.ferUnder
+                const prob = isOver ? calc?.pOver : calc?.pUnder
+                const mid = isOver ? calc?.midO : calc?.midU
+                const evBack = isOver ? calc?.evOBack : calc?.evUBack
+                const evLay = isOver ? calc?.evOLay : calc?.evULay
+                const st = calc?.st || 10
+                const comm = calc?.comm || 0.05
+                const mkt = isOver ? 'over2.5' : 'under2.5'
+                const edge = mid && fer ? (mid / fer - 1) * 100 : null
+                return (
+                  <div key={mkt} className={`market-col ${isOver ? 'market-col-over' : 'market-col-under'}`}>
+                    <div className={`market-title ${isOver ? 'market-title-over' : 'market-title-under'}`}>
+                      {isOver ? 'Over 2.5' : 'Under 2.5'}
+                    </div>
+                    {fer && <div style={{ marginBottom: 10 }}>
+                      <div className="label">FER kurz</div>
+                      <div className={`fer-num ${isOver ? 'fer-num-over' : 'fer-num-under'}`}>
+                        {fmt3(fer)} <span style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 400 }}>({fmtPct(prob * 100)})</span>
+                      </div>
+                    </div>}
+                    <div style={{ marginBottom: 8 }}>
+                      <div className="label">Best Back</div>
+                      <input className="inp inp-sm" placeholder="1.85"
+                        value={isOver ? backOver : backUnder}
+                        onChange={e => isOver ? setBackOver(e.target.value) : setBackUnder(e.target.value)} />
+                    </div>
+                    <div style={{ marginBottom: 8 }}>
+                      <div className="label">Best Lay</div>
+                      <input className="inp inp-sm" placeholder="1.88"
+                        value={isOver ? layOver : layUnder}
+                        onChange={e => isOver ? setLayOver(e.target.value) : setLayUnder(e.target.value)} />
+                    </div>
+                    {mid ? <>
+                      <div className="mid-row">
+                        <span style={{ color: 'var(--text3)' }}>Mid:</span>
+                        <span className="mid-val">{fmt3(mid)}</span>
+                        {edge != null && <span className={edge > 0 ? 'pos' : 'neg'} style={{ marginLeft: 'auto', fontSize: 11 }}>Edge {fmtSignPct(edge)}</span>}
+                      </div>
+                      {evBack != null && <div>
+                        <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 2 }}>▲ Back EV</div>
+                        <div className={`ev-big ${evBack > 0 ? 'pos' : 'neg'}`}>
+                          {fmtSignPct(evBack * 100)}<span className="ev-eur">{fmtSign(evBack * st)}€</span>
+                        </div>
+                      </div>}
+                      {evLay != null && <div style={{ marginTop: 6 }}>
+                        <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 2 }}>▼ Lay EV</div>
+                        <div className={`ev-big ${evLay > 0 ? 'pos' : 'neg'}`}>
+                          {fmtSignPct(evLay * 100)}<span className="ev-eur">{fmtSign(evLay * st)}€</span>
+                        </div>
+                        <div className="liability-note">Liability: {fmt2(layLiability(mid, st))}€</div>
+                      </div>}
+                      <div className="save-btns">
+                        <button className="btn-save-back" onClick={() => handleSave(mkt, 'back')} disabled={saving}>
+                          {savedKey === mkt + '-back' ? '✓' : '+ Back'}
+                        </button>
+                        <button className="btn-save-lay" onClick={() => handleSave(mkt, 'lay')} disabled={saving}>
+                          {savedKey === mkt + '-lay' ? '✓' : '+ Lay'}
+                        </button>
+                      </div>
+                      <div style={{ fontSize: 9, color: 'var(--text3)', textAlign: 'center', marginTop: 4 }}>kom {(comm * 100).toFixed(0)}%</div>
+                    </> : <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 8 }}>Zadaj Back aj Lay pre mid price</div>}
+                  </div>
+                )
+              })}
+            </div>
+            {calc && <div className="lambda-row">
+              <span>λ Home: <b>{fmt2(calc.lH)}</b></span>
+              <span>λ Away: <b>{fmt2(calc.lA)}</b></span>
+              <span>λ Suma: <b>{fmt2(calc.lH + calc.lA)}</b></span>
+            </div>}
           </div>
         )}
 
