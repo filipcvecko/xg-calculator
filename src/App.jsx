@@ -278,11 +278,11 @@ export default function App() {
 
         <div style={{ marginBottom: 8 }}>
           <div className="label">Best Back</div>
-          <input className="inp inp-sm" type="number" step="0.01" min="1.01" placeholder="1.85" value={backVal} onChange={e => setBack(e.target.value)} />
+          <input className="inp inp-sm" type="text" inputMode="decimal" placeholder="1.85" value={backVal} onChange={e => setBack(e.target.value)} />
         </div>
         <div style={{ marginBottom: 8 }}>
           <div className="label">Best Lay</div>
-          <input className="inp inp-sm" type="number" step="0.01" min="1.01" placeholder="1.88" value={layVal} onChange={e => setLay(e.target.value)} />
+          <input className="inp inp-sm" type="text" inputMode="decimal" placeholder="1.88" value={layVal} onChange={e => setLay(e.target.value)} />
         </div>
 
         {mid && <>
@@ -359,18 +359,18 @@ export default function App() {
             <div className="card">
               <div className="label" style={{ marginBottom: 10 }}>xG hodnoty</div>
               <div className="grid2">
-                <div><div className="label">xG Home</div><input className="inp" type="number" step="0.01" min="0" placeholder="1.45" value={xgH} onChange={e => setXgH(e.target.value)} /></div>
-                <div><div className="label">xG Away</div><input className="inp" type="number" step="0.01" min="0" placeholder="0.98" value={xgA} onChange={e => setXgA(e.target.value)} /></div>
-                <div><div className="label">xGA Home <span style={{ color: 'var(--text3)' }}>(opt)</span></div><input className="inp" type="number" step="0.01" min="0" placeholder="1.20" value={xgaH} onChange={e => setXgaH(e.target.value)} /></div>
-                <div><div className="label">xGA Away <span style={{ color: 'var(--text3)' }}>(opt)</span></div><input className="inp" type="number" step="0.01" min="0" placeholder="1.10" value={xgaA} onChange={e => setXgaA(e.target.value)} /></div>
+                <div><div className="label">xG Home</div><input className="inp" type="text" inputMode="decimal" placeholder="1.45" value={xgH} onChange={e => setXgH(e.target.value)} /></div>
+                <div><div className="label">xG Away</div><input className="inp" type="text" inputMode="decimal" placeholder="0.98" value={xgA} onChange={e => setXgA(e.target.value)} /></div>
+                <div><div className="label">xGA Home <span style={{ color: 'var(--text3)' }}>(opt)</span></div><input className="inp" type="text" inputMode="decimal" placeholder="1.20" value={xgaH} onChange={e => setXgaH(e.target.value)} /></div>
+                <div><div className="label">xGA Away <span style={{ color: 'var(--text3)' }}>(opt)</span></div><input className="inp" type="text" inputMode="decimal" placeholder="1.10" value={xgaA} onChange={e => setXgaA(e.target.value)} /></div>
               </div>
             </div>
 
             <div className="card">
               <div className="grid3">
-                <div><div className="label">Stake (€)</div><input className="inp" type="number" step="1" min="1" placeholder="10" value={stake} onChange={e => setStake(e.target.value)} /></div>
-                <div><div className="label">Komisia (%)</div><input className="inp" type="number" step="0.5" min="0" max="15" placeholder="5" value={commission} onChange={e => setCommission(e.target.value)} /></div>
-                <div><div className="label">Closing kurz <span style={{ color: 'var(--text3)' }}>(opt)</span></div><input className="inp" type="number" step="0.01" placeholder="1.82" value={oddsClose} onChange={e => setOddsClose(e.target.value)} /></div>
+                <div><div className="label">Stake (€)</div><input className="inp" type="text" inputMode="decimal" placeholder="10" value={stake} onChange={e => setStake(e.target.value)} /></div>
+                <div><div className="label">Komisia (%)</div><input className="inp" type="text" inputMode="decimal" max="15" placeholder="5" value={commission} onChange={e => setCommission(e.target.value)} /></div>
+                <div><div className="label">Closing kurz <span style={{ color: 'var(--text3)' }}>(opt)</span></div><input className="inp" type="text" inputMode="decimal" placeholder="1.82" value={oddsClose} onChange={e => setOddsClose(e.target.value)} /></div>
               </div>
             </div>
 
@@ -438,7 +438,7 @@ export default function App() {
                       </div>
                       <div>
                         <div className="label">Closing kurz <span style={{ color: 'var(--text3)' }}>(opt)</span></div>
-                        <input className="inp" type="number" step="0.01" placeholder="1.82" value={settleClose} onChange={e => setSettleClose(e.target.value)} />
+                        <input className="inp" type="text" inputMode="decimal" placeholder="1.82" value={settleClose} onChange={e => setSettleClose(e.target.value)} />
                       </div>
                     </div>
                     <button className="btn btn-primary" style={{ padding: '10px' }} onClick={() => handleSettle(b.id)}>Potvrdiť výsledok</button>
