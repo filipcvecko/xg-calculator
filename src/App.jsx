@@ -126,6 +126,8 @@ export default function App() {
   const [layOver, setLayOver] = useState('')
   const [backUnder, setBackUnder] = useState('')
   const [layUnder, setLayUnder] = useState('')
+  const [myOddsOver, setMyOddsOver] = useState('')
+  const [myOddsUnder, setMyOddsUnder] = useState('')
   const [stake, setStake] = useState('10')
   const [commission, setCommission] = useState('5')
   const [matchName, setMatchName] = useState('')
@@ -205,6 +207,8 @@ export default function App() {
     const ferO = isOver ? calc.ferOver : calc.ferUnder
     const midOdds = isOver ? calc.midO : calc.midU
     if (!midOdds) { setSaving(false); return }
+    const myO = pf(isOver ? myOddsOver : myOddsUnder)
+    const actualOdds = myO > 1 ? myO : midOdds
     const ev = betType === 'back'
       ? (isOver ? calc.evOBack : calc.evUBack)
       : (isOver ? calc.evOLay : calc.evULay)
@@ -214,7 +218,7 @@ export default function App() {
       lambda_h: calc.lH, lambda_a: calc.lA,
       p_over: calc.pOver, p_under: calc.pUnder,
       sel_prob: selProb, fer_odds: ferO,
-      odds_open: midOdds, odds_close: null,
+      odds_open: actualOdds, odds_close: null,
       stake: calc.st, commission: calc.comm * 100,
       ev, ev_pct: ev != null ? ev * 100 : null,
       clv: null, result: null, pnl: null, brier: null, log_loss: null,
@@ -371,6 +375,12 @@ export default function App() {
                       <input className="inp inp-sm" placeholder="1.88"
                         value={isOver ? layOver : layUnder}
                         onChange={e => isOver ? setLayOver(e.target.value) : setLayUnder(e.target.value)} />
+                    </div>
+                    <div style={{ marginBottom: 8 }}>
+                      <div className="label">Môj kurz <span style={{color:'var(--accent2)'}}>(opt — ak líši od mid)</span></div>
+                      <input className="inp inp-sm" placeholder="napr. 2.08"
+                        value={isOver ? myOddsOver : myOddsUnder}
+                        onChange={e => isOver ? setMyOddsOver(e.target.value) : setMyOddsUnder(e.target.value)} />
                     </div>
                     {mid ? <>
                       <div className="mid-row">
