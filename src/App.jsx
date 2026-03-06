@@ -210,9 +210,10 @@ export default function App() {
     if (!midOdds) { setSaving(false); return }
     const myO = pf(isOver ? myOddsOver : myOddsUnder)
     const actualOdds = myO > 1 ? myO : midOdds
+    // EV počítame z actualOdds (môj kurz), nie z mid
     const ev = betType === 'back'
-      ? (isOver ? calc.evOBack : calc.evUBack)
-      : (isOver ? calc.evOLay : calc.evULay)
+      ? calcBackEV(selProb, actualOdds, calc.comm)
+      : calcLayEV(selProb, actualOdds, calc.comm)
 
     const { error } = await supabase.from('bets').insert({
       match_name: calc.matchName, market, bet_type: betType,
@@ -389,19 +390,34 @@ export default function App() {
                         <span className="mid-val">{fmt3(mid)}</span>
                         {edge != null && <span className={edge > 0 ? 'pos' : 'neg'} style={{ marginLeft: 'auto', fontSize: 11 }}>Edge {fmtSignPct(edge)}</span>}
                       </div>
-                      {evBack != null && <div>
-                        <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 2 }}>▲ Back EV</div>
-                        <div className={`ev-big ${evBack > 0 ? 'pos' : 'neg'}`}>
-                          {fmtSignPct(evBack * 100)}<span className="ev-eur">{fmtSign(evBack * st)}€</span>
-                        </div>
-                      </div>}
-                      {evLay != null && <div style={{ marginTop: 6 }}>
-                        <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 2 }}>▼ Lay EV</div>
-                        <div className={`ev-big ${evLay > 0 ? 'pos' : 'neg'}`}>
-                          {fmtSignPct(evLay * 100)}<span className="ev-eur">{fmtSign(evLay * st)}€</span>
-                        </div>
-                        <div className="liability-note">Liability: {fmt2(layLiability(mid, st))}€</div>
-                      </div>}
+                      {(() => {
+                        const myO = pf(isOver ? myOddsOver : myOddsUnder)
+                        const actualOdds = myO > 1 ? myO : mid
+                        const prob = isOver ? calc.pOver : calc.pUnder
+                        const comm = calc.comm
+                        const evB = calcBackEV(prob, actualOdds, comm)
+                        const evL = calcLayEV(prob, actualOdds, comm)
+                        const usingMyOdds = myO > 1
+                        return <>
+                          <div>
+                            <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 2 }}>
+                              ▲ Back EV {usingMyOdds && <span style={{color:'var(--accent2)'}}>(@{fmt3(actualOdds)})</span>}
+                            </div>
+                            <div className={`ev-big ${evB > 0 ? 'pos' : 'neg'}`}>
+                              {fmtSignPct(evB * 100)}<span className="ev-eur">{fmtSign(evB * st)}€</span>
+                            </div>
+                          </div>
+                          <div style={{ marginTop: 6 }}>
+                            <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 2 }}>
+                              ▼ Lay EV {usingMyOdds && <span style={{color:'var(--accent2)'}}>(@{fmt3(actualOdds)})</span>}
+                            </div>
+                            <div className={`ev-big ${evL > 0 ? 'pos' : 'neg'}`}>
+                              {fmtSignPct(evL * 100)}<span className="ev-eur">{fmtSign(evL * st)}€</span>
+                            </div>
+                            <div className="liability-note">Liability: {fmt2(layLiability(mid, st))}€</div>
+                          </div>
+                        </>
+                      })()}
                       <div className="save-btns">
                         <button className="btn-save-back" onClick={() => handleSave(mkt, 'back')} disabled={saving}>
                           {savedKey === mkt + '-back' ? '✓' : '+ Back'}
