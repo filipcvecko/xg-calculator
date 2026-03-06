@@ -234,7 +234,12 @@ export default function App() {
     setLeagueAvgH('')
     setLeagueAvgA('')
 
-    const avg = await fetchLeagueAvg(league.id)
+    // Potrebujeme season_id (najnovšia sezóna), nie league.id
+    const seasons = league.season ?? []
+    const latestSeason = seasons.reduce((best, s) => (!best || s.id > best.id ? s : best), null)
+    const seasonId = latestSeason ? latestSeason.id : league.id
+
+    const avg = await fetchLeagueAvg(seasonId)
     if (avg) {
       setLeagueAvgH(String(avg.avgHome.toFixed(3)))
       setLeagueAvgA(String(avg.avgAway.toFixed(3)))
