@@ -6,6 +6,8 @@ import {
   fmt2, fmt3, fmtPct, fmtSign, fmtSignPct
 } from './math'
 
+const FOOTYSTATS_KEY = import.meta.env.VITE_FOOTYSTATS_KEY
+
 function midPrice(back, lay) {
   if (!back || !lay || back <= 1 || lay <= 1) return null
   return (back + lay) / 2
@@ -26,11 +28,6 @@ function pf(v) {
   return parseFloat(String(v).replace(',', '.')) || 0
 }
 
-// GF/GA blend: λ = sqrt(Att * Def)
-// AttH = α*xGH + (1-α)*GFH_home
-// DefA = α*xGAA + (1-α)*GAA_away
-// AttA = α*xGA + (1-α)*GFA_away
-// DefH = α*xGAH + (1-α)*GAH_home
 function blendWithGoals(xgH, xgA, xgaH, xgaA, gfH, gaH, gfA, gaA, alpha) {
   const a = alpha
   const attH = a * xgH + (1 - a) * gfH
@@ -40,6 +37,68 @@ function blendWithGoals(xgH, xgA, xgaH, xgaA, gfH, gaH, gfA, gaA, alpha) {
   const lH = Math.sqrt(attH * defA)
   const lA = Math.sqrt(attA * defH)
   return { lH, lA }
+}
+
+// Shrinkage λ k priemeru ligy
+// alpha = sila ťahu (0.15 = 15% ťah k priemeru)
+function applyShrinkage(lH, lA, lgAvgH, lgAvgA, shrink) {
+  const rawTotal = lH + lA
+  const leagueTotal = lgAvgH + lgAvgA
+  if (rawTotal <= 0) return { lH, lA, shrunk: false }
+  const shrunkTotal = (1 - shrink) * rawTotal + shrink * leagueTotal
+  const ratio = shrunkTotal / rawTotal
+  return {
+    lH: lH * ratio,
+    lA: lA * ratio,
+    shrunk: true,
+    ratio: ratio.toFixed(4),
+    rawTotal: rawTotal.toFixed(3),
+    shrunkTotal: shrunkTotal.toFixed(3),
+  }
+}
+
+// FootyStats API — načítaj ligy pre aktuálnu sezónu
+async function fetchLeagueAvg(leagueId) {
+  try {
+    const url = `https://api.football-data-api.com/league-season?key=${FOOTYSTATS_KEY}&season_id=${leagueId}&stats=true`
+    const res = await fetch(url)
+    if (!res.ok) return null
+    const json = await res.json()
+    const data = json?.data
+    if (!data) return null
+    // FootyStats vracia avg_goals_per_match, home_ppg atď.
+    const avgHome = data.home_ppg_scored ?? data.avg_home_goals ?? null
+    const avgAway = data.away_ppg_scored ?? data.avg_away_goals ?? null
+    const avgTotal = data.avg_goals_per_match ?? null
+    if (avgTotal && !avgHome) {
+      // Ak nemáme home/away zvlášť, rozdeľ 55/45
+      return { avgHome: avgTotal * 0.55, avgAway: avgTotal * 0.45, source: 'api', leagueId }
+    }
+    if (avgHome && avgAway) {
+      return { avgHome, avgAway, source: 'api', leagueId }
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+// FootyStats — vyhľadaj ligy podľa názvu
+async function searchLeagues(query) {
+  try {
+    const url = `https://api.football-data-api.com/league-list?key=${FOOTYSTATS_KEY}&chosen_leagues_only=false`
+    const res = await fetch(url)
+    if (!res.ok) return []
+    const json = await res.json()
+    const leagues = json?.data ?? []
+    const q = query.toLowerCase()
+    return leagues
+      .filter(l => l.name?.toLowerCase().includes(q) || l.country?.toLowerCase().includes(q))
+      .slice(0, 8)
+      .map(l => ({ id: l.id, name: l.name, country: l.country, season: l.season }))
+  } catch {
+    return []
+  }
 }
 
 const css = `
@@ -63,6 +122,7 @@ const css = `
   .btn { cursor: pointer; border: none; font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; padding: 12px 20px; border-radius: 6px; transition: all 0.2s; width: 100%; }
   .btn-primary { background: var(--accent); color: #fff; }
   .btn-primary:hover { background: #7d6ff0; }
+  .btn-sm { padding: 7px 14px; width: auto; font-size: 10px; }
   .btn-ghost { cursor: pointer; background: transparent; border: 1px solid var(--border2); color: var(--text2); font-family: var(--mono); font-size: 11px; padding: 6px 12px; border-radius: 4px; }
   .btn-danger { cursor: pointer; background: transparent; border: 1px solid rgba(214,48,49,0.2); color: var(--red); font-family: var(--mono); font-size: 11px; padding: 6px 10px; border-radius: 4px; }
   .pos { color: var(--green); }
@@ -104,6 +164,13 @@ const css = `
   .empty { text-align: center; padding: 60px 20px; color: var(--text3); line-height: 1.8; }
   .lambda-row { display: flex; gap: 16px; font-size: 12px; color: var(--text3); padding: 10px 14px; background: var(--bg3); border-radius: 6px; flex-wrap: wrap; margin-top: 10px; }
   .lambda-row span b { color: var(--text2); }
+  .league-search-results { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; margin-top: 4px; overflow: hidden; }
+  .league-result-item { padding: 8px 12px; cursor: pointer; font-size: 12px; border-bottom: 1px solid var(--border); transition: background 0.1s; }
+  .league-result-item:last-child { border-bottom: none; }
+  .league-result-item:hover { background: var(--bg2); }
+  .shrink-info { font-size: 10px; color: var(--accent2); background: rgba(108,92,231,0.08); border: 1px solid rgba(108,92,231,0.2); border-radius: 6px; padding: 8px 12px; margin-top: 8px; line-height: 1.7; }
+  .league-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(108,92,231,0.12); border: 1px solid rgba(108,92,231,0.3); border-radius: 4px; padding: 4px 10px; font-size: 11px; color: var(--accent2); margin-top: 6px; }
+  .league-badge button { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 12px; padding: 0; line-height: 1; }
   @media(max-width:520px){ .markets-grid{grid-template-columns:1fr;} .grid3{grid-template-columns:1fr 1fr;} .tab{padding:10px 8px;font-size:10px;} }
 `
 
@@ -135,9 +202,19 @@ export default function App() {
   const [savedKey, setSavedKey] = useState(null)
   const [expandedId, setExpandedId] = useState(null)
 
-  // Settle: CLV first, then result
+  // Liga priemer — nový blok
+  const [leagueSearch, setLeagueSearch] = useState('')
+  const [leagueResults, setLeagueResults] = useState([])
+  const [leagueSearching, setLeagueSearching] = useState(false)
+  const [selectedLeague, setSelectedLeague] = useState(null)   // { id, name, country }
+  const [leagueAvgH, setLeagueAvgH] = useState('')             // manuálne alebo z API
+  const [leagueAvgA, setLeagueAvgA] = useState('')
+  const [leagueAvgSource, setLeagueAvgSource] = useState(null) // 'api' | 'manual' | null
+  const [shrinkage, setShrinkage] = useState('0.15')
+
+  // Settle
   const [settlingId, setSettlingId] = useState(null)
-  const [settleMode, setSettleMode] = useState('clv') // 'clv' or 'result'
+  const [settleMode, setSettleMode] = useState('clv')
   const [settleClose, setSettleClose] = useState('')
   const [settleResult, setSettleResult] = useState('')
 
@@ -148,6 +225,45 @@ export default function App() {
     const { data, error } = await supabase.from('bets').select('*').order('created_at', { ascending: false })
     if (!error) setBets(data || [])
     setLoading(false)
+  }
+
+  // Vyhľadaj ligu cez FootyStats
+  async function handleLeagueSearch() {
+    if (!leagueSearch.trim()) return
+    setLeagueSearching(true)
+    setLeagueResults([])
+    const results = await searchLeagues(leagueSearch)
+    setLeagueResults(results)
+    setLeagueSearching(false)
+  }
+
+  // Vyber ligu a stiahni priemer
+  async function handleSelectLeague(league) {
+    setSelectedLeague(league)
+    setLeagueResults([])
+    setLeagueSearch('')
+    setLeagueAvgSource(null)
+    setLeagueAvgH('')
+    setLeagueAvgA('')
+
+    const avg = await fetchLeagueAvg(league.id)
+    if (avg) {
+      setLeagueAvgH(String(avg.avgHome.toFixed(3)))
+      setLeagueAvgA(String(avg.avgAway.toFixed(3)))
+      setLeagueAvgSource('api')
+    } else {
+      // API nenašlo dáta — nechaj manuálne polia prázdne
+      setLeagueAvgSource('manual')
+    }
+  }
+
+  function clearLeague() {
+    setSelectedLeague(null)
+    setLeagueAvgH('')
+    setLeagueAvgA('')
+    setLeagueAvgSource(null)
+    setLeagueSearch('')
+    setLeagueResults([])
   }
 
   function handleCalc() {
@@ -162,18 +278,37 @@ export default function App() {
     const hasXGA = ha > 0 && aa > 0
 
     if (hasGoals && hasXGA) {
-      // Full blend: xG + xGA + GF/GA
       const res = blendWithGoals(h, a, ha, aa, gfHv, gaHv, gfAv, gaAv, alph)
       lH = res.lH; lA = res.lA
     } else if (hasGoals) {
-      // No xGA — use xG as both attack and defense proxy
       const res = blendWithGoals(h, a, h, a, gfHv, gaHv, gfAv, gaAv, alph)
       lH = res.lH; lA = res.lA
     } else if (hasXGA) {
-      // Original geometric mean blend
       lH = blendLambda(h, aa); lA = blendLambda(a, ha)
     } else {
       lH = h; lA = a
+    }
+
+    // Shrinkage k priemeru ligy (ak je zadaný)
+    const lgH = pf(leagueAvgH)
+    const lgA = pf(leagueAvgA)
+    const shr = pf(shrinkage) || 0.15
+    let shrinkInfo = null
+
+    if (lgH > 0 && lgA > 0) {
+      const result = applyShrinkage(lH, lA, lgH, lgA, shr)
+      shrinkInfo = {
+        lHraw: lH.toFixed(3),
+        lAraw: lA.toFixed(3),
+        rawTotal: result.rawTotal,
+        shrunkTotal: result.shrunkTotal,
+        ratio: result.ratio,
+        leagueAvgH: lgH.toFixed(3),
+        leagueAvgA: lgA.toFixed(3),
+        source: leagueAvgSource,
+      }
+      lH = result.lH
+      lA = result.lA
     }
 
     const { pOver, pUnder } = calcOverUnder(lH, lA)
@@ -197,6 +332,7 @@ export default function App() {
       matchName: matchName.trim() || null,
       modelType: hasGoals ? (hasXGA ? 'full' : 'goals') : (hasXGA ? 'xga' : 'basic'),
       alpha: alph.toFixed(2),
+      shrinkInfo,
     })
   }
 
@@ -210,7 +346,6 @@ export default function App() {
     if (!midOdds) { setSaving(false); return }
     const myO = pf(isOver ? myOddsOver : myOddsUnder)
     const actualOdds = myO > 1 ? myO : midOdds
-    // EV počítame z actualOdds (môj kurz), nie z mid
     const ev = betType === 'back'
       ? calcBackEV(selProb, actualOdds, calc.comm)
       : calcLayEV(selProb, actualOdds, calc.comm)
@@ -285,8 +420,6 @@ export default function App() {
   const calib = hitRate != null && avgProb != null ? (hitRate - avgProb) * 100 : null
   const MARKET = { 'over2.5': 'Over 2.5', 'under2.5': 'Under 2.5' }
 
-
-
   return (
     <>
       <style>{css}</style>
@@ -308,10 +441,14 @@ export default function App() {
       <div className="wrap">
         {tab === 'calc' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+            {/* Zápas */}
             <div className="card">
               <div className="label">Zápas (voliteľné)</div>
               <input className="inp" placeholder="napr. Arsenal vs Chelsea" value={matchName} onChange={e => setMatchName(e.target.value)} />
             </div>
+
+            {/* xG hodnoty */}
             <div className="card">
               <div className="label" style={{ marginBottom: 10 }}>xG hodnoty</div>
               <div className="grid2">
@@ -321,6 +458,8 @@ export default function App() {
                 <div><div className="label">xGA Away (opt)</div><input className="inp" placeholder="1.10" value={xgaA} onChange={e => setXgaA(e.target.value)} /></div>
               </div>
             </div>
+
+            {/* GF / GA */}
             <div className="card">
               <div className="label" style={{ marginBottom: 10 }}>GF / GA — reálne góly (opt)</div>
               <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 10 }}>
@@ -337,20 +476,139 @@ export default function App() {
                 <input className="inp" placeholder="0.70" value={alpha} onChange={e => setAlpha(e.target.value)} />
               </div>
             </div>
+
+            {/* ── LIGA PRIEMER (nový blok) ── */}
+            <div className="card">
+              <div className="label" style={{ marginBottom: 4 }}>
+                Liga priemer gólov
+                <span style={{ color: 'var(--text3)', marginLeft: 6, textTransform: 'none', letterSpacing: 0 }}>
+                  — voliteľné, spresnenie modelu cez shrinkage
+                </span>
+              </div>
+
+              {/* Ak liga NIE je vybraná — zobraziť vyhľadávanie */}
+              {!selectedLeague && (
+                <>
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
+                    <input
+                      className="inp"
+                      placeholder="Hľadaj ligu... (napr. Premier, Bundesliga, Slovakia)"
+                      value={leagueSearch}
+                      onChange={e => setLeagueSearch(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && handleLeagueSearch()}
+                      style={{ flex: 1 }}
+                    />
+                    <button
+                      className="btn btn-primary btn-sm"
+                      onClick={handleLeagueSearch}
+                      disabled={leagueSearching}
+                      style={{ whiteSpace: 'nowrap' }}
+                    >
+                      {leagueSearching ? '...' : 'Hľadaj'}
+                    </button>
+                  </div>
+
+                  {leagueResults.length > 0 && (
+                    <div className="league-search-results">
+                      {leagueResults.map(l => (
+                        <div key={l.id} className="league-result-item" onClick={() => handleSelectLeague(l)}>
+                          <span style={{ color: 'var(--text2)' }}>{l.name}</span>
+                          <span style={{ color: 'var(--text3)', marginLeft: 8 }}>{l.country} · ID {l.id}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Alebo zadaj manuálne priamo */}
+                  <div style={{ marginTop: 10 }}>
+                    <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 6 }}>
+                      Alebo zadaj priemer ligy manuálne:
+                    </div>
+                    <div className="grid2">
+                      <div>
+                        <div className="label">Avg Home Goals/zápas</div>
+                        <input className="inp" placeholder="napr. 1.45" value={leagueAvgH}
+                          onChange={e => { setLeagueAvgH(e.target.value); setLeagueAvgSource('manual') }} />
+                      </div>
+                      <div>
+                        <div className="label">Avg Away Goals/zápas</div>
+                        <input className="inp" placeholder="napr. 1.20" value={leagueAvgA}
+                          onChange={e => { setLeagueAvgA(e.target.value); setLeagueAvgSource('manual') }} />
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Ak liga JE vybraná */}
+              {selectedLeague && (
+                <div>
+                  <div className="league-badge">
+                    ⚽ {selectedLeague.name}
+                    <span style={{ color: 'var(--text3)' }}>{selectedLeague.country}</span>
+                    <button onClick={clearLeague} title="Zmazať">✕</button>
+                  </div>
+
+                  {leagueAvgSource === 'api' && pf(leagueAvgH) > 0 && (
+                    <div style={{ fontSize: 10, color: 'var(--green)', marginTop: 6 }}>
+                      ✓ Stiahnuté z FootyStats: Home {leagueAvgH} · Away {leagueAvgA} gól/zápas
+                    </div>
+                  )}
+
+                  {leagueAvgSource === 'manual' && (
+                    <div style={{ fontSize: 10, color: 'var(--yellow)', marginTop: 6, marginBottom: 8 }}>
+                      ⚠ Dáta pre túto ligu neboli nájdené — zadaj manuálne:
+                    </div>
+                  )}
+
+                  {(leagueAvgSource === 'manual' || !pf(leagueAvgH)) && (
+                    <div className="grid2" style={{ marginTop: 8 }}>
+                      <div>
+                        <div className="label">Avg Home Goals/zápas</div>
+                        <input className="inp" placeholder="napr. 1.45" value={leagueAvgH}
+                          onChange={e => setLeagueAvgH(e.target.value)} />
+                      </div>
+                      <div>
+                        <div className="label">Avg Away Goals/zápas</div>
+                        <input className="inp" placeholder="napr. 1.20" value={leagueAvgA}
+                          onChange={e => setLeagueAvgA(e.target.value)} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Shrinkage faktor — zobraziť len keď je zadaný priemer */}
+              {(pf(leagueAvgH) > 0 || pf(leagueAvgA) > 0) && (
+                <div style={{ marginTop: 10 }}>
+                  <div className="label">
+                    Shrinkage faktor
+                    <span style={{ color: 'var(--accent2)', marginLeft: 6, textTransform: 'none', letterSpacing: 0 }}>
+                      (0.15 = 15% ťah λ k priemeru ligy)
+                    </span>
+                  </div>
+                  <input className="inp" placeholder="0.15" value={shrinkage} onChange={e => setShrinkage(e.target.value)} />
+                </div>
+              )}
+            </div>
+            {/* ── KONIEC LIGA PRIEMER ── */}
+
+            {/* Stake / komisia */}
             <div className="card">
               <div className="grid2">
                 <div><div className="label">Stake (€)</div><input className="inp" placeholder="10" value={stake} onChange={e => setStake(e.target.value)} /></div>
                 <div><div className="label">Komisia (%)</div><input className="inp" placeholder="5" value={commission} onChange={e => setCommission(e.target.value)} /></div>
               </div>
             </div>
+
             <button className="btn btn-primary" onClick={handleCalc}>▶ Vypočítať</button>
+
+            {/* Markets */}
             <div className="markets-grid">
               {[true, false].map(isOver => {
                 const fer = isOver ? calc?.ferOver : calc?.ferUnder
                 const prob = isOver ? calc?.pOver : calc?.pUnder
                 const mid = isOver ? calc?.midO : calc?.midU
-                const evBack = isOver ? calc?.evOBack : calc?.evUBack
-                const evLay = isOver ? calc?.evOLay : calc?.evULay
                 const st = calc?.st || 10
                 const comm = calc?.comm || 0.05
                 const mkt = isOver ? 'over2.5' : 'under2.5'
@@ -432,6 +690,8 @@ export default function App() {
                 )
               })}
             </div>
+
+            {/* Lambda info + shrink info */}
             {calc && <div className="lambda-row">
               <span>λ Home: <b>{fmt2(calc.lH)}</b></span>
               <span>λ Away: <b>{fmt2(calc.lA)}</b></span>
@@ -441,7 +701,22 @@ export default function App() {
                  calc.modelType === 'xga' ? 'xG+xGA' :
                  calc.modelType === 'goals' ? `xG+GF/GA (α=${calc.alpha})` : 'xG only'}
               </span>
+              {calc.shrinkInfo && (
+                <span style={{ color: 'var(--green)' }}>
+                  + shrink {calc.shrinkInfo.source === 'api' ? '📡' : '✍'} ({calc.shrinkInfo.rawTotal} → {calc.shrinkInfo.shrunkTotal})
+                </span>
+              )}
             </div>}
+
+            {/* Shrink detail */}
+            {calc?.shrinkInfo && (
+              <div className="shrink-info">
+                <b>Shrinkage:</b> λ_raw = {calc.shrinkInfo.lHraw} + {calc.shrinkInfo.lAraw} = {calc.shrinkInfo.rawTotal} →
+                shrunk na {calc.shrinkInfo.shrunkTotal} (liga avg: {calc.shrinkInfo.leagueAvgH} + {calc.shrinkInfo.leagueAvgA}) ·
+                ratio {calc.shrinkInfo.ratio} · zdroj: {calc.shrinkInfo.source === 'api' ? '📡 FootyStats API' : '✍ manuálne'}
+              </div>
+            )}
+
           </div>
         )}
 
