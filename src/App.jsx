@@ -133,6 +133,7 @@ export default function App() {
   const [matchName, setMatchName] = useState('')
   const [calc, setCalc] = useState(null)
   const [savedKey, setSavedKey] = useState(null)
+  const [expandedId, setExpandedId] = useState(null)
 
   // Settle: CLV first, then result
   const [settlingId, setSettlingId] = useState(null)
@@ -435,7 +436,7 @@ export default function App() {
             {bets.map(b => (
               <div key={b.id} className="bet-row">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-                  <div style={{ flex: 1 }}>
+                  <div style={{ flex: 1, cursor: 'pointer' }} onClick={() => setExpandedId(expandedId === b.id ? null : b.id)}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
                       {b.result == null && <span className="badge badge-pending">PENDING</span>}
                       {b.result === 1 && <span className="badge badge-won">WON</span>}
@@ -443,11 +444,12 @@ export default function App() {
                       <span className={`badge ${b.bet_type === 'lay' ? 'badge-lay' : 'badge-back'}`}>{b.bet_type === 'lay' ? '▼ LAY' : '▲ BACK'}</span>
                       <span style={{ fontSize: 12, fontWeight: 600 }}>{MARKET[b.market]}</span>
                       {b.match_name && <span style={{ fontSize: 11, color: 'var(--text3)' }}>{b.match_name}</span>}
+                      <span style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--text3)' }}>{expandedId === b.id ? '▲' : '▼'}</span>
                     </div>
                     <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', fontSize: 11, color: 'var(--text3)' }}>
                       <span>P: <b style={{ color: 'var(--text2)' }}>{fmtPct(b.sel_prob * 100)}</b></span>
                       <span>FER: <b style={{ color: 'var(--accent2)' }}>{fmt3(b.fer_odds)}</b></span>
-                      {b.odds_open && <span>Mid: <b style={{ color: 'var(--text2)' }}>{fmt3(b.odds_open)}</b></span>}
+                      {b.odds_open && <span>Kurz: <b style={{ color: 'var(--text2)' }}>{fmt3(b.odds_open)}</b></span>}
                       <span>Stake: <b style={{ color: 'var(--text2)' }}>{b.stake}€</b></span>
                       {b.ev_pct != null && <span>EV: <b className={b.ev_pct > 0 ? 'pos' : 'neg'}>{fmtSignPct(b.ev_pct)}</b></span>}
                       {b.clv != null && <span>CLV: <b className={b.clv > 0 ? 'pos' : 'neg'}>{fmtSignPct(b.clv)}</b></span>}
@@ -469,6 +471,26 @@ export default function App() {
                     <button className="btn-danger" onClick={() => handleDelete(b.id)}>✕</button>
                   </div>
                 </div>
+
+                {expandedId === b.id && (
+                  <div style={{ marginTop: 10, padding: '10px 12px', background: 'var(--bg3)', borderRadius: 6, fontSize: 11 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 16px', color: 'var(--text3)' }}>
+                      {b.lambda_h && <span>λ Home: <b style={{ color: 'var(--text2)' }}>{fmt2(b.lambda_h)}</b></span>}
+                      {b.lambda_a && <span>λ Away: <b style={{ color: 'var(--text2)' }}>{fmt2(b.lambda_a)}</b></span>}
+                      {b.lambda_h && b.lambda_a && <span>λ Suma: <b style={{ color: 'var(--text2)' }}>{fmt2(b.lambda_h + b.lambda_a)}</b></span>}
+                      {b.p_over && <span>P(Over): <b style={{ color: 'var(--text2)' }}>{fmtPct(b.p_over * 100)}</b></span>}
+                      {b.p_under && <span>P(Under): <b style={{ color: 'var(--text2)' }}>{fmtPct(b.p_under * 100)}</b></span>}
+                      <span>FER: <b style={{ color: 'var(--accent2)' }}>{fmt3(b.fer_odds)}</b></span>
+                      <span>Môj kurz: <b style={{ color: 'var(--text2)' }}>{fmt3(b.odds_open)}</b></span>
+                      {b.odds_close && <span>Closing: <b style={{ color: 'var(--text2)' }}>{fmt3(b.odds_close)}</b></span>}
+                      {b.commission && <span>Komisia: <b style={{ color: 'var(--text2)' }}>{b.commission}%</b></span>}
+                      {b.ev_pct != null && <span>EV: <b className={b.ev_pct > 0 ? 'pos' : 'neg'}>{fmtSignPct(b.ev_pct)}</b></span>}
+                      {b.clv != null && <span>CLV: <b className={b.clv > 0 ? 'pos' : 'neg'}>{fmtSignPct(b.clv)}</b></span>}
+                      {b.brier != null && <span>Brier: <b style={{ color: 'var(--text2)' }}>{fmt2(b.brier)}</b></span>}
+                      {b.log_loss != null && <span>Log loss: <b style={{ color: 'var(--text2)' }}>{fmt2(b.log_loss)}</b></span>}
+                    </div>
+                  </div>
+                )}
 
                 {settlingId === b.id && settleMode === 'clv' && (
                   <div className="clv-box">
