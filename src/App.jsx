@@ -83,19 +83,17 @@ async function fetchLeagueAvg(leagueId) {
   }
 }
 
-// FootyStats — vyhľadaj ligy podľa názvu
-async function searchLeagues(query) {
+// FootyStats — načítaj všetky predplatené ligy (chosen_leagues_only=true)
+async function loadMyLeagues() {
   try {
-    const url = `https://api.football-data-api.com/league-list?key=${FOOTYSTATS_KEY}&chosen_leagues_only=false`
+    const url = `https://api.football-data-api.com/league-list?key=${FOOTYSTATS_KEY}&chosen_leagues_only=true`
     const res = await fetch(url)
     if (!res.ok) return []
     const json = await res.json()
     const leagues = json?.data ?? []
-    const q = query.toLowerCase()
     return leagues
-      .filter(l => l.name?.toLowerCase().includes(q) || l.country?.toLowerCase().includes(q))
-      .slice(0, 8)
       .map(l => ({ id: l.id, name: l.name, country: l.country, season: l.season }))
+      .sort((a, b) => a.name.localeCompare(b.name))
   } catch {
     return []
   }
@@ -202,14 +200,15 @@ export default function App() {
   const [savedKey, setSavedKey] = useState(null)
   const [expandedId, setExpandedId] = useState(null)
 
-  // Liga priemer — nový blok
-  const [leagueSearch, setLeagueSearch] = useState('')
-  const [leagueResults, setLeagueResults] = useState([])
-  const [leagueSearching, setLeagueSearching] = useState(false)
-  const [selectedLeague, setSelectedLeague] = useState(null)   // { id, name, country }
-  const [leagueAvgH, setLeagueAvgH] = useState('')             // manuálne alebo z API
+  // Liga priemer
+  const [allLeagues, setAllLeagues] = useState([])          // všetky predplatené ligy
+  const [leagueLoading, setLeagueLoading] = useState(false) // načítavanie zoznamu
+  const [leagueSearch, setLeagueSearch] = useState('')      // filter text
+  const [leagueOpen, setLeagueOpen] = useState(false)       // dropdown otvorený
+  const [selectedLeague, setSelectedLeague] = useState(null)
+  const [leagueAvgH, setLeagueAvgH] = useState('')
   const [leagueAvgA, setLeagueAvgA] = useState('')
-  const [leagueAvgSource, setLeagueAvgSource] = useState(null) // 'api' | 'manual' | null
+  const [leagueAvgSource, setLeagueAvgSource] = useState(null)
   const [shrinkage, setShrinkage] = useState('0.15')
 
   // Settle
@@ -218,7 +217,15 @@ export default function App() {
   const [settleClose, setSettleClose] = useState('')
   const [settleResult, setSettleResult] = useState('')
 
-  useEffect(() => { loadBets() }, [])
+  useEffect(() => {
+    loadBets()
+    // Načítaj zoznam predplatených líg pri štarte
+    setLeagueLoading(true)
+    loadMyLeagues().then(leagues => {
+      setAllLeagues(leagues)
+      setLeagueLoading(false)
+    })
+  }, [])
 
   async function loadBets() {
     setLoading(true)
@@ -227,20 +234,10 @@ export default function App() {
     setLoading(false)
   }
 
-  // Vyhľadaj ligu cez FootyStats
-  async function handleLeagueSearch() {
-    if (!leagueSearch.trim()) return
-    setLeagueSearching(true)
-    setLeagueResults([])
-    const results = await searchLeagues(leagueSearch)
-    setLeagueResults(results)
-    setLeagueSearching(false)
-  }
-
-  // Vyber ligu a stiahni priemer
+  // Vyber ligu z dropdownu a stiahni priemer
   async function handleSelectLeague(league) {
     setSelectedLeague(league)
-    setLeagueResults([])
+    setLeagueOpen(false)
     setLeagueSearch('')
     setLeagueAvgSource(null)
     setLeagueAvgH('')
@@ -252,7 +249,6 @@ export default function App() {
       setLeagueAvgA(String(avg.avgAway.toFixed(3)))
       setLeagueAvgSource('api')
     } else {
-      // API nenašlo dáta — nechaj manuálne polia prázdne
       setLeagueAvgSource('manual')
     }
   }
@@ -263,7 +259,7 @@ export default function App() {
     setLeagueAvgA('')
     setLeagueAvgSource(null)
     setLeagueSearch('')
-    setLeagueResults([])
+    setLeagueOpen(false)
   }
 
   function handleCalc() {
@@ -477,86 +473,61 @@ export default function App() {
               </div>
             </div>
 
-            {/* ── LIGA PRIEMER (nový blok) ── */}
-            <div className="card">
-              <div className="label" style={{ marginBottom: 4 }}>
+            {/* ── LIGA PRIEMER (dropdown) ── */}
+            <div className="card" style={{ position: 'relative' }}>
+              <div className="label" style={{ marginBottom: 8 }}>
                 Liga priemer gólov
                 <span style={{ color: 'var(--text3)', marginLeft: 6, textTransform: 'none', letterSpacing: 0 }}>
-                  — voliteľné, spresnenie modelu cez shrinkage
+                  — voliteľné, spresnenie λ cez shrinkage
                 </span>
               </div>
 
-              {/* Ak liga NIE je vybraná — zobraziť vyhľadávanie */}
-              {!selectedLeague && (
-                <>
-                  <div style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
-                    <input
-                      className="inp"
-                      placeholder="Hľadaj ligu... (napr. Premier, Bundesliga, Slovakia)"
-                      value={leagueSearch}
-                      onChange={e => setLeagueSearch(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && handleLeagueSearch()}
-                      style={{ flex: 1 }}
-                    />
-                    <button
-                      className="btn btn-primary btn-sm"
-                      onClick={handleLeagueSearch}
-                      disabled={leagueSearching}
-                      style={{ whiteSpace: 'nowrap' }}
-                    >
-                      {leagueSearching ? '...' : 'Hľadaj'}
-                    </button>
-                  </div>
-
-                  {leagueResults.length > 0 && (
-                    <div className="league-search-results">
-                      {leagueResults.map(l => (
-                        <div key={l.id} className="league-result-item" onClick={() => handleSelectLeague(l)}>
-                          <span style={{ color: 'var(--text2)' }}>{l.name}</span>
-                          <span style={{ color: 'var(--text3)', marginLeft: 8 }}>{l.country} · ID {l.id}</span>
-                        </div>
-                      ))}
+              {/* Dropdown trigger */}
+              {!selectedLeague ? (
+                <div style={{ position: 'relative' }}>
+                  <input
+                    className="inp"
+                    placeholder={leagueLoading ? 'Načítavam ligy...' : 'Klikni pre výber ligy alebo píš na filtrovanie...'}
+                    value={leagueSearch}
+                    disabled={leagueLoading}
+                    onChange={e => { setLeagueSearch(e.target.value); setLeagueOpen(true) }}
+                    onFocus={() => setLeagueOpen(true)}
+                    onBlur={() => setTimeout(() => setLeagueOpen(false), 150)}
+                  />
+                  {leagueOpen && allLeagues.length > 0 && (
+                    <div className="league-search-results" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, maxHeight: 260, overflowY: 'auto' }}>
+                      {allLeagues
+                        .filter(l => {
+                          if (!leagueSearch.trim()) return true
+                          const q = leagueSearch.toLowerCase()
+                          return l.name?.toLowerCase().includes(q) || l.country?.toLowerCase().includes(q)
+                        })
+                        .map(l => (
+                          <div key={l.id} className="league-result-item" onMouseDown={() => handleSelectLeague(l)}>
+                            <span style={{ color: 'var(--text2)' }}>{l.name}</span>
+                            <span style={{ color: 'var(--text3)', marginLeft: 8 }}>{l.country}</span>
+                          </div>
+                        ))
+                      }
                     </div>
                   )}
-
-                  {/* Alebo zadaj manuálne priamo */}
-                  <div style={{ marginTop: 10 }}>
-                    <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 6 }}>
-                      Alebo zadaj priemer ligy manuálne:
-                    </div>
-                    <div className="grid2">
-                      <div>
-                        <div className="label">Avg Home Goals/zápas</div>
-                        <input className="inp" placeholder="napr. 1.45" value={leagueAvgH}
-                          onChange={e => { setLeagueAvgH(e.target.value); setLeagueAvgSource('manual') }} />
-                      </div>
-                      <div>
-                        <div className="label">Avg Away Goals/zápas</div>
-                        <input className="inp" placeholder="napr. 1.20" value={leagueAvgA}
-                          onChange={e => { setLeagueAvgA(e.target.value); setLeagueAvgSource('manual') }} />
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* Ak liga JE vybraná */}
-              {selectedLeague && (
+                </div>
+              ) : (
                 <div>
                   <div className="league-badge">
                     ⚽ {selectedLeague.name}
                     <span style={{ color: 'var(--text3)' }}>{selectedLeague.country}</span>
-                    <button onClick={clearLeague} title="Zmazať">✕</button>
+                    <button onClick={clearLeague} title="Zmeniť ligu">✕</button>
                   </div>
 
                   {leagueAvgSource === 'api' && pf(leagueAvgH) > 0 && (
                     <div style={{ fontSize: 10, color: 'var(--green)', marginTop: 6 }}>
-                      ✓ Stiahnuté z FootyStats: Home {leagueAvgH} · Away {leagueAvgA} gól/zápas
+                      ✓ Stiahnuté z FootyStats: Home <b>{leagueAvgH}</b> · Away <b>{leagueAvgA}</b> gól/zápas
                     </div>
                   )}
 
                   {leagueAvgSource === 'manual' && (
-                    <div style={{ fontSize: 10, color: 'var(--yellow)', marginTop: 6, marginBottom: 8 }}>
+                    <div style={{ fontSize: 10, color: 'var(--yellow)', marginTop: 6 }}>
                       ⚠ Dáta pre túto ligu neboli nájdené — zadaj manuálne:
                     </div>
                   )}
@@ -578,7 +549,26 @@ export default function App() {
                 </div>
               )}
 
-              {/* Shrinkage faktor — zobraziť len keď je zadaný priemer */}
+              {/* Manuálne polia ak nechceš vyberať ligu */}
+              {!selectedLeague && (
+                <div style={{ marginTop: 10 }}>
+                  <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 6 }}>Alebo zadaj manuálne:</div>
+                  <div className="grid2">
+                    <div>
+                      <div className="label">Avg Home Goals/zápas</div>
+                      <input className="inp" placeholder="napr. 1.45" value={leagueAvgH}
+                        onChange={e => { setLeagueAvgH(e.target.value); setLeagueAvgSource('manual') }} />
+                    </div>
+                    <div>
+                      <div className="label">Avg Away Goals/zápas</div>
+                      <input className="inp" placeholder="napr. 1.20" value={leagueAvgA}
+                        onChange={e => { setLeagueAvgA(e.target.value); setLeagueAvgSource('manual') }} />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Shrinkage — len keď sú zadané hodnoty */}
               {(pf(leagueAvgH) > 0 || pf(leagueAvgA) > 0) && (
                 <div style={{ marginTop: 10 }}>
                   <div className="label">
