@@ -6,8 +6,6 @@ import {
   fmt2, fmt3, fmtPct, fmtSign, fmtSignPct
 } from './math'
 
-const FOOTYSTATS_KEY = import.meta.env.VITE_FOOTYSTATS_KEY
-
 function midPrice(back, lay) {
   if (!back || !lay || back <= 1 || lay <= 1) return null
   return (back + lay) / 2
@@ -57,21 +55,19 @@ function applyShrinkage(lH, lA, lgAvgH, lgAvgA, shrink) {
   }
 }
 
-// FootyStats API — načítaj ligy pre aktuálnu sezónu
+// Volania idú cez Vercel proxy /api/footystats (kvôli CORS)
 async function fetchLeagueAvg(leagueId) {
   try {
-    const url = `https://api.football-data-api.com/league-season?key=${FOOTYSTATS_KEY}&season_id=${leagueId}&stats=true`
+    const url = `/api/footystats?endpoint=league-season&season_id=${leagueId}&stats=true`
     const res = await fetch(url)
     if (!res.ok) return null
     const json = await res.json()
     const data = json?.data
     if (!data) return null
-    // FootyStats vracia avg_goals_per_match, home_ppg atď.
     const avgHome = data.home_ppg_scored ?? data.avg_home_goals ?? null
     const avgAway = data.away_ppg_scored ?? data.avg_away_goals ?? null
     const avgTotal = data.avg_goals_per_match ?? null
     if (avgTotal && !avgHome) {
-      // Ak nemáme home/away zvlášť, rozdeľ 55/45
       return { avgHome: avgTotal * 0.55, avgAway: avgTotal * 0.45, source: 'api', leagueId }
     }
     if (avgHome && avgAway) {
@@ -83,10 +79,9 @@ async function fetchLeagueAvg(leagueId) {
   }
 }
 
-// FootyStats — načítaj všetky predplatené ligy (chosen_leagues_only=true)
 async function loadMyLeagues() {
   try {
-    const url = `https://api.football-data-api.com/league-list?key=${FOOTYSTATS_KEY}&chosen_leagues_only=true`
+    const url = `/api/footystats?endpoint=league-list&chosen_leagues_only=true`
     const res = await fetch(url)
     if (!res.ok) return []
     const json = await res.json()
