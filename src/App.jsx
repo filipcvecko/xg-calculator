@@ -64,12 +64,8 @@ async function fetchLeagueAvg(leagueId) {
     const json = await res.json()
     const data = json?.data
     if (!data) return null
-    const avgHome = data.home_ppg_scored ?? data.avg_home_goals ?? null
-    const avgAway = data.away_ppg_scored ?? data.avg_away_goals ?? null
-    const avgTotal = data.avg_goals_per_match ?? null
-    if (avgTotal && !avgHome) {
-      return { avgHome: avgTotal * 0.55, avgAway: avgTotal * 0.45, source: 'api', leagueId }
-    }
+    const avgHome = data.seasonAVG_home ?? null
+    const avgAway = data.seasonAVG_away ?? null
     if (avgHome && avgAway) {
       return { avgHome, avgAway, source: 'api', leagueId }
     }
