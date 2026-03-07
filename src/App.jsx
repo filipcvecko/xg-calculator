@@ -112,26 +112,29 @@ async function fetchTeamNamesForSeason(seasonId, leagueName, leagueCountry) {
 // Načítaj štatistiky konkrétneho tímu (pri výbere)
 async function fetchTeamStats(teamId, seasonId) {
   try {
-    const url = `/api/footystats?endpoint=league-teams&season_id=${seasonId}`
+    // Správny endpoint: /team?team_id=X&season_id=Y
+    const url = `/api/footystats?endpoint=team&team_id=${teamId}&season_id=${seasonId}`
     const res = await fetch(url)
     if (!res.ok) return null
     const json = await res.json()
-    const teams = json?.data ?? []
-    const team = teams.find(t => t.id === teamId)
+    // team endpoint vracia objekt alebo pole
+    const data = json?.data
+    const team = Array.isArray(data) ? data[0] : data
     if (!team) return null
-    // Log všetky dostupné kľúče pre debug
-    console.log('FootyStats team keys:', Object.keys(team))
-    console.log('FootyStats team sample:', JSON.stringify(
+    console.log('=== TEAM STATS KEYS ===', Object.keys(team))
+    console.log('=== TEAM STATS SAMPLE ===', JSON.stringify(
       Object.fromEntries(Object.entries(team).filter(([k]) =>
         k.toLowerCase().includes('xg') ||
         k.toLowerCase().includes('goal') ||
         k.toLowerCase().includes('match') ||
+        k.toLowerCase().includes('played') ||
         k.toLowerCase().includes('concede') ||
-        k.toLowerCase().includes('played')
+        k.toLowerCase().includes('scored')
       ))
     ))
     return team
-  } catch {
+  } catch (e) {
+    console.error('fetchTeamStats error:', e)
     return null
   }
 }
