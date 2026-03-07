@@ -88,6 +88,37 @@ async function loadMyLeagues() {
   }
 }
 
+// Načítaj všetky tímy z danej sezóny
+async function fetchTeamsForSeason(seasonId) {
+  try {
+    const url = `/api/footystats?endpoint=league-teams&season_id=${seasonId}&include=stats`
+    const res = await fetch(url)
+    if (!res.ok) return []
+    const json = await res.json()
+    return json?.data ?? []
+  } catch {
+    return []
+  }
+}
+
+// Z tímových dát vytiahni štatistiky pre kalkulačku
+// FootyStats vracia per-season celkové góly — vydelíme počtom zápasov
+function extractTeamStats(team) {
+  const mp_h = team.seasonMatchesPlayed_home || 1
+  const mp_a = team.seasonMatchesPlayed_away || 1
+
+  const xgH = team.seasonXG_home != null ? +(team.seasonXG_home / mp_h).toFixed(2) : null
+  const xgA = team.seasonXG_away != null ? +(team.seasonXG_away / mp_a).toFixed(2) : null
+  const xgaH = team.seasonXGC_home != null ? +(team.seasonXGC_home / mp_h).toFixed(2) : null
+  const xgaA = team.seasonXGC_away != null ? +(team.seasonXGC_away / mp_a).toFixed(2) : null
+  const gfH = team.seasonGoals_home != null ? +(team.seasonGoals_home / mp_h).toFixed(2) : null
+  const gfA = team.seasonGoals_away != null ? +(team.seasonGoals_away / mp_a).toFixed(2) : null
+  const gaH = team.seasonConceded_home != null ? +(team.seasonConceded_home / mp_h).toFixed(2) : null
+  const gaA = team.seasonConceded_away != null ? +(team.seasonConceded_away / mp_a).toFixed(2) : null
+
+  return { xgH, xgA, xgaH, xgaA, gfH, gfA, gaH, gaA, mp_h, mp_a }
+}
+
 const css = `
   * { box-sizing: border-box; }
   .wrap { max-width: 720px; margin: 0 auto; padding: 20px 16px 60px; }
@@ -164,7 +195,14 @@ const css = `
   .filter-fail { font-size: 11px; color: var(--red); background: rgba(255,92,92,0.08); border: 1px solid rgba(255,92,92,0.2); border-radius: 6px; padding: 8px 12px; margin-top: 8px; }
   .league-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(108,92,231,0.12); border: 1px solid rgba(108,92,231,0.3); border-radius: 4px; padding: 4px 10px; font-size: 11px; color: var(--accent2); margin-top: 6px; }
   .league-badge button { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 12px; padding: 0; line-height: 1; }
-  .advanced-toggle { display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+  .team-search-wrap { position: relative; }
+  .team-search-results { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; margin-top: 4px; overflow: hidden; position: absolute; top: 100%; left: 0; right: 0; z-index: 50; max-height: 280px; overflow-y: auto; }
+  .team-result-item { padding: 9px 12px; cursor: pointer; font-size: 12px; border-bottom: 1px solid var(--border); transition: background 0.1s; display: flex; justify-content: space-between; align-items: center; }
+  .team-result-item:last-child { border-bottom: none; }
+  .team-result-item:hover { background: var(--bg2); }
+  .team-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(46,204,138,0.10); border: 1px solid rgba(46,204,138,0.3); border-radius: 4px; padding: 4px 10px; font-size: 11px; color: var(--green); margin-top: 6px; }
+  .team-badge button { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 12px; padding: 0; line-height: 1; }
+  .autofill-info { font-size: 10px; color: var(--green); background: rgba(46,204,138,0.07); border: 1px solid rgba(46,204,138,0.2); border-radius: 6px; padding: 8px 12px; margin-top: 8px; line-height: 1.8; }
   .prob-compare { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-top: 10px; font-size: 11px; }
   .prob-box { background: var(--bg3); border-radius: 6px; padding: 8px 10px; }
   .prob-box-label { font-size: 9px; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 3px; }
@@ -200,6 +238,17 @@ export default function App() {
   const [savedKey, setSavedKey] = useState(null)
   const [expandedId, setExpandedId] = useState(null)
 
+  // Team autofill
+  const [allTeams, setAllTeams] = useState([])         // všetky tímy zo všetkých líg
+  const [teamsLoading, setTeamsLoading] = useState(false)
+  const [homeTeamSearch, setHomeTeamSearch] = useState('')
+  const [awayTeamSearch, setAwayTeamSearch] = useState('')
+  const [homeTeamOpen, setHomeTeamOpen] = useState(false)
+  const [awayTeamOpen, setAwayTeamOpen] = useState(false)
+  const [selectedHomeTeam, setSelectedHomeTeam] = useState(null)
+  const [selectedAwayTeam, setSelectedAwayTeam] = useState(null)
+  const [autofillInfo, setAutofillInfo] = useState(null)
+
   // Pokročilé nastavenia
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [rho, setRho] = useState('-0.10')
@@ -231,9 +280,39 @@ export default function App() {
   useEffect(() => {
     loadBets()
     setLeagueLoading(true)
-    loadMyLeagues().then(leagues => {
+    loadMyLeagues().then(async leagues => {
       setAllLeagues(leagues)
       setLeagueLoading(false)
+
+      // Načítaj tímy z každej ligy (paralelne, max 5 naraz aby sme nepretažili API)
+      if (leagues.length === 0) return
+      setTeamsLoading(true)
+      const CHUNK = 5
+      let allLoadedTeams = []
+      for (let i = 0; i < leagues.length; i += CHUNK) {
+        const chunk = leagues.slice(i, i + CHUNK)
+        const results = await Promise.all(chunk.map(async l => {
+          const seasons = l.season ?? []
+          const latest = seasons.reduce((best, s) => (!best || s.id > best.id ? s : best), null)
+          const sid = latest ? latest.id : l.id
+          const teams = await fetchTeamsForSeason(sid)
+          return teams.map(t => ({
+            id: t.id,
+            name: t.name,
+            cleanName: t.cleanName || t.name,
+            leagueName: l.name,
+            leagueCountry: l.country,
+            seasonId: sid,
+            stats: extractTeamStats(t),
+          }))
+        }))
+        allLoadedTeams = allLoadedTeams.concat(results.flat())
+      }
+      // Deduplikácia podľa id
+      const seen = new Set()
+      const unique = allLoadedTeams.filter(t => { if (seen.has(t.id)) return false; seen.add(t.id); return true })
+      setAllTeams(unique)
+      setTeamsLoading(false)
     })
   }, [])
 
@@ -271,6 +350,64 @@ export default function App() {
     setLeagueAvgSource(null)
     setLeagueSearch('')
     setLeagueOpen(false)
+  }
+
+  function handleSelectHomeTeam(team) {
+    setSelectedHomeTeam(team)
+    setHomeTeamOpen(false)
+    setHomeTeamSearch('')
+    const s = team.stats
+    if (s.xgH != null) setXgH(String(s.xgH))
+    if (s.xgaH != null) setXgaH(String(s.xgaH))
+    if (s.gfH != null) setGfH(String(s.gfH))
+    if (s.gaH != null) setGaH(String(s.gaH))
+    updateAutofillInfo(team, selectedAwayTeam, s, null)
+  }
+
+  function handleSelectAwayTeam(team) {
+    setSelectedAwayTeam(team)
+    setAwayTeamOpen(false)
+    setAwayTeamSearch('')
+    const s = team.stats
+    if (s.xgA != null) setXgA(String(s.xgA))
+    if (s.xgaA != null) setXgaA(String(s.xgaA))
+    if (s.gfA != null) setGfA(String(s.gfA))
+    if (s.gaA != null) setGaA(String(s.gaA))
+    updateAutofillInfo(selectedHomeTeam, team, null, s)
+  }
+
+  function updateAutofillInfo(home, away, homeStats, awayStats) {
+    const h = homeStats || home?.stats
+    const a = awayStats || away?.stats
+    if (!h && !a) { setAutofillInfo(null); return }
+    setAutofillInfo({
+      home: home ? { name: home.name, league: home.leagueName, mp_h: h?.mp_h } : null,
+      away: away ? { name: away.name, league: away.leagueName, mp_a: a?.mp_a } : null,
+      hasXG: (h?.xgH != null) || (a?.xgA != null),
+    })
+  }
+
+  function clearHomeTeam() {
+    setSelectedHomeTeam(null)
+    setHomeTeamSearch('')
+    setXgH(''); setXgaH(''); setGfH(''); setGaH('')
+    setAutofillInfo(null)
+  }
+
+  function clearAwayTeam() {
+    setSelectedAwayTeam(null)
+    setAwayTeamSearch('')
+    setXgA(''); setXgaA(''); setGfA(''); setGaA('')
+    setAutofillInfo(null)
+  }
+
+  function filterTeams(query) {
+    if (!query.trim()) return []
+    const q = query.toLowerCase()
+    return allTeams.filter(t =>
+      t.name?.toLowerCase().includes(q) ||
+      t.cleanName?.toLowerCase().includes(q)
+    ).slice(0, 12)
   }
 
   function handleCalc() {
@@ -482,6 +619,106 @@ export default function App() {
               <div className="label">Zápas (voliteľné)</div>
               <input className="inp" placeholder="napr. Arsenal vs Chelsea" value={matchName} onChange={e => setMatchName(e.target.value)} />
             </div>
+
+            {/* ── VÝBER TÍMOV (autocomplete) ── */}
+            <div className="card">
+              <div className="label" style={{ marginBottom: 8 }}>
+                Vyber tímy — automatické doplnenie štatistík
+                {teamsLoading && <span style={{ color: 'var(--yellow)', marginLeft: 8 }}>⏳ Načítavam tímy...</span>}
+                {!teamsLoading && allTeams.length > 0 && <span style={{ color: 'var(--text3)', marginLeft: 8 }}>({allTeams.length} tímov z tvojich líg)</span>}
+              </div>
+
+              <div className="grid2">
+                {/* HOME tím */}
+                <div>
+                  <div className="label">Home tím</div>
+                  {!selectedHomeTeam ? (
+                    <div className="team-search-wrap">
+                      <input
+                        className="inp"
+                        placeholder={teamsLoading ? 'Načítavam...' : 'Hľadaj home tím...'}
+                        value={homeTeamSearch}
+                        disabled={teamsLoading}
+                        onChange={e => { setHomeTeamSearch(e.target.value); setHomeTeamOpen(true) }}
+                        onFocus={() => setHomeTeamOpen(true)}
+                        onBlur={() => setTimeout(() => setHomeTeamOpen(false), 150)}
+                      />
+                      {homeTeamOpen && homeTeamSearch.length > 1 && (
+                        <div className="team-search-results">
+                          {filterTeams(homeTeamSearch).length === 0
+                            ? <div style={{ padding: '10px 12px', fontSize: 11, color: 'var(--text3)' }}>Nenašiel som tím — vyplň ručne</div>
+                            : filterTeams(homeTeamSearch).map(t => (
+                              <div key={t.id} className="team-result-item" onMouseDown={() => handleSelectHomeTeam(t)}>
+                                <span style={{ color: 'var(--text2)' }}>{t.name}</span>
+                                <span style={{ fontSize: 10, color: 'var(--text3)' }}>{t.leagueName}</span>
+                              </div>
+                            ))
+                          }
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="team-badge">
+                      🏠 {selectedHomeTeam.name}
+                      <button onClick={clearHomeTeam} title="Zmeniť">✕</button>
+                    </div>
+                  )}
+                </div>
+
+                {/* AWAY tím */}
+                <div>
+                  <div className="label">Away tím</div>
+                  {!selectedAwayTeam ? (
+                    <div className="team-search-wrap">
+                      <input
+                        className="inp"
+                        placeholder={teamsLoading ? 'Načítavam...' : 'Hľadaj away tím...'}
+                        value={awayTeamSearch}
+                        disabled={teamsLoading}
+                        onChange={e => { setAwayTeamSearch(e.target.value); setAwayTeamOpen(true) }}
+                        onFocus={() => setAwayTeamOpen(true)}
+                        onBlur={() => setTimeout(() => setAwayTeamOpen(false), 150)}
+                      />
+                      {awayTeamOpen && awayTeamSearch.length > 1 && (
+                        <div className="team-search-results">
+                          {filterTeams(awayTeamSearch).length === 0
+                            ? <div style={{ padding: '10px 12px', fontSize: 11, color: 'var(--text3)' }}>Nenašiel som tím — vyplň ručne</div>
+                            : filterTeams(awayTeamSearch).map(t => (
+                              <div key={t.id} className="team-result-item" onMouseDown={() => handleSelectAwayTeam(t)}>
+                                <span style={{ color: 'var(--text2)' }}>{t.name}</span>
+                                <span style={{ fontSize: 10, color: 'var(--text3)' }}>{t.leagueName}</span>
+                              </div>
+                            ))
+                          }
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="team-badge">
+                      ✈️ {selectedAwayTeam.name}
+                      <button onClick={clearAwayTeam} title="Zmeniť">✕</button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Autofill info */}
+              {autofillInfo && (
+                <div className="autofill-info">
+                  {autofillInfo.home && <span>🏠 <b>{autofillInfo.home.name}</b> ({autofillInfo.home.league}, {autofillInfo.home.mp_h} dom. zápasov) </span>}
+                  {autofillInfo.away && <span>✈️ <b>{autofillInfo.away.name}</b> ({autofillInfo.away.league}, {autofillInfo.away.mp_a} vonk. zápasov) </span>}
+                  {autofillInfo.hasXG
+                    ? <span style={{ color: 'var(--green)' }}>· ✓ xG + GF/GA natiahnuté</span>
+                    : <span style={{ color: 'var(--yellow)' }}>· ⚠ xG nedostupné pre túto ligu, natiahnuté len GF/GA</span>
+                  }
+                </div>
+              )}
+
+              <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 8 }}>
+                Tímy mimo tvojich líg → vyplň xG / GF / GA ručne nižšie
+              </div>
+            </div>
+            {/* ── KONIEC VÝBER TÍMOV ── */}
 
             {/* xG hodnoty */}
             <div className="card">
