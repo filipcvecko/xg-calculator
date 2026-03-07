@@ -6,18 +6,31 @@ export function poissonPMF(k, lambda) {
   return Math.exp(logP)
 }
 
-// Over/Under 2.5 probabilities using independent Poisson
-export function calcOverUnder(lambdaH, lambdaA) {
+// Dixon-Coles τ korekcia pre nízke skóre (0-0, 1-0, 0-1, 1-1)
+// rho ≈ -0.05 až -0.15 (záporné = koreluje nízke skóre)
+export function dixonColesTau(h, a, lambdaH, lambdaA, rho = -0.10) {
+  if (h === 0 && a === 0) return 1 - lambdaH * lambdaA * rho
+  if (h === 1 && a === 0) return 1 + lambdaA * rho
+  if (h === 0 && a === 1) return 1 + lambdaH * rho
+  if (h === 1 && a === 1) return 1 - rho
+  return 1
+}
+
+// Over/Under 2.5 s Dixon-Coles korekciou
+// rho = 0 znamená štandardný Poisson (bez korekcie)
+export function calcOverUnder(lambdaH, lambdaA, rho = -0.10) {
   let pUnder = 0
   for (let h = 0; h <= 2; h++) {
     for (let a = 0; a <= 2 - h; a++) {
-      pUnder += poissonPMF(h, lambdaH) * poissonPMF(a, lambdaA)
+      const tau = dixonColesTau(h, a, lambdaH, lambdaA, rho)
+      pUnder += poissonPMF(h, lambdaH) * poissonPMF(a, lambdaA) * tau
     }
   }
+  pUnder = Math.min(1, Math.max(0, pUnder))
   return { pOver: 1 - pUnder, pUnder }
 }
 
-// Blend xG + xGA using geometric mean (more stable than arithmetic)
+// Blend xG + xGA using geometric mean
 export function blendLambda(xg, xgaOpponent) {
   return Math.sqrt(xg * xgaOpponent)
 }
@@ -28,7 +41,7 @@ export function fairOdds(p) {
   return 1 / p
 }
 
-// EV = p * odds - 1  (profit per 1 unit staked)
+// EV = p * odds - 1
 export function calcEV(prob, odds) {
   if (!prob || !odds) return null
   return prob * odds - 1
@@ -38,6 +51,31 @@ export function calcEV(prob, odds) {
 export function calcCLV(oddsOpen, oddsClose) {
   if (!oddsOpen || !oddsClose || oddsClose <= 1) return null
   return (oddsOpen / oddsClose - 1) * 100
+}
+
+// Market calibration: blend modelu a trhových kurzov
+// w = váha modelu (0.6 = 60% model, 40% market)
+export function marketCalibration(pModel, marketOdds, w = 0.6) {
+  if (!marketOdds || marketOdds <= 1) return pModel
+  const pMarket = 1 / marketOdds
+  return w * pModel + (1 - w) * pMarket
+}
+
+// Probability calibration: power transform P^k
+// k < 1 = zníž istotu | k > 1 = zvýš polarizáciu
+export function calibrateProb(p, k = 0.95) {
+  if (!p || p <= 0 || p >= 1) return p
+  return Math.pow(p, k)
+}
+
+// EV threshold filter — true ak bet spĺňa minimálny EV
+export function evFilter(ev, evMin = 0.04) {
+  return ev != null && ev >= evMin
+}
+
+// Odds band filter — true ak kurz je v rozumnom pásme
+export function oddsBandFilter(odds, low = 1.4, high = 3.5) {
+  return odds != null && odds > low && odds < high
 }
 
 // Brier score = (result - prob)^2

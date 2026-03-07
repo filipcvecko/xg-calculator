@@ -3,6 +3,7 @@ import { supabase } from './supabase'
 import {
   calcOverUnder, blendLambda, fairOdds, calcCLV,
   brierScore, logLoss, calcMaxDrawdown,
+  marketCalibration, calibrateProb, evFilter, oddsBandFilter,
   fmt2, fmt3, fmtPct, fmtSign, fmtSignPct
 } from './math'
 
@@ -37,8 +38,6 @@ function blendWithGoals(xgH, xgA, xgaH, xgaA, gfH, gaH, gfA, gaA, alpha) {
   return { lH, lA }
 }
 
-// Shrinkage λ k priemeru ligy
-// alpha = sila ťahu (0.15 = 15% ťah k priemeru)
 function applyShrinkage(lH, lA, lgAvgH, lgAvgA, shrink) {
   const rawTotal = lH + lA
   const leagueTotal = lgAvgH + lgAvgA
@@ -55,7 +54,6 @@ function applyShrinkage(lH, lA, lgAvgH, lgAvgA, shrink) {
   }
 }
 
-// Volania idú cez Vercel proxy /api/footystats (kvôli CORS)
 async function fetchLeagueAvg(leagueId) {
   try {
     const url = `/api/footystats?endpoint=league-season&season_id=${leagueId}&stats=true`
@@ -108,12 +106,14 @@ const css = `
   .inp-sm { padding: 8px 10px; font-size: 12px; }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .grid4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; }
   .btn { cursor: pointer; border: none; font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; padding: 12px 20px; border-radius: 6px; transition: all 0.2s; width: 100%; }
   .btn-primary { background: var(--accent); color: #fff; }
   .btn-primary:hover { background: #7d6ff0; }
   .btn-sm { padding: 7px 14px; width: auto; font-size: 10px; }
   .btn-ghost { cursor: pointer; background: transparent; border: 1px solid var(--border2); color: var(--text2); font-family: var(--mono); font-size: 11px; padding: 6px 12px; border-radius: 4px; }
   .btn-danger { cursor: pointer; background: transparent; border: 1px solid rgba(214,48,49,0.2); color: var(--red); font-family: var(--mono); font-size: 11px; padding: 6px 10px; border-radius: 4px; }
+  .btn-toggle { cursor: pointer; background: transparent; border: 1px solid var(--border); color: var(--text3); font-family: var(--mono); font-size: 10px; padding: 5px 10px; border-radius: 4px; letter-spacing: 0.08em; }
   .pos { color: var(--green); }
   .neg { color: var(--red); }
   .neu { color: var(--yellow); }
@@ -142,6 +142,7 @@ const css = `
   .badge-lost { background: rgba(214,48,49,0.15); color: var(--red); }
   .badge-back { background: rgba(108,92,231,0.15); color: var(--accent2); }
   .badge-lay { background: rgba(214,48,49,0.12); color: var(--red); }
+  .badge-pass { background: rgba(253,203,110,0.12); color: var(--yellow); font-size: 9px; padding: 2px 6px; }
   .settle-box { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 12px; margin-top: 10px; }
   .clv-box { background: var(--bg3); border: 1px solid rgba(108,92,231,0.3); border-radius: 6px; padding: 12px; margin-top: 10px; }
   .stat-val { font-size: 20px; font-weight: 700; margin-top: 2px; }
@@ -158,9 +159,17 @@ const css = `
   .league-result-item:last-child { border-bottom: none; }
   .league-result-item:hover { background: var(--bg2); }
   .shrink-info { font-size: 10px; color: var(--accent2); background: rgba(108,92,231,0.08); border: 1px solid rgba(108,92,231,0.2); border-radius: 6px; padding: 8px 12px; margin-top: 8px; line-height: 1.7; }
+  .calib-info { font-size: 10px; color: var(--yellow); background: rgba(253,203,110,0.06); border: 1px solid rgba(253,203,110,0.2); border-radius: 6px; padding: 8px 12px; margin-top: 8px; line-height: 1.7; }
+  .filter-pass { font-size: 11px; color: var(--green); background: rgba(46,204,138,0.08); border: 1px solid rgba(46,204,138,0.2); border-radius: 6px; padding: 8px 12px; margin-top: 8px; }
+  .filter-fail { font-size: 11px; color: var(--red); background: rgba(255,92,92,0.08); border: 1px solid rgba(255,92,92,0.2); border-radius: 6px; padding: 8px 12px; margin-top: 8px; }
   .league-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(108,92,231,0.12); border: 1px solid rgba(108,92,231,0.3); border-radius: 4px; padding: 4px 10px; font-size: 11px; color: var(--accent2); margin-top: 6px; }
   .league-badge button { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 12px; padding: 0; line-height: 1; }
-  @media(max-width:520px){ .markets-grid{grid-template-columns:1fr;} .grid3{grid-template-columns:1fr 1fr;} .tab{padding:10px 8px;font-size:10px;} }
+  .advanced-toggle { display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+  .prob-compare { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-top: 10px; font-size: 11px; }
+  .prob-box { background: var(--bg3); border-radius: 6px; padding: 8px 10px; }
+  .prob-box-label { font-size: 9px; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 3px; }
+  .prob-box-val { font-weight: 700; font-size: 14px; }
+  @media(max-width:520px){ .markets-grid{grid-template-columns:1fr;} .grid3{grid-template-columns:1fr 1fr;} .grid4{grid-template-columns:1fr 1fr;} .tab{padding:10px 8px;font-size:10px;} }
 `
 
 export default function App() {
@@ -191,11 +200,22 @@ export default function App() {
   const [savedKey, setSavedKey] = useState(null)
   const [expandedId, setExpandedId] = useState(null)
 
+  // Pokročilé nastavenia
+  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [rho, setRho] = useState('-0.10')
+  const [marketOddsOver, setMarketOddsOver] = useState('')
+  const [marketOddsUnder, setMarketOddsUnder] = useState('')
+  const [marketWeight, setMarketWeight] = useState('0.60')
+  const [calibK, setCalibK] = useState('0.95')
+  const [evMin, setEvMin] = useState('4')
+  const [oddsLow, setOddsLow] = useState('1.4')
+  const [oddsHigh, setOddsHigh] = useState('3.5')
+
   // Liga priemer
-  const [allLeagues, setAllLeagues] = useState([])          // všetky predplatené ligy
-  const [leagueLoading, setLeagueLoading] = useState(false) // načítavanie zoznamu
-  const [leagueSearch, setLeagueSearch] = useState('')      // filter text
-  const [leagueOpen, setLeagueOpen] = useState(false)       // dropdown otvorený
+  const [allLeagues, setAllLeagues] = useState([])
+  const [leagueLoading, setLeagueLoading] = useState(false)
+  const [leagueSearch, setLeagueSearch] = useState('')
+  const [leagueOpen, setLeagueOpen] = useState(false)
   const [selectedLeague, setSelectedLeague] = useState(null)
   const [leagueAvgH, setLeagueAvgH] = useState('')
   const [leagueAvgA, setLeagueAvgA] = useState('')
@@ -210,7 +230,6 @@ export default function App() {
 
   useEffect(() => {
     loadBets()
-    // Načítaj zoznam predplatených líg pri štarte
     setLeagueLoading(true)
     loadMyLeagues().then(leagues => {
       setAllLeagues(leagues)
@@ -225,7 +244,6 @@ export default function App() {
     setLoading(false)
   }
 
-  // Vyber ligu z dropdownu a stiahni priemer
   async function handleSelectLeague(league) {
     setSelectedLeague(league)
     setLeagueOpen(false)
@@ -233,12 +251,9 @@ export default function App() {
     setLeagueAvgSource(null)
     setLeagueAvgH('')
     setLeagueAvgA('')
-
-    // Potrebujeme season_id (najnovšia sezóna), nie league.id
     const seasons = league.season ?? []
     const latestSeason = seasons.reduce((best, s) => (!best || s.id > best.id ? s : best), null)
     const seasonId = latestSeason ? latestSeason.id : league.id
-
     const avg = await fetchLeagueAvg(seasonId)
     if (avg) {
       setLeagueAvgH(String(avg.avgHome.toFixed(3)))
@@ -281,31 +296,44 @@ export default function App() {
       lH = h; lA = a
     }
 
-    // Shrinkage k priemeru ligy (ak je zadaný)
+    // Shrinkage
     const lgH = pf(leagueAvgH)
     const lgA = pf(leagueAvgA)
     const shr = pf(shrinkage) || 0.15
     let shrinkInfo = null
-
     if (lgH > 0 && lgA > 0) {
       const result = applyShrinkage(lH, lA, lgH, lgA, shr)
       shrinkInfo = {
-        lHraw: lH.toFixed(3),
-        lAraw: lA.toFixed(3),
-        rawTotal: result.rawTotal,
-        shrunkTotal: result.shrunkTotal,
+        lHraw: lH.toFixed(3), lAraw: lA.toFixed(3),
+        rawTotal: result.rawTotal, shrunkTotal: result.shrunkTotal,
         ratio: result.ratio,
-        leagueAvgH: lgH.toFixed(3),
-        leagueAvgA: lgA.toFixed(3),
+        leagueAvgH: lgH.toFixed(3), leagueAvgA: lgA.toFixed(3),
         source: leagueAvgSource,
       }
       lH = result.lH
       lA = result.lA
     }
 
-    const { pOver, pUnder } = calcOverUnder(lH, lA)
-    const ferOver = fairOdds(pOver)
-    const ferUnder = fairOdds(pUnder)
+    // Dixon-Coles rho
+    const rhoVal = pf(rho) || -0.10
+
+    // Poisson + Dixon-Coles
+    const { pOver: pOverRaw, pUnder: pUnderRaw } = calcOverUnder(lH, lA, rhoVal)
+
+    // Probability calibration (P^k)
+    const kVal = pf(calibK) || 0.95
+    const pOverCalib = calibrateProb(pOverRaw, kVal)
+    const pUnderCalib = calibrateProb(pUnderRaw, kVal)
+
+    // Market calibration
+    const mw = pf(marketWeight) || 0.60
+    const moOver = pf(marketOddsOver)
+    const moUnder = pf(marketOddsUnder)
+    const pOverFinal = moOver > 1 ? marketCalibration(pOverCalib, moOver, mw) : pOverCalib
+    const pUnderFinal = moUnder > 1 ? marketCalibration(pUnderCalib, moUnder, mw) : pUnderCalib
+
+    const ferOver = fairOdds(pOverFinal)
+    const ferUnder = fairOdds(pUnderFinal)
     const comm = pf(commission) / 100 || 0.05
     const st = pf(stake) || 10
     const bo = pf(backOver) || null
@@ -314,17 +342,32 @@ export default function App() {
     const lu = pf(layUnder) || null
     const midO = midPrice(bo, lo)
     const midU = midPrice(bu, lu)
+
+    // EV + filters
+    const evMinVal = pf(evMin) / 100 || 0.04
+    const oLow = pf(oddsLow) || 1.4
+    const oHigh = pf(oddsHigh) || 3.5
+
     setSavedKey(null)
     setCalc({
-      lH, lA, pOver, pUnder, ferOver, ferUnder, midO, midU, comm, st,
-      evOBack: midO ? calcBackEV(pOver, midO, comm) : null,
-      evUBack: midU ? calcBackEV(pUnder, midU, comm) : null,
-      evOLay: midO ? calcLayEV(pOver, midO, comm) : null,
-      evULay: midU ? calcLayEV(pUnder, midU, comm) : null,
+      lH, lA,
+      pOverRaw, pUnderRaw,
+      pOverCalib, pUnderCalib,
+      pOver: pOverFinal, pUnder: pUnderFinal,
+      ferOver, ferUnder, midO, midU, comm, st,
+      evOBack: midO ? calcBackEV(pOverFinal, midO, comm) : null,
+      evUBack: midU ? calcBackEV(pUnderFinal, midU, comm) : null,
+      evOLay: midO ? calcLayEV(pOverFinal, midO, comm) : null,
+      evULay: midU ? calcLayEV(pUnderFinal, midU, comm) : null,
       matchName: matchName.trim() || null,
       modelType: hasGoals ? (hasXGA ? 'full' : 'goals') : (hasXGA ? 'xga' : 'basic'),
       alpha: alph.toFixed(2),
       shrinkInfo,
+      rho: rhoVal,
+      calibK: kVal,
+      marketCalibUsed: { over: moOver > 1, under: moUnder > 1, w: mw },
+      evMinVal,
+      oLow, oHigh,
     })
   }
 
@@ -469,7 +512,7 @@ export default function App() {
               </div>
             </div>
 
-            {/* ── LIGA PRIEMER (dropdown) ── */}
+            {/* Liga priemer */}
             <div className="card" style={{ position: 'relative' }}>
               <div className="label" style={{ marginBottom: 8 }}>
                 Liga priemer gólov
@@ -477,8 +520,6 @@ export default function App() {
                   — voliteľné, spresnenie λ cez shrinkage
                 </span>
               </div>
-
-              {/* Dropdown trigger */}
               {!selectedLeague ? (
                 <div style={{ position: 'relative' }}>
                   <input
@@ -515,37 +556,30 @@ export default function App() {
                     <span style={{ color: 'var(--text3)' }}>{selectedLeague.country}</span>
                     <button onClick={clearLeague} title="Zmeniť ligu">✕</button>
                   </div>
-
                   {leagueAvgSource === 'api' && pf(leagueAvgH) > 0 && (
                     <div style={{ fontSize: 10, color: 'var(--green)', marginTop: 6 }}>
                       ✓ Stiahnuté z FootyStats: Home <b>{leagueAvgH}</b> · Away <b>{leagueAvgA}</b> gól/zápas
                     </div>
                   )}
-
                   {leagueAvgSource === 'manual' && (
                     <div style={{ fontSize: 10, color: 'var(--yellow)', marginTop: 6 }}>
                       ⚠ Dáta pre túto ligu neboli nájdené — zadaj manuálne:
                     </div>
                   )}
-
                   {(leagueAvgSource === 'manual' || !pf(leagueAvgH)) && (
                     <div className="grid2" style={{ marginTop: 8 }}>
                       <div>
                         <div className="label">Avg Home Goals/zápas</div>
-                        <input className="inp" placeholder="napr. 1.45" value={leagueAvgH}
-                          onChange={e => setLeagueAvgH(e.target.value)} />
+                        <input className="inp" placeholder="napr. 1.45" value={leagueAvgH} onChange={e => setLeagueAvgH(e.target.value)} />
                       </div>
                       <div>
                         <div className="label">Avg Away Goals/zápas</div>
-                        <input className="inp" placeholder="napr. 1.20" value={leagueAvgA}
-                          onChange={e => setLeagueAvgA(e.target.value)} />
+                        <input className="inp" placeholder="napr. 1.20" value={leagueAvgA} onChange={e => setLeagueAvgA(e.target.value)} />
                       </div>
                     </div>
                   )}
                 </div>
               )}
-
-              {/* Manuálne polia ak nechceš vyberať ligu */}
               {!selectedLeague && (
                 <div style={{ marginTop: 10 }}>
                   <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 6 }}>Alebo zadaj manuálne:</div>
@@ -563,8 +597,6 @@ export default function App() {
                   </div>
                 </div>
               )}
-
-              {/* Shrinkage — len keď sú zadané hodnoty */}
               {(pf(leagueAvgH) > 0 || pf(leagueAvgA) > 0) && (
                 <div style={{ marginTop: 10 }}>
                   <div className="label">
@@ -577,7 +609,94 @@ export default function App() {
                 </div>
               )}
             </div>
-            {/* ── KONIEC LIGA PRIEMER ── */}
+
+            {/* ── POKROČILÉ NASTAVENIA ── */}
+            <div className="card">
+              <div className="advanced-toggle" onClick={() => setShowAdvanced(v => !v)}>
+                <div className="label" style={{ marginBottom: 0 }}>
+                  ⚙ Pokročilé nastavenia
+                  <span style={{ color: 'var(--text3)', marginLeft: 6, textTransform: 'none', letterSpacing: 0 }}>
+                    Dixon-Coles · Market cal · Prob cal · Filtre
+                  </span>
+                </div>
+                <button className="btn-toggle">{showAdvanced ? '▲ Skryť' : '▼ Zobraziť'}</button>
+              </div>
+
+              {showAdvanced && (
+                <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+                  {/* Dixon-Coles */}
+                  <div>
+                    <div className="section-title" style={{ marginBottom: 8 }}>📐 Dixon-Coles korekcia</div>
+                    <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 8 }}>
+                      Upravuje pravdepodobnosti pre nízke skóre (0-0, 1-0, 0-1, 1-1). ρ = 0 vypne korekciu.
+                    </div>
+                    <div>
+                      <div className="label">ρ (rho) — korelačný parameter <span style={{ color: 'var(--accent2)' }}>(-0.05 až -0.15)</span></div>
+                      <input className="inp" placeholder="-0.10" value={rho} onChange={e => setRho(e.target.value)} />
+                    </div>
+                  </div>
+
+                  {/* Market calibration */}
+                  <div>
+                    <div className="section-title" style={{ marginBottom: 8 }}>📊 Market calibration</div>
+                    <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 8 }}>
+                      Blend modelu s trhovou pravdepodobnosťou. Nechaj prázdne ak nechceš použiť.
+                    </div>
+                    <div className="grid2" style={{ marginBottom: 10 }}>
+                      <div>
+                        <div className="label">Market kurz Over 2.5</div>
+                        <input className="inp" placeholder="napr. 1.90" value={marketOddsOver} onChange={e => setMarketOddsOver(e.target.value)} />
+                      </div>
+                      <div>
+                        <div className="label">Market kurz Under 2.5</div>
+                        <input className="inp" placeholder="napr. 2.00" value={marketOddsUnder} onChange={e => setMarketOddsUnder(e.target.value)} />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="label">w — váha modelu <span style={{ color: 'var(--accent2)' }}>(0.60 = 60% model, 40% market)</span></div>
+                      <input className="inp" placeholder="0.60" value={marketWeight} onChange={e => setMarketWeight(e.target.value)} />
+                    </div>
+                  </div>
+
+                  {/* Probability calibration */}
+                  <div>
+                    <div className="section-title" style={{ marginBottom: 8 }}>🎯 Probability calibration</div>
+                    <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 8 }}>
+                      Power transform P^k. k &lt; 1 = zníž istotu, k = 1 = bez zmeny, k &gt; 1 = zvýš polarizáciu.
+                    </div>
+                    <div>
+                      <div className="label">k — kalibračný exponent <span style={{ color: 'var(--accent2)' }}>(default 0.95)</span></div>
+                      <input className="inp" placeholder="0.95" value={calibK} onChange={e => setCalibK(e.target.value)} />
+                    </div>
+                  </div>
+
+                  {/* Filtre */}
+                  <div>
+                    <div className="section-title" style={{ marginBottom: 8 }}>🔍 Bet filtre</div>
+                    <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 8 }}>
+                      Tieto filtre sa zobrazia po výpočte pri každom markete.
+                    </div>
+                    <div className="grid3">
+                      <div>
+                        <div className="label">Min EV% <span style={{ color: 'var(--accent2)' }}>(default 4)</span></div>
+                        <input className="inp" placeholder="4" value={evMin} onChange={e => setEvMin(e.target.value)} />
+                      </div>
+                      <div>
+                        <div className="label">Min kurz</div>
+                        <input className="inp" placeholder="1.4" value={oddsLow} onChange={e => setOddsLow(e.target.value)} />
+                      </div>
+                      <div>
+                        <div className="label">Max kurz</div>
+                        <input className="inp" placeholder="3.5" value={oddsHigh} onChange={e => setOddsHigh(e.target.value)} />
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              )}
+            </div>
+            {/* ── KONIEC POKROČILÉ ── */}
 
             {/* Stake / komisia */}
             <div className="card">
@@ -594,23 +713,47 @@ export default function App() {
               {[true, false].map(isOver => {
                 const fer = isOver ? calc?.ferOver : calc?.ferUnder
                 const prob = isOver ? calc?.pOver : calc?.pUnder
+                const probRaw = isOver ? calc?.pOverRaw : calc?.pUnderRaw
+                const probCalib = isOver ? calc?.pOverCalib : calc?.pUnderCalib
                 const mid = isOver ? calc?.midO : calc?.midU
                 const st = calc?.st || 10
                 const comm = calc?.comm || 0.05
                 const mkt = isOver ? 'over2.5' : 'under2.5'
                 const edge = mid && fer ? (mid / fer - 1) * 100 : null
+                const marketCalibUsed = isOver ? calc?.marketCalibUsed?.over : calc?.marketCalibUsed?.under
+
                 return (
                   <div key={mkt} className={`market-col ${isOver ? 'market-col-over' : 'market-col-under'}`}>
                     <div className={`market-title ${isOver ? 'market-title-over' : 'market-title-under'}`}>
                       {isOver ? 'Over 2.5' : 'Under 2.5'}
                     </div>
+
                     {fer && <div style={{ marginBottom: 10 }}>
                       <div className="label">FER kurz</div>
                       <div className={`fer-num ${isOver ? 'fer-num-over' : 'fer-num-under'}`}>
                         {fmt3(fer)} <span style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 400 }}>({fmtPct(prob * 100)})</span>
                       </div>
                     </div>}
-                    <div style={{ marginBottom: 8 }}>
+
+                    {/* Pravdepodobnosti pipeline */}
+                    {calc && probRaw != null && (
+                      <div className="prob-compare">
+                        <div className="prob-box">
+                          <div className="prob-box-label">Poisson+DC</div>
+                          <div className="prob-box-val" style={{ color: 'var(--text2)' }}>{fmtPct(probRaw * 100)}</div>
+                        </div>
+                        <div className="prob-box">
+                          <div className="prob-box-label">P^k calib</div>
+                          <div className="prob-box-val" style={{ color: 'var(--yellow)' }}>{fmtPct(probCalib * 100)}</div>
+                        </div>
+                        <div className="prob-box">
+                          <div className="prob-box-label">{marketCalibUsed ? 'Mkt blend' : 'Finálna'}</div>
+                          <div className="prob-box-val" style={{ color: isOver ? 'var(--accent2)' : 'var(--green)' }}>{fmtPct(prob * 100)}</div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div style={{ marginTop: 10, marginBottom: 8 }}>
                       <div className="label">Best Back</div>
                       <input className="inp inp-sm" placeholder="1.85"
                         value={isOver ? backOver : backUnder}
@@ -628,6 +771,7 @@ export default function App() {
                         value={isOver ? myOddsOver : myOddsUnder}
                         onChange={e => isOver ? setMyOddsOver(e.target.value) : setMyOddsUnder(e.target.value)} />
                     </div>
+
                     {mid ? <>
                       <div className="mid-row">
                         <span style={{ color: 'var(--text3)' }}>Mid:</span>
@@ -637,11 +781,18 @@ export default function App() {
                       {(() => {
                         const myO = pf(isOver ? myOddsOver : myOddsUnder)
                         const actualOdds = myO > 1 ? myO : mid
-                        const prob = isOver ? calc.pOver : calc.pUnder
-                        const comm = calc.comm
                         const evB = calcBackEV(prob, actualOdds, comm)
                         const evL = calcLayEV(prob, actualOdds, comm)
                         const usingMyOdds = myO > 1
+
+                        // Filtre
+                        const evMinVal = calc?.evMinVal || 0.04
+                        const oLow = calc?.oLow || 1.4
+                        const oHigh = calc?.oHigh || 3.5
+                        const evPassB = evFilter(evB, evMinVal)
+                        const evPassL = evFilter(evL, evMinVal)
+                        const oddsPass = oddsBandFilter(actualOdds, oLow, oHigh)
+
                         return <>
                           <div>
                             <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 2 }}>
@@ -659,6 +810,24 @@ export default function App() {
                               {fmtSignPct(evL * 100)}<span className="ev-eur">{fmtSign(evL * st)}€</span>
                             </div>
                             <div className="liability-note">Liability: {fmt2(layLiability(mid, st))}€</div>
+                          </div>
+
+                          {/* Filter výsledok */}
+                          <div style={{ marginTop: 8, fontSize: 10, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                            <div style={{ color: oddsPass ? 'var(--green)' : 'var(--red)' }}>
+                              {oddsPass ? '✓' : '✗'} Kurz {fmt3(actualOdds)} {oddsPass ? `v pásme (${oLow}–${oHigh})` : `mimo pásma (${oLow}–${oHigh})`}
+                            </div>
+                            <div style={{ color: evPassB ? 'var(--green)' : 'var(--text3)' }}>
+                              {evPassB ? '✓' : '✗'} Back EV {evPassB ? 'spĺňa' : 'nespĺňa'} min {fmtPct(evMinVal * 100)}
+                            </div>
+                            <div style={{ color: evPassL ? 'var(--green)' : 'var(--text3)' }}>
+                              {evPassL ? '✓' : '✗'} Lay EV {evPassL ? 'spĺňa' : 'nespĺňa'} min {fmtPct(evMinVal * 100)}
+                            </div>
+                            {oddsPass && (evPassB || evPassL) && (
+                              <div style={{ marginTop: 4, color: 'var(--green)', fontWeight: 700 }}>
+                                ✅ BET SIGNAL: {evPassB && oddsPass ? 'BACK ' : ''}{evPassL && oddsPass ? 'LAY' : ''}
+                              </div>
+                            )}
                           </div>
                         </>
                       })()}
@@ -687,10 +856,15 @@ export default function App() {
                  calc.modelType === 'xga' ? 'xG+xGA' :
                  calc.modelType === 'goals' ? `xG+GF/GA (α=${calc.alpha})` : 'xG only'}
               </span>
+              <span style={{ color: 'var(--text3)' }}>ρ={fmt2(calc.rho)}</span>
+              <span style={{ color: 'var(--yellow)' }}>k={fmt2(calc.calibK)}</span>
               {calc.shrinkInfo && (
                 <span style={{ color: 'var(--green)' }}>
                   + shrink {calc.shrinkInfo.source === 'api' ? '📡' : '✍'} ({calc.shrinkInfo.rawTotal} → {calc.shrinkInfo.shrunkTotal})
                 </span>
+              )}
+              {(calc.marketCalibUsed?.over || calc.marketCalibUsed?.under) && (
+                <span style={{ color: 'var(--yellow)' }}>+ mkt blend (w={fmt2(calc.marketCalibUsed.w)})</span>
               )}
             </div>}
 
@@ -700,6 +874,16 @@ export default function App() {
                 <b>Shrinkage:</b> λ_raw = {calc.shrinkInfo.lHraw} + {calc.shrinkInfo.lAraw} = {calc.shrinkInfo.rawTotal} →
                 shrunk na {calc.shrinkInfo.shrunkTotal} (liga avg: {calc.shrinkInfo.leagueAvgH} + {calc.shrinkInfo.leagueAvgA}) ·
                 ratio {calc.shrinkInfo.ratio} · zdroj: {calc.shrinkInfo.source === 'api' ? '📡 FootyStats API' : '✍ manuálne'}
+              </div>
+            )}
+
+            {/* Calibration detail */}
+            {calc && (calc.calibK !== 1 || calc.marketCalibUsed?.over || calc.marketCalibUsed?.under) && (
+              <div className="calib-info">
+                <b>Kalibrácia:</b>
+                {` P^k (k=${fmt2(calc.calibK)}) aplikovaná`}
+                {calc.marketCalibUsed?.over && ` · Over market blend (w=${fmt2(calc.marketCalibUsed.w)})`}
+                {calc.marketCalibUsed?.under && ` · Under market blend (w=${fmt2(calc.marketCalibUsed.w)})`}
               </div>
             )}
 
