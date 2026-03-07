@@ -88,55 +88,99 @@ async function loadMyLeagues() {
   }
 }
 
-// Načítaj všetky tímy z danej sezóny
-async function fetchTeamsForSeason(seasonId) {
+// Načítaj len mená tímov z danej sezóny (bez štatistík — rýchle)
+async function fetchTeamNamesForSeason(seasonId, leagueName, leagueCountry) {
   try {
-    const url = `/api/footystats?endpoint=league-teams&season_id=${seasonId}&include=stats`
+    const url = `/api/footystats?endpoint=league-teams&season_id=${seasonId}`
     const res = await fetch(url)
     if (!res.ok) return []
     const json = await res.json()
-    return json?.data ?? []
+    const teams = json?.data ?? []
+    return teams.map(t => ({
+      id: t.id,
+      name: t.name,
+      cleanName: t.cleanName || t.name,
+      leagueName,
+      leagueCountry,
+      seasonId,
+    }))
   } catch {
     return []
   }
 }
 
-// Z tímových dát vytiahni štatistiky pre kalkulačku
-// FootyStats: seasonXG_home/away = priemer per zápas (už hotový)
-//             seasonGoals_home/away = celkový súčet → treba deliť
-// Alternatívne názvy polí pre rôzne verzie API
-function extractTeamStats(team) {
-  const mp_h = team.seasonMatchesPlayed_home || team.homeMatchesPlayed || 0
-  const mp_a = team.seasonMatchesPlayed_away || team.awayMatchesPlayed || 0
-
-  // xG — FootyStats vracia priemer per zápas priamo
-  const xgH = team.seasonXG_home ?? team.xg_for_avg_home ?? null
-  const xgA = team.seasonXG_away ?? team.xg_for_avg_away ?? null
-  const xgaH = team.seasonXGC_home ?? team.xg_against_avg_home ?? null
-  const xgaA = team.seasonXGC_away ?? team.xg_against_avg_away ?? null
-
-  // GF/GA — celkové góly, delíme počtom zápasov
-  const gfH = (team.seasonGoals_home != null && mp_h > 0)
-    ? +(team.seasonGoals_home / mp_h).toFixed(2) : null
-  const gfA = (team.seasonGoals_away != null && mp_a > 0)
-    ? +(team.seasonGoals_away / mp_a).toFixed(2) : null
-  const gaH = (team.seasonConceded_home != null && mp_h > 0)
-    ? +(team.seasonConceded_home / mp_h).toFixed(2) : null
-  const gaA = (team.seasonConceded_away != null && mp_a > 0)
-    ? +(team.seasonConceded_away / mp_a).toFixed(2) : null
-
-  return {
-    xgH: xgH != null ? +parseFloat(xgH).toFixed(2) : null,
-    xgA: xgA != null ? +parseFloat(xgA).toFixed(2) : null,
-    xgaH: xgaH != null ? +parseFloat(xgaH).toFixed(2) : null,
-    xgaA: xgaA != null ? +parseFloat(xgaA).toFixed(2) : null,
-    gfH, gfA, gaH, gaA, mp_h, mp_a,
-    // debug — zachovaj surové polia pre diagnostiku
-    _raw: {
-      xgFields: { seasonXG_home: team.seasonXG_home, xg_for_avg_home: team.xg_for_avg_home },
-      goalFields: { goals_h: team.seasonGoals_home, mp_h },
-    }
+// Načítaj štatistiky konkrétneho tímu (pri výbere)
+async function fetchTeamStats(teamId, seasonId) {
+  try {
+    const url = `/api/footystats?endpoint=league-teams&season_id=${seasonId}`
+    const res = await fetch(url)
+    if (!res.ok) return null
+    const json = await res.json()
+    const teams = json?.data ?? []
+    const team = teams.find(t => t.id === teamId)
+    if (!team) return null
+    // Log všetky dostupné kľúče pre debug
+    console.log('FootyStats team keys:', Object.keys(team))
+    console.log('FootyStats team sample:', JSON.stringify(
+      Object.fromEntries(Object.entries(team).filter(([k]) =>
+        k.toLowerCase().includes('xg') ||
+        k.toLowerCase().includes('goal') ||
+        k.toLowerCase().includes('match') ||
+        k.toLowerCase().includes('concede') ||
+        k.toLowerCase().includes('played')
+      ))
+    ))
+    return team
+  } catch {
+    return null
   }
+}
+
+function extractTeamStats(team) {
+  // Pomocná funkcia — skús viac možných názvov poľa
+  const get = (...keys) => {
+    for (const k of keys) {
+      if (team[k] != null && team[k] !== 0 && team[k] !== '') return team[k]
+    }
+    return null
+  }
+
+  // Počet zápasov
+  const mp_h = get('seasonMatchesPlayed_home', 'homeMatchesPlayed', 'matches_played_home', 'homePlayed') || 0
+  const mp_a = get('seasonMatchesPlayed_away', 'awayMatchesPlayed', 'matches_played_away', 'awayPlayed') || 0
+
+  // xG — FootyStats vracia priemer per zápas
+  const xgH_raw = get('seasonXG_home', 'xg_for_avg_home', 'xgFor_home', 'avg_xg_home', 'xgHome')
+  const xgA_raw = get('seasonXG_away', 'xg_for_avg_away', 'xgFor_away', 'avg_xg_away', 'xgAway')
+  const xgaH_raw = get('seasonXGC_home', 'xg_against_avg_home', 'xgAgainst_home', 'avg_xgc_home', 'xgConcHome')
+  const xgaA_raw = get('seasonXGC_away', 'xg_against_avg_away', 'xgAgainst_away', 'avg_xgc_away', 'xgConcAway')
+
+  // GF/GA — celkové, treba deliť zápasmi
+  const goalsH = get('seasonGoals_home', 'goals_scored_home', 'homeGoals', 'scored_home')
+  const goalsA = get('seasonGoals_away', 'goals_scored_away', 'awayGoals', 'scored_away')
+  const concH = get('seasonConceded_home', 'goals_conceded_home', 'homeConceded', 'conceded_home')
+  const concA = get('seasonConceded_away', 'goals_conceded_away', 'awayConceded', 'conceded_away')
+
+  const xgH = xgH_raw != null ? +parseFloat(xgH_raw).toFixed(2) : null
+  const xgA = xgA_raw != null ? +parseFloat(xgA_raw).toFixed(2) : null
+  const xgaH = xgaH_raw != null ? +parseFloat(xgaH_raw).toFixed(2) : null
+  const xgaA = xgaA_raw != null ? +parseFloat(xgaA_raw).toFixed(2) : null
+  const gfH = (goalsH != null && mp_h > 0) ? +(goalsH / mp_h).toFixed(2) : null
+  const gfA = (goalsA != null && mp_a > 0) ? +(goalsA / mp_a).toFixed(2) : null
+  const gaH = (concH != null && mp_h > 0) ? +(concH / mp_h).toFixed(2) : null
+  const gaA = (concA != null && mp_a > 0) ? +(concA / mp_a).toFixed(2) : null
+
+  // Debug — zobraz všetky relevantné raw polia
+  const _raw = {}
+  Object.entries(team).forEach(([k, v]) => {
+    if (k.toLowerCase().includes('xg') || k.toLowerCase().includes('goal') ||
+        k.toLowerCase().includes('match') || k.toLowerCase().includes('played') ||
+        k.toLowerCase().includes('concede') || k.toLowerCase().includes('scored')) {
+      _raw[k] = v
+    }
+  })
+
+  return { xgH, xgA, xgaH, xgaA, gfH, gfA, gaH, gaA, mp_h, mp_a, _raw }
 }
 
 const css = `
@@ -304,10 +348,10 @@ export default function App() {
       setAllLeagues(leagues)
       setLeagueLoading(false)
 
-      // Načítaj tímy z každej ligy (paralelne, max 5 naraz aby sme nepretažili API)
+      // Načítaj len mená tímov (bez štatistík) — oveľa rýchlejšie
       if (leagues.length === 0) return
       setTeamsLoading(true)
-      const CHUNK = 5
+      const CHUNK = 10
       let allLoadedTeams = []
       for (let i = 0; i < leagues.length; i += CHUNK) {
         const chunk = leagues.slice(i, i + CHUNK)
@@ -315,22 +359,17 @@ export default function App() {
           const seasons = l.season ?? []
           const latest = seasons.reduce((best, s) => (!best || s.id > best.id ? s : best), null)
           const sid = latest ? latest.id : l.id
-          const teams = await fetchTeamsForSeason(sid)
-          return teams.map(t => ({
-            id: t.id,
-            name: t.name,
-            cleanName: t.cleanName || t.name,
-            leagueName: l.name,
-            leagueCountry: l.country,
-            seasonId: sid,
-            stats: extractTeamStats(t),
-          }))
+          return fetchTeamNamesForSeason(sid, l.name, l.country)
         }))
         allLoadedTeams = allLoadedTeams.concat(results.flat())
       }
-      // Deduplikácia podľa id
+      // Deduplikácia
       const seen = new Set()
-      const unique = allLoadedTeams.filter(t => { if (seen.has(t.id)) return false; seen.add(t.id); return true })
+      const unique = allLoadedTeams.filter(t => {
+        if (seen.has(t.id)) return false
+        seen.add(t.id)
+        return true
+      })
       setAllTeams(unique)
       setTeamsLoading(false)
     })
@@ -372,28 +411,38 @@ export default function App() {
     setLeagueOpen(false)
   }
 
-  function handleSelectHomeTeam(team) {
-    setSelectedHomeTeam(team)
+  async function handleSelectHomeTeam(team) {
+    setSelectedHomeTeam({ ...team, loading: true })
     setHomeTeamOpen(false)
     setHomeTeamSearch('')
-    const s = team.stats
-    if (s.xgH != null) setXgH(String(s.xgH))
-    if (s.xgaH != null) setXgaH(String(s.xgaH))
-    if (s.gfH != null) setGfH(String(s.gfH))
-    if (s.gaH != null) setGaH(String(s.gaH))
-    updateAutofillInfo(team, selectedAwayTeam, s, null)
+    const raw = await fetchTeamStats(team.id, team.seasonId)
+    const s = raw ? extractTeamStats(raw) : null
+    const finalTeam = { ...team, stats: s, loading: false }
+    setSelectedHomeTeam(finalTeam)
+    if (s) {
+      if (s.xgH != null) setXgH(String(s.xgH))
+      if (s.xgaH != null) setXgaH(String(s.xgaH))
+      if (s.gfH != null) setGfH(String(s.gfH))
+      if (s.gaH != null) setGaH(String(s.gaH))
+    }
+    updateAutofillInfo(finalTeam, selectedAwayTeam, s, null)
   }
 
-  function handleSelectAwayTeam(team) {
-    setSelectedAwayTeam(team)
+  async function handleSelectAwayTeam(team) {
+    setSelectedAwayTeam({ ...team, loading: true })
     setAwayTeamOpen(false)
     setAwayTeamSearch('')
-    const s = team.stats
-    if (s.xgA != null) setXgA(String(s.xgA))
-    if (s.xgaA != null) setXgaA(String(s.xgaA))
-    if (s.gfA != null) setGfA(String(s.gfA))
-    if (s.gaA != null) setGaA(String(s.gaA))
-    updateAutofillInfo(selectedHomeTeam, team, null, s)
+    const raw = await fetchTeamStats(team.id, team.seasonId)
+    const s = raw ? extractTeamStats(raw) : null
+    const finalTeam = { ...team, stats: s, loading: false }
+    setSelectedAwayTeam(finalTeam)
+    if (s) {
+      if (s.xgA != null) setXgA(String(s.xgA))
+      if (s.xgaA != null) setXgaA(String(s.xgaA))
+      if (s.gfA != null) setGfA(String(s.gfA))
+      if (s.gaA != null) setGaA(String(s.gaA))
+    }
+    updateAutofillInfo(selectedHomeTeam, finalTeam, null, s)
   }
 
   function updateAutofillInfo(home, away, homeStats, awayStats) {
@@ -680,7 +729,8 @@ export default function App() {
                     </div>
                   ) : (
                     <div className="team-badge">
-                      🏠 {selectedHomeTeam.name}
+                      {selectedHomeTeam.loading ? '⏳' : '🏠'} {selectedHomeTeam.name}
+                      {selectedHomeTeam.loading && <span style={{color:'var(--yellow)'}}>načítavam...</span>}
                       <button onClick={clearHomeTeam} title="Zmeniť">✕</button>
                     </div>
                   )}
@@ -716,7 +766,8 @@ export default function App() {
                     </div>
                   ) : (
                     <div className="team-badge">
-                      ✈️ {selectedAwayTeam.name}
+                      {selectedAwayTeam.loading ? '⏳' : '✈️'} {selectedAwayTeam.name}
+                      {selectedAwayTeam.loading && <span style={{color:'var(--yellow)'}}>načítavam...</span>}
                       <button onClick={clearAwayTeam} title="Zmeniť">✕</button>
                     </div>
                   )}
