@@ -140,25 +140,36 @@ async function fetchTeamStats(teamId, seasonId) {
 }
 
 function extractTeamStats(team) {
-  // Pomocná funkcia — skús viac možných názvov poľa
+  // FootyStats vracia štatistiky v team.stats (vnorený objekt)
+  const s = team?.stats || team || {}
+
+  console.log('=== STATS OBJECT KEYS ===', Object.keys(s))
+  console.log('=== STATS SAMPLE ===', JSON.stringify(
+    Object.fromEntries(Object.entries(s).filter(([k]) =>
+      k.toLowerCase().includes('xg') ||
+      k.toLowerCase().includes('goal') ||
+      k.toLowerCase().includes('match') ||
+      k.toLowerCase().includes('played') ||
+      k.toLowerCase().includes('concede') ||
+      k.toLowerCase().includes('scored')
+    ))
+  ))
+
   const get = (...keys) => {
     for (const k of keys) {
-      if (team[k] != null && team[k] !== 0 && team[k] !== '') return team[k]
+      if (s[k] != null && s[k] !== 0 && s[k] !== '') return s[k]
     }
     return null
   }
 
-  // Počet zápasov
-  const mp_h = get('seasonMatchesPlayed_home', 'homeMatchesPlayed', 'matches_played_home', 'homePlayed') || 0
-  const mp_a = get('seasonMatchesPlayed_away', 'awayMatchesPlayed', 'matches_played_away', 'awayPlayed') || 0
+  const mp_h = get('seasonMatchesPlayed_home', 'homeMatchesPlayed', 'matches_played_home') || 0
+  const mp_a = get('seasonMatchesPlayed_away', 'awayMatchesPlayed', 'matches_played_away') || 0
 
-  // xG — FootyStats vracia priemer per zápas
-  const xgH_raw = get('seasonXG_home', 'xg_for_avg_home', 'xgFor_home', 'avg_xg_home', 'xgHome')
-  const xgA_raw = get('seasonXG_away', 'xg_for_avg_away', 'xgFor_away', 'avg_xg_away', 'xgAway')
-  const xgaH_raw = get('seasonXGC_home', 'xg_against_avg_home', 'xgAgainst_home', 'avg_xgc_home', 'xgConcHome')
-  const xgaA_raw = get('seasonXGC_away', 'xg_against_avg_away', 'xgAgainst_away', 'avg_xgc_away', 'xgConcAway')
+  const xgH_raw = get('seasonXG_home', 'xg_for_avg_home', 'xgFor_home', 'avg_xg_home')
+  const xgA_raw = get('seasonXG_away', 'xg_for_avg_away', 'xgFor_away', 'avg_xg_away')
+  const xgaH_raw = get('seasonXGC_home', 'xg_against_avg_home', 'xgAgainst_home', 'avg_xgc_home')
+  const xgaA_raw = get('seasonXGC_away', 'xg_against_avg_away', 'xgAgainst_away', 'avg_xgc_away')
 
-  // GF/GA — celkové, treba deliť zápasmi
   const goalsH = get('seasonGoals_home', 'goals_scored_home', 'homeGoals', 'scored_home')
   const goalsA = get('seasonGoals_away', 'goals_scored_away', 'awayGoals', 'scored_away')
   const concH = get('seasonConceded_home', 'goals_conceded_home', 'homeConceded', 'conceded_home')
@@ -173,15 +184,11 @@ function extractTeamStats(team) {
   const gaH = (concH != null && mp_h > 0) ? +(concH / mp_h).toFixed(2) : null
   const gaA = (concA != null && mp_a > 0) ? +(concA / mp_a).toFixed(2) : null
 
-  // Debug — zobraz všetky relevantné raw polia
-  const _raw = {}
-  Object.entries(team).forEach(([k, v]) => {
-    if (k.toLowerCase().includes('xg') || k.toLowerCase().includes('goal') ||
-        k.toLowerCase().includes('match') || k.toLowerCase().includes('played') ||
-        k.toLowerCase().includes('concede') || k.toLowerCase().includes('scored')) {
-      _raw[k] = v
-    }
-  })
+  const _raw = Object.fromEntries(Object.entries(s).filter(([k]) =>
+    k.toLowerCase().includes('xg') || k.toLowerCase().includes('goal') ||
+    k.toLowerCase().includes('match') || k.toLowerCase().includes('played') ||
+    k.toLowerCase().includes('concede') || k.toLowerCase().includes('scored')
+  ))
 
   return { xgH, xgA, xgaH, xgaA, gfH, gfA, gaH, gaA, mp_h, mp_a, _raw }
 }
