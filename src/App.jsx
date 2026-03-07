@@ -112,85 +112,54 @@ async function fetchTeamNamesForSeason(seasonId, leagueName, leagueCountry) {
 // Načítaj štatistiky konkrétneho tímu (pri výbere)
 async function fetchTeamStats(teamId, seasonId) {
   try {
-    // Správny endpoint: /team?team_id=X&season_id=Y
     const url = `/api/footystats?endpoint=team&team_id=${teamId}&season_id=${seasonId}`
     const res = await fetch(url)
     if (!res.ok) return null
     const json = await res.json()
-    // team endpoint vracia objekt alebo pole
     const data = json?.data
-    const team = Array.isArray(data) ? data[0] : data
-    if (!team) return null
-    console.log('=== TEAM STATS KEYS ===', Object.keys(team))
-    console.log('=== TEAM STATS SAMPLE ===', JSON.stringify(
-      Object.fromEntries(Object.entries(team).filter(([k]) =>
-        k.toLowerCase().includes('xg') ||
-        k.toLowerCase().includes('goal') ||
-        k.toLowerCase().includes('match') ||
-        k.toLowerCase().includes('played') ||
-        k.toLowerCase().includes('concede') ||
-        k.toLowerCase().includes('scored')
-      ))
-    ))
-    return team
+    return Array.isArray(data) ? data[0] : data || null
   } catch (e) {
-    console.error('fetchTeamStats error:', e)
     return null
   }
 }
 
 function extractTeamStats(team) {
-  // FootyStats vracia štatistiky v team.stats (vnorený objekt)
   const s = team?.stats || team || {}
-
-  console.log('=== STATS OBJECT KEYS ===', Object.keys(s))
-  console.log('=== STATS SAMPLE ===', JSON.stringify(
-    Object.fromEntries(Object.entries(s).filter(([k]) =>
-      k.toLowerCase().includes('xg') ||
-      k.toLowerCase().includes('goal') ||
-      k.toLowerCase().includes('match') ||
-      k.toLowerCase().includes('played') ||
-      k.toLowerCase().includes('concede') ||
-      k.toLowerCase().includes('scored')
-    ))
-  ))
 
   const get = (...keys) => {
     for (const k of keys) {
-      if (s[k] != null && s[k] !== 0 && s[k] !== '') return s[k]
+      if (s[k] != null && s[k] !== '' && s[k] !== 0) return s[k]
     }
     return null
   }
 
-  const mp_h = get('seasonMatchesPlayed_home', 'homeMatchesPlayed', 'matches_played_home') || 0
-  const mp_a = get('seasonMatchesPlayed_away', 'awayMatchesPlayed', 'matches_played_away') || 0
+  const mp_h = +(get('seasonMatchesPlayed_home') || 0)
+  const mp_a = +(get('seasonMatchesPlayed_away') || 0)
 
-  const xgH_raw = get('seasonXG_home', 'xg_for_avg_home', 'xgFor_home', 'avg_xg_home')
-  const xgA_raw = get('seasonXG_away', 'xg_for_avg_away', 'xgFor_away', 'avg_xg_away')
-  const xgaH_raw = get('seasonXGC_home', 'xg_against_avg_home', 'xgAgainst_home', 'avg_xgc_home')
-  const xgaA_raw = get('seasonXGC_away', 'xg_against_avg_away', 'xgAgainst_away', 'avg_xgc_away')
+  // xG per zápas (priemer) — FootyStats názvy
+  const xgH = get('xg_for_avg_home', 'seasonXG_home')
+  const xgA = get('xg_for_avg_away', 'seasonXG_away')
+  const xgaH = get('xg_against_avg_home', 'seasonXGC_home')
+  const xgaA = get('xg_against_avg_away', 'seasonXGC_away')
 
-  const goalsH = get('seasonGoals_home', 'goals_scored_home', 'homeGoals', 'scored_home')
-  const goalsA = get('seasonGoals_away', 'goals_scored_away', 'awayGoals', 'scored_away')
-  const concH = get('seasonConceded_home', 'goals_conceded_home', 'homeConceded', 'conceded_home')
-  const concA = get('seasonConceded_away', 'goals_conceded_away', 'awayConceded', 'conceded_away')
+  // GF/GA — FootyStats vracia priemer per zápas priamo
+  const gfH = get('seasonScoredAVG_home', 'seasonGoals_home')
+  const gfA = get('seasonScoredAVG_away', 'seasonGoals_away')
+  const gaH = get('seasonConcededAVG_home', 'seasonConceded_home')
+  const gaA = get('seasonConcededAVG_away', 'seasonConceded_away')
 
-  const xgH = xgH_raw != null ? +parseFloat(xgH_raw).toFixed(2) : null
-  const xgA = xgA_raw != null ? +parseFloat(xgA_raw).toFixed(2) : null
-  const xgaH = xgaH_raw != null ? +parseFloat(xgaH_raw).toFixed(2) : null
-  const xgaA = xgaA_raw != null ? +parseFloat(xgaA_raw).toFixed(2) : null
-  const gfH = (goalsH != null && mp_h > 0) ? +(goalsH / mp_h).toFixed(2) : null
-  const gfA = (goalsA != null && mp_a > 0) ? +(goalsA / mp_a).toFixed(2) : null
-  const gaH = (concH != null && mp_h > 0) ? +(concH / mp_h).toFixed(2) : null
-  const gaA = (concA != null && mp_a > 0) ? +(concA / mp_a).toFixed(2) : null
-
-  const _raw = Object.fromEntries(Object.entries(s).filter(([k]) =>
-    k.toLowerCase().includes('xg') || k.toLowerCase().includes('goal') ||
-    k.toLowerCase().includes('match') || k.toLowerCase().includes('played') ||
-    k.toLowerCase().includes('concede') || k.toLowerCase().includes('scored')
-  ))
-
-  return { xgH, xgA, xgaH, xgaA, gfH, gfA, gaH, gaA, mp_h, mp_a, _raw }
+  return {
+    xgH: xgH != null ? +parseFloat(xgH).toFixed(2) : null,
+    xgA: xgA != null ? +parseFloat(xgA).toFixed(2) : null,
+    xgaH: xgaH != null ? +parseFloat(xgaH).toFixed(2) : null,
+    xgaA: xgaA != null ? +parseFloat(xgaA).toFixed(2) : null,
+    gfH: gfH != null ? +parseFloat(gfH).toFixed(2) : null,
+    gfA: gfA != null ? +parseFloat(gfA).toFixed(2) : null,
+    gaH: gaH != null ? +parseFloat(gaH).toFixed(2) : null,
+    gaA: gaA != null ? +parseFloat(gaA).toFixed(2) : null,
+    mp_h, mp_a,
+    _raw: {}
+  }
 }
 
 const css = `
@@ -793,11 +762,6 @@ export default function App() {
                     ? <span style={{ color: 'var(--green)' }}>· ✓ xG + GF/GA natiahnuté</span>
                     : <span style={{ color: 'var(--yellow)' }}>· ⚠ xG nedostupné pre túto ligu, natiahnuté len GF/GA</span>
                   }
-                  {autofillInfo.debugRaw && (
-                    <div style={{ marginTop: 6, fontSize: 9, color: 'var(--text3)', wordBreak: 'break-all' }}>
-                      🔍 Debug: {JSON.stringify(autofillInfo.debugRaw)}
-                    </div>
-                  )}
                 </div>
               )}
 
