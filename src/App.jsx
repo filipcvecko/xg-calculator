@@ -102,21 +102,41 @@ async function fetchTeamsForSeason(seasonId) {
 }
 
 // Z tímových dát vytiahni štatistiky pre kalkulačku
-// FootyStats vracia per-season celkové góly — vydelíme počtom zápasov
+// FootyStats: seasonXG_home/away = priemer per zápas (už hotový)
+//             seasonGoals_home/away = celkový súčet → treba deliť
+// Alternatívne názvy polí pre rôzne verzie API
 function extractTeamStats(team) {
-  const mp_h = team.seasonMatchesPlayed_home || 1
-  const mp_a = team.seasonMatchesPlayed_away || 1
+  const mp_h = team.seasonMatchesPlayed_home || team.homeMatchesPlayed || 0
+  const mp_a = team.seasonMatchesPlayed_away || team.awayMatchesPlayed || 0
 
-  const xgH = team.seasonXG_home != null ? +(team.seasonXG_home / mp_h).toFixed(2) : null
-  const xgA = team.seasonXG_away != null ? +(team.seasonXG_away / mp_a).toFixed(2) : null
-  const xgaH = team.seasonXGC_home != null ? +(team.seasonXGC_home / mp_h).toFixed(2) : null
-  const xgaA = team.seasonXGC_away != null ? +(team.seasonXGC_away / mp_a).toFixed(2) : null
-  const gfH = team.seasonGoals_home != null ? +(team.seasonGoals_home / mp_h).toFixed(2) : null
-  const gfA = team.seasonGoals_away != null ? +(team.seasonGoals_away / mp_a).toFixed(2) : null
-  const gaH = team.seasonConceded_home != null ? +(team.seasonConceded_home / mp_h).toFixed(2) : null
-  const gaA = team.seasonConceded_away != null ? +(team.seasonConceded_away / mp_a).toFixed(2) : null
+  // xG — FootyStats vracia priemer per zápas priamo
+  const xgH = team.seasonXG_home ?? team.xg_for_avg_home ?? null
+  const xgA = team.seasonXG_away ?? team.xg_for_avg_away ?? null
+  const xgaH = team.seasonXGC_home ?? team.xg_against_avg_home ?? null
+  const xgaA = team.seasonXGC_away ?? team.xg_against_avg_away ?? null
 
-  return { xgH, xgA, xgaH, xgaA, gfH, gfA, gaH, gaA, mp_h, mp_a }
+  // GF/GA — celkové góly, delíme počtom zápasov
+  const gfH = (team.seasonGoals_home != null && mp_h > 0)
+    ? +(team.seasonGoals_home / mp_h).toFixed(2) : null
+  const gfA = (team.seasonGoals_away != null && mp_a > 0)
+    ? +(team.seasonGoals_away / mp_a).toFixed(2) : null
+  const gaH = (team.seasonConceded_home != null && mp_h > 0)
+    ? +(team.seasonConceded_home / mp_h).toFixed(2) : null
+  const gaA = (team.seasonConceded_away != null && mp_a > 0)
+    ? +(team.seasonConceded_away / mp_a).toFixed(2) : null
+
+  return {
+    xgH: xgH != null ? +parseFloat(xgH).toFixed(2) : null,
+    xgA: xgA != null ? +parseFloat(xgA).toFixed(2) : null,
+    xgaH: xgaH != null ? +parseFloat(xgaH).toFixed(2) : null,
+    xgaA: xgaA != null ? +parseFloat(xgaA).toFixed(2) : null,
+    gfH, gfA, gaH, gaA, mp_h, mp_a,
+    // debug — zachovaj surové polia pre diagnostiku
+    _raw: {
+      xgFields: { seasonXG_home: team.seasonXG_home, xg_for_avg_home: team.xg_for_avg_home },
+      goalFields: { goals_h: team.seasonGoals_home, mp_h },
+    }
+  }
 }
 
 const css = `
@@ -384,6 +404,7 @@ export default function App() {
       home: home ? { name: home.name, league: home.leagueName, mp_h: h?.mp_h } : null,
       away: away ? { name: away.name, league: away.leagueName, mp_a: a?.mp_a } : null,
       hasXG: (h?.xgH != null) || (a?.xgA != null),
+      debugRaw: h?._raw || a?._raw || null,
     })
   }
 
@@ -711,6 +732,11 @@ export default function App() {
                     ? <span style={{ color: 'var(--green)' }}>· ✓ xG + GF/GA natiahnuté</span>
                     : <span style={{ color: 'var(--yellow)' }}>· ⚠ xG nedostupné pre túto ligu, natiahnuté len GF/GA</span>
                   }
+                  {autofillInfo.debugRaw && (
+                    <div style={{ marginTop: 6, fontSize: 9, color: 'var(--text3)', wordBreak: 'break-all' }}>
+                      🔍 Debug: {JSON.stringify(autofillInfo.debugRaw)}
+                    </div>
+                  )}
                 </div>
               )}
 
