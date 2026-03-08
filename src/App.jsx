@@ -314,11 +314,39 @@ export default function App() {
   const [leagueAvgSource, setLeagueAvgSource] = useState(null)
   const [shrinkage, setShrinkage] = useState('0.15')
 
+  // Čas zápasu pre CLV notifikáciu
+  const [matchTime, setMatchTime] = useState('')
+  const [notifPermission, setNotifPermission] = useState(
+    typeof Notification !== 'undefined' ? Notification.permission : 'denied'
+  )
+
   // Settle
   const [settlingId, setSettlingId] = useState(null)
   const [settleMode, setSettleMode] = useState('clv')
   const [settleClose, setSettleClose] = useState('')
   const [settleResult, setSettleResult] = useState('')
+
+  async function requestNotifPermission() {
+    if (typeof Notification === 'undefined') return
+    const perm = await Notification.requestPermission()
+    setNotifPermission(perm)
+  }
+
+  function scheduleClvNotification(betId, betMatchName, kickoffStr) {
+    if (!kickoffStr || typeof Notification === 'undefined' || Notification.permission !== 'granted') return
+    const kickoff = new Date(kickoffStr).getTime()
+    const notifTime = kickoff - 5 * 60 * 1000
+    const delay = notifTime - Date.now()
+    if (delay < 0) return
+    setTimeout(() => {
+      const n = new Notification('⏰ CLV pripomienka', {
+        body: `${betMatchName || 'Zápas'} začína o 5 min — skontroluj záverečný kurz!`,
+        icon: '/favicon.ico',
+        tag: `clv-${betId}`,
+      })
+      n.onclick = () => { window.focus(); n.close() }
+    }, delay)
+  }
 
   useEffect(() => {
     loadBets()
@@ -357,7 +385,15 @@ export default function App() {
   async function loadBets() {
     setLoading(true)
     const { data, error } = await supabase.from('bets').select('*').order('created_at', { ascending: false })
-    if (!error) setBets(data || [])
+    if (!error) {
+      setBets(data || [])
+      // Obnov naplánované notifikácie pre pending bety s budúcim časom
+      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        (data || []).filter(b => b.result === null && b.match_time).forEach(b => {
+          scheduleClvNotification(b.id, b.match_name, b.match_time)
+        })
+      }
+    }
     setLoading(false)
   }
 
@@ -577,7 +613,8 @@ export default function App() {
       ? calcBackEV(selProb, actualOdds, calc.comm)
       : calcLayEV(selProb, actualOdds, calc.comm)
 
-    const { error } = await supabase.from('bets').insert({
+    const kickoff = matchTime ? new Date(matchTime).toISOString() : null
+    const { data: inserted, error } = await supabase.from('bets').insert({
       match_name: calc.matchName, market, bet_type: betType,
       lambda_h: calc.lH, lambda_a: calc.lA,
       p_over: calc.pOver, p_under: calc.pUnder,
@@ -586,8 +623,15 @@ export default function App() {
       stake: calc.st, commission: calc.comm * 100,
       ev, ev_pct: ev != null ? ev * 100 : null,
       clv: null, result: null, pnl: null, brier: null, log_loss: null,
-    })
-    if (!error) { await loadBets(); setSavedKey(market + '-' + betType) }
+      match_time: kickoff,
+    }).select()
+    if (!error) {
+      await loadBets()
+      setSavedKey(market + '-' + betType)
+      if (kickoff && inserted?.[0]?.id) {
+        scheduleClvNotification(inserted[0].id, calc.matchName, kickoff)
+      }
+    }
     setSaving(false)
   }
 
@@ -669,10 +713,35 @@ export default function App() {
         {tab === 'calc' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
 
-            {/* Zápas */}
+            {/* Zápas + čas */}
             <div className="card">
               <div className="label">Zápas (voliteľné)</div>
               <input className="inp" placeholder="napr. Arsenal vs Chelsea" value={matchName} onChange={e => setMatchName(e.target.value)} />
+              <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <div style={{ flex: 1, minWidth: 180 }}>
+                  <div className="label" style={{ marginBottom: 4 }}>⏰ Čas výkopu (pre CLV notifikáciu)</div>
+                  <input
+                    className="inp"
+                    type="datetime-local"
+                    value={matchTime}
+                    onChange={e => setMatchTime(e.target.value)}
+                    style={{ colorScheme: 'dark' }}
+                  />
+                </div>
+                {notifPermission !== 'granted' && (
+                  <button
+                    onClick={requestNotifPermission}
+                    style={{ marginTop: 18, padding: '6px 12px', background: 'var(--accent)', color: '#000', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12, whiteSpace: 'nowrap' }}
+                  >
+                    🔔 Povoliť notifikácie
+                  </button>
+                )}
+                {notifPermission === 'granted' && matchTime && (
+                  <div style={{ marginTop: 18, fontSize: 11, color: 'var(--green)' }}>
+                    ✓ Notifikácia sa naplánuje pri uložení betu
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* ── VÝBER TÍMOV (autocomplete) ── */}
@@ -1212,6 +1281,11 @@ export default function App() {
                     </div>
                     <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 4 }}>
                       {new Date(b.created_at).toLocaleDateString('sk')} {new Date(b.created_at).toLocaleTimeString('sk', { hour: '2-digit', minute: '2-digit' })}
+                      {b.match_time && (
+                        <span style={{ marginLeft: 8, color: 'var(--yellow)' }}>
+                          ⏰ Výkop: {new Date(b.match_time).toLocaleDateString('sk')} {new Date(b.match_time).toLocaleTimeString('sk', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
