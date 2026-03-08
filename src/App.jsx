@@ -372,13 +372,20 @@ export default function App() {
         }))
         allLoadedTeams = allLoadedTeams.concat(results.flat())
       }
-      // Deduplikácia — zachovaj tím s najnovším seasonId
+      // Deduplikácia — preferuj domácu ligu pred pohármi (UEFA, Cup, Cup...)
+      const cupKeywords = [/cup/i, /uefa/i, /champions/i, /europa/i, /conference/i, /pohar/i, /coupe/i, /copa/i, /coppa/i, /pokal/i]
+      const isCup = (name) => cupKeywords.some(r => r.test(name))
       const teamMap = new Map()
       for (const t of allLoadedTeams) {
         const existing = teamMap.get(t.id)
-        if (!existing || t.seasonId > existing.seasonId) {
-          teamMap.set(t.id, t)
-        }
+        if (!existing) { teamMap.set(t.id, t); continue }
+        const tIsCup = isCup(t.leagueName)
+        const exIsCup = isCup(existing.leagueName)
+        // Domáca liga má prednosť pred pohármi
+        if (exIsCup && !tIsCup) { teamMap.set(t.id, t); continue }
+        if (!exIsCup && tIsCup) continue
+        // Obe rovnaký typ — zachovaj novší seasonId
+        if (t.seasonId > existing.seasonId) teamMap.set(t.id, t)
       }
       const unique = Array.from(teamMap.values())
       setAllTeams(unique)
@@ -619,7 +626,7 @@ export default function App() {
 
     const kickoff = matchTime ? new Date(matchTime).toISOString() : null
     const { data: inserted, error } = await supabase.from('bets').insert({
-      match_name: calc.matchName, market, bet_type: betType,
+      match_name: matchName.trim() || calc.matchName || null, market, bet_type: betType,
       lambda_h: calc.lH, lambda_a: calc.lA,
       p_over: calc.pOver, p_under: calc.pUnder,
       sel_prob: selProb, fer_odds: ferO,
