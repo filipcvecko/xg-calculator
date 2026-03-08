@@ -358,25 +358,29 @@ export default function App() {
       // Načítaj len mená tímov (bez štatistík) — oveľa rýchlejšie
       if (leagues.length === 0) return
       setTeamsLoading(true)
-      const CHUNK = 10
+      const CHUNK = 5
       let allLoadedTeams = []
       for (let i = 0; i < leagues.length; i += CHUNK) {
         const chunk = leagues.slice(i, i + CHUNK)
         const results = await Promise.all(chunk.map(async l => {
-          const seasons = l.season ?? []
-          const latest = seasons.reduce((best, s) => (!best || s.id > best.id ? s : best), null)
-          const sid = latest ? latest.id : l.id
-          return fetchTeamNamesForSeason(sid, l.name, l.country)
+          const seasons = (l.season ?? []).slice().sort((a, b) => b.id - a.id)
+          // Načítaj top 2 sezóny (aktuálna + predchádzajúca) — zachytí tímy aj keď liga ešte nezačala
+          const top2 = seasons.slice(0, 2)
+          if (top2.length === 0) top2.push({ id: l.id })
+          const teamArrays = await Promise.all(top2.map(s => fetchTeamNamesForSeason(s.id, l.name, l.country)))
+          return teamArrays.flat()
         }))
         allLoadedTeams = allLoadedTeams.concat(results.flat())
       }
-      // Deduplikácia
-      const seen = new Set()
-      const unique = allLoadedTeams.filter(t => {
-        if (seen.has(t.id)) return false
-        seen.add(t.id)
-        return true
-      })
+      // Deduplikácia — zachovaj tím s najnovším seasonId
+      const teamMap = new Map()
+      for (const t of allLoadedTeams) {
+        const existing = teamMap.get(t.id)
+        if (!existing || t.seasonId > existing.seasonId) {
+          teamMap.set(t.id, t)
+        }
+      }
+      const unique = Array.from(teamMap.values())
       setAllTeams(unique)
       setTeamsLoading(false)
     })
