@@ -404,6 +404,9 @@ export default function App() {
       if (s.gfH != null) setGfH(String(s.gfH))
       if (s.gaH != null) setGaH(String(s.gaH))
     }
+    // Auto-vyplň názov zápasu
+    const awayName = selectedAwayTeam?.name || ''
+    if (team.name) setMatchName(awayName ? `${team.name} vs ${awayName}` : team.name)
     updateAutofillInfo(finalTeam, selectedAwayTeam, s, null)
   }
 
@@ -421,6 +424,9 @@ export default function App() {
       if (s.gfA != null) setGfA(String(s.gfA))
       if (s.gaA != null) setGaA(String(s.gaA))
     }
+    // Auto-vyplň názov zápasu
+    const homeName = selectedHomeTeam?.name || ''
+    if (team.name) setMatchName(homeName ? `${homeName} vs ${team.name}` : team.name)
     updateAutofillInfo(selectedHomeTeam, finalTeam, null, s)
   }
 
