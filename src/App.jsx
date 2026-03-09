@@ -393,16 +393,22 @@ export default function App() {
         }))
         allLoadedTeams = allLoadedTeams.concat(results.flat())
       }
-      // Deduplikácia — pre každý tím zachovaj len najnovšiu sezónu
+      // Deduplikácia — pre každý tím (podľa ID) zachovaj len záznam z ligového súťaženia
+      // Priorita: ligová sezóna > pohár (Copa, Cup, Libertadores...)
       const teamMap = new Map()
       allLoadedTeams.forEach(t => {
-        const key = t.id + '|' + t.leagueName
+        const key = String(t.id)
         const existing = teamMap.get(key)
-        if (!existing || (t.seasonId ?? 0) > (existing.seasonId ?? 0)) {
-          teamMap.set(key, t)
-        }
+        if (!existing) { teamMap.set(key, t); return }
+        // Preferuj domácu ligu pred pohármi
+        const isCup = (name) => /cup|copa|libertadores|sudamericana|champions|league cup|fa cup/i.test(name)
+        const existingIsCup = isCup(existing.leagueName || '')
+        const newIsCup = isCup(t.leagueName || '')
+        if (existingIsCup && !newIsCup) { teamMap.set(key, t); return }
+        if (!existingIsCup && newIsCup) return
+        // Ak obe sú ligy alebo obe poháre — zachovaj novšiu sezónu
+        if ((t.seasonId ?? 0) > (existing.seasonId ?? 0)) teamMap.set(key, t)
       })
-      // Zoraď abecedne podľa mena
       const unique = Array.from(teamMap.values()).sort((a, b) => a.name.localeCompare(b.name))
       setAllTeams(unique)
       setTeamsLoading(false)
@@ -533,23 +539,24 @@ export default function App() {
 
   function filterTeams(query) {
     if (!query.trim()) return []
-    const q = query.toLowerCase()
+    const words = query.toLowerCase().trim().split(/\s+/)
     const results = allTeams
       .map(t => {
         const name = t.name?.toLowerCase() || ''
         const clean = t.cleanName?.toLowerCase() || ''
-        const league = t.leagueName?.toLowerCase() || ''
-        const country = t.leagueCountry?.toLowerCase() || ''
-        // Skóre: 0=neshoda, 1=obsahuje, 2=začína menom, 3=presná zhoda
-        let score = 0
-        if (name.includes(q) || clean.includes(q)) score = 1
-        if (name.startsWith(q) || clean.startsWith(q)) score = 2
-        if (name === q || clean === q) score = 3
-        // Bonus ak query obsahuje aj ligu/krajinu
-        if (league.includes(q) || country.includes(q)) score = Math.max(score, 1)
+        const haystack = name + ' ' + clean
+
+        // VŠETKY slová musia byť v názve tímu
+        const allMatch = words.every(w => haystack.includes(w))
+        if (!allMatch) return null
+
+        // Skóre: presná zhoda > začína > obsahuje
+        let score = 1
+        if (name.startsWith(words[0]) || clean.startsWith(words[0])) score = 2
+        if (name === query.toLowerCase() || clean === query.toLowerCase()) score = 3
         return { t, score }
       })
-      .filter(x => x.score > 0)
+      .filter(Boolean)
       .sort((a, b) => b.score - a.score || a.t.name.localeCompare(b.t.name))
       .map(x => x.t)
       .slice(0, 12)
