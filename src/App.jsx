@@ -63,8 +63,9 @@ async function fetchLeagueAvg(leagueId) {
     const json = await res.json()
     const data = json?.data
     if (!data) return null
-    const avgHome = data.seasonAVG_home ?? null
-    const avgAway = data.seasonAVG_away ?? null
+    // FootyStats používa rôzne názvy polí podľa verzie API / ligy
+    const avgHome = data.seasonAVG_home ?? data.avg_goals_home ?? data.avgGoalsPerMatch_home ?? data.avgGoals_home ?? null
+    const avgAway = data.seasonAVG_away ?? data.avg_goals_away ?? data.avgGoalsPerMatch_away ?? data.avgGoals_away ?? null
     if (avgHome && avgAway) {
       return { avgHome, avgAway, source: 'api', leagueId }
     }
@@ -141,9 +142,10 @@ async function fetchTeamLastX(teamId) {
 function extractTeamStats(team) {
   const s = team?.stats || team || {}
 
+  // Opravená get() — nekontroluje !== 0, lebo 0 môže byť validná hodnota
   const get = (...keys) => {
     for (const k of keys) {
-      if (s[k] != null && s[k] !== '' && s[k] !== 0) return s[k]
+      if (s[k] != null && s[k] !== '') return s[k]
     }
     return null
   }
@@ -151,17 +153,25 @@ function extractTeamStats(team) {
   const mp_h = +(get('seasonMatchesPlayed_home') || 0)
   const mp_a = +(get('seasonMatchesPlayed_away') || 0)
 
-  // xG per zápas (priemer) — FootyStats názvy
-  const xgH = get('xg_for_avg_home', 'seasonXG_home')
-  const xgA = get('xg_for_avg_away', 'seasonXG_away')
-  const xgaH = get('xg_against_avg_home', 'seasonXGC_home')
-  const xgaA = get('xg_against_avg_away', 'seasonXGC_away')
+  // xG per zápas — FootyStats používa tieto názvy polí
+  // xg_for_avg_home / xg_for_avg_away sú štandardné názvy z /team endpointu
+  const xgH = get('xg_for_avg_home', 'xg_for_avg', 'seasonXG_home', 'xGFor_home')
+  const xgA = get('xg_for_avg_away', 'seasonXG_away', 'xGFor_away')
+  const xgaH = get('xg_against_avg_home', 'xg_against_avg', 'seasonXGC_home', 'xGAgainst_home')
+  const xgaA = get('xg_against_avg_away', 'seasonXGC_away', 'xGAgainst_away')
 
-  // GF/GA — FootyStats vracia priemer per zápas priamo
-  const gfH = get('seasonScoredAVG_home', 'seasonGoals_home')
-  const gfA = get('seasonScoredAVG_away', 'seasonGoals_away')
-  const gaH = get('seasonConcededAVG_home', 'seasonConceded_home')
-  const gaA = get('seasonConcededAVG_away', 'seasonConceded_away')
+  // GF/GA priemer per zápas
+  const gfH = get('seasonScoredAVG_home', 'scored_home', 'seasonGoals_home')
+  const gfA = get('seasonScoredAVG_away', 'scored_away', 'seasonGoals_away')
+  const gaH = get('seasonConcededAVG_home', 'conceded_home', 'seasonConceded_home')
+  const gaA = get('seasonConcededAVG_away', 'conceded_away', 'seasonConceded_away')
+
+  // Ulož všetky raw polia pre debug (filtruj len číselné/xG-relevantné)
+  const _raw = Object.fromEntries(
+    Object.entries(s).filter(([k]) =>
+      /xg|goal|scored|conceded|matches|played|avg/i.test(k)
+    ).slice(0, 40)
+  )
 
   return {
     xgH: xgH != null ? +parseFloat(xgH).toFixed(2) : null,
@@ -173,7 +183,7 @@ function extractTeamStats(team) {
     gaH: gaH != null ? +parseFloat(gaH).toFixed(2) : null,
     gaA: gaA != null ? +parseFloat(gaA).toFixed(2) : null,
     mp_h, mp_a,
-    _raw: {}
+    _raw
   }
 }
 
@@ -517,7 +527,7 @@ export default function App() {
       home: home ? { name: home.name, league: home.leagueName, mp_h: h?.mp_h } : null,
       away: away ? { name: away.name, league: away.leagueName, mp_a: a?.mp_a } : null,
       hasXG: (h?.xgH != null) || (a?.xgA != null),
-      debugRaw: h?._raw || a?._raw || null,
+      debugRaw: { ...(h?._raw || {}), ...(a?._raw || {}) },
     })
   }
 
@@ -944,8 +954,24 @@ export default function App() {
                   {autofillInfo.away && <span>✈️ <b>{autofillInfo.away.name}</b> ({autofillInfo.away.league}, {autofillInfo.away.mp_a} vonk. zápasov) </span>}
                   {autofillInfo.hasXG
                     ? <span style={{ color: 'var(--green)' }}>· ✓ xG + GF/GA natiahnuté</span>
-                    : <span style={{ color: 'var(--yellow)' }}>· ⚠ xG nedostupné pre túto ligu, natiahnuté len GF/GA</span>
+                    : <span style={{ color: 'var(--yellow)' }}>· ⚠ xG sa nenašlo — skontroluj raw polia nižšie</span>
                   }
+                  {/* Debug: ukáž raw polia z API keď xG chýba */}
+                  {!autofillInfo.hasXG && autofillInfo.debugRaw && Object.keys(autofillInfo.debugRaw).length > 0 && (
+                    <details style={{ marginTop: 6, fontSize: 10 }}>
+                      <summary style={{ cursor: 'pointer', color: 'var(--accent2)' }}>🔍 Raw API polia (klikni pre debug)</summary>
+                      <div style={{ marginTop: 4, padding: '6px 8px', background: 'var(--bg3)', borderRadius: 4, fontFamily: 'var(--mono)', lineHeight: 1.8, color: 'var(--text2)' }}>
+                        {Object.entries(autofillInfo.debugRaw).map(([k, v]) => (
+                          <div key={k}><span style={{ color: 'var(--accent2)' }}>{k}</span>: {String(v)}</div>
+                        ))}
+                      </div>
+                    </details>
+                  )}
+                  {!autofillInfo.hasXG && autofillInfo.debugRaw && Object.keys(autofillInfo.debugRaw).length === 0 && (
+                    <div style={{ marginTop: 4, fontSize: 10, color: 'var(--red)' }}>
+                      ❌ API nevrátilo žiadne dáta pre tento tím — skontroluj season_id alebo API kľúč
+                    </div>
+                  )}
                 </div>
               )}
 
