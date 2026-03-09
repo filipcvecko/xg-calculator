@@ -112,9 +112,16 @@ export function timeDecayBlend(seasonVal, formVal, w = 0.40) {
 
 // Extrahuj xG/GF/GA z lastx objektu (last5/last6/last10)
 // typ = 'last_5' | 'last_6' | 'last_10'
-export function extractLastXStats(lastxData, typ = 'last_5') {
+export function extractLastXStats(lastxData, matchNum = 5) {
   if (!lastxData) return null
-  const d = lastxData?.[typ] || lastxData?.data?.[typ] || null
+
+  // API vracia { data: [ { last_x_match_num: 5, stats: {...} }, ... ] }
+  const arr = lastxData?.data
+  if (!Array.isArray(arr) || arr.length === 0) return null
+
+  // Nájdi záznam s požadovaným počtom zápasov
+  const item = arr.find(x => x.last_x_match_num === matchNum) || arr[0]
+  const d = item?.stats
   if (!d) return null
 
   const get = (...keys) => {
@@ -125,15 +132,15 @@ export function extractLastXStats(lastxData, typ = 'last_5') {
   }
 
   return {
-    xgH: get('xg_for_avg_home', 'xg_for_avg'),
-    xgA: get('xg_for_avg_away'),
-    xgaH: get('xg_against_avg_home', 'xg_against_avg'),
-    xgaA: get('xg_against_avg_away'),
-    gfH: get('seasonScoredAVG_home', 'scored_avg_home', 'scored_avg'),
-    gfA: get('seasonScoredAVG_away', 'scored_avg_away'),
-    gaH: get('seasonConcededAVG_home', 'conceded_avg_home', 'conceded_avg'),
-    gaA: get('seasonConcededAVG_away', 'conceded_avg_away'),
-    mp: get('matchesPlayed', 'matches_played', 'seasonMatchesPlayed') || null,
+    xgH: get('xg_for_avg_home', 'xg_for_avg_overall'),
+    xgA: get('xg_for_avg_away', 'xg_for_avg_overall'),
+    xgaH: get('xg_against_avg_home', 'xg_against_avg_overall'),
+    xgaA: get('xg_against_avg_away', 'xg_against_avg_overall'),
+    gfH: get('seasonScoredAVG_home'),
+    gfA: get('seasonScoredAVG_away'),
+    gaH: get('seasonConcededAVG_home'),
+    gaA: get('seasonConcededAVG_away'),
+    mp: get('seasonMatchesPlayed_overall') || null,
   }
 }
 

@@ -132,6 +132,7 @@ async function fetchTeamLastX(teamId) {
     const res = await fetch(url)
     if (!res.ok) return null
     const json = await res.json()
+    console.log('[lastx raw]', JSON.stringify(json).slice(0, 2000))
     // FootyStats vracia { data: { last_5: {...}, last_6: {...}, last_10: {...} } }
     return json?.data || json || null
   } catch {
@@ -320,7 +321,7 @@ export default function App() {
   // Time decay / forma
   const [homeLastX, setHomeLastX] = useState(null)   // raw lastx data pre home tím
   const [awayLastX, setAwayLastX] = useState(null)   // raw lastx data pre away tím
-  const [formWindow, setFormWindow] = useState('last_5')  // last_5 | last_6 | last_10
+  const [formWindow, setFormWindow] = useState(5)  // 5 | 6 | 10
   const [formWeight, setFormWeight] = useState('0.40')    // váha formy vs sezóna
 
   // Pokročilé nastavenia
@@ -983,13 +984,13 @@ export default function App() {
                   </div>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}>
                     <span style={{ fontSize: 11, color: 'var(--text3)' }}>Okno:</span>
-                    {['last_5', 'last_6', 'last_10'].map(w => (
+                    {[5, 6, 10].map(w => (
                       <button key={w} onClick={() => setFormWindow(w)}
                         style={{ padding: '4px 10px', borderRadius: 4, border: '1px solid', fontSize: 10, cursor: 'pointer', fontFamily: 'var(--mono)',
                           borderColor: formWindow === w ? 'var(--accent)' : 'var(--border)',
                           background: formWindow === w ? 'rgba(108,92,231,0.2)' : 'transparent',
                           color: formWindow === w ? 'var(--accent2)' : 'var(--text3)' }}>
-                        {w.replace('last_', 'Last ')}
+                        {`Last ${w}`}
                       </button>
                     ))}
                     <span style={{ fontSize: 11, color: 'var(--text3)', marginLeft: 8 }}>Váha formy:</span>
