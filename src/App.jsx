@@ -372,22 +372,14 @@ export default function App() {
         }))
         allLoadedTeams = allLoadedTeams.concat(results.flat())
       }
-      // Deduplikácia — preferuj domácu ligu pred pohármi (UEFA, Cup, Cup...)
-      const cupKeywords = [/cup/i, /uefa/i, /champions/i, /europa/i, /conference/i, /pohar/i, /coupe/i, /copa/i, /coppa/i, /pokal/i]
-      const isCup = (name) => cupKeywords.some(r => r.test(name))
-      const teamMap = new Map()
-      for (const t of allLoadedTeams) {
-        const existing = teamMap.get(t.id)
-        if (!existing) { teamMap.set(t.id, t); continue }
-        const tIsCup = isCup(t.leagueName)
-        const exIsCup = isCup(existing.leagueName)
-        // Domáca liga má prednosť pred pohármi
-        if (exIsCup && !tIsCup) { teamMap.set(t.id, t); continue }
-        if (!exIsCup && tIsCup) continue
-        // Obe rovnaký typ — zachovaj novší seasonId
-        if (t.seasonId > existing.seasonId) teamMap.set(t.id, t)
-      }
-      const unique = Array.from(teamMap.values())
+      // Deduplikácia — odstráň len duplicity rovnaký tím+liga+sezóna
+      const seen = new Set()
+      const unique = allLoadedTeams.filter(t => {
+        const key = t.id + '|' + t.leagueName + '|' + t.seasonId
+        if (seen.has(key)) return false
+        seen.add(key)
+        return true
+      })
       setAllTeams(unique)
       setTeamsLoading(false)
     })
