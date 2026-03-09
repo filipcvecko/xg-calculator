@@ -102,7 +102,42 @@ export function calcMaxDrawdown(bets) {
   return maxDD
 }
 
-// Formatters
+// Time decay blend — mixuje sezónny priemer s last-X formou
+// w = váha formy (0.0–1.0), napr. 0.4 = 40% forma, 60% sezóna
+export function timeDecayBlend(seasonVal, formVal, w = 0.40) {
+  if (formVal == null || isNaN(formVal)) return seasonVal
+  if (seasonVal == null || isNaN(seasonVal)) return formVal
+  return (1 - w) * seasonVal + w * formVal
+}
+
+// Extrahuj xG/GF/GA z lastx objektu (last5/last6/last10)
+// typ = 'last_5' | 'last_6' | 'last_10'
+export function extractLastXStats(lastxData, typ = 'last_5') {
+  if (!lastxData) return null
+  const d = lastxData?.[typ] || lastxData?.data?.[typ] || null
+  if (!d) return null
+
+  const get = (...keys) => {
+    for (const k of keys) {
+      if (d[k] != null && d[k] !== '' && !isNaN(+d[k])) return +d[k]
+    }
+    return null
+  }
+
+  return {
+    xgH: get('xg_for_avg_home', 'xg_for_avg'),
+    xgA: get('xg_for_avg_away'),
+    xgaH: get('xg_against_avg_home', 'xg_against_avg'),
+    xgaA: get('xg_against_avg_away'),
+    gfH: get('seasonScoredAVG_home', 'scored_avg_home', 'scored_avg'),
+    gfA: get('seasonScoredAVG_away', 'scored_avg_away'),
+    gaH: get('seasonConcededAVG_home', 'conceded_avg_home', 'conceded_avg'),
+    gaA: get('seasonConcededAVG_away', 'conceded_avg_away'),
+    mp: get('matchesPlayed', 'matches_played', 'seasonMatchesPlayed') || null,
+  }
+}
+
+
 export const fmt2 = n => (n == null || isNaN(n) ? '—' : n.toFixed(2))
 export const fmt3 = n => (n == null || isNaN(n) ? '—' : n.toFixed(3))
 export const fmtPct = n => (n == null || isNaN(n) ? '—' : n.toFixed(1) + '%')

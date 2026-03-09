@@ -4,6 +4,7 @@ import {
   calcOverUnder, blendLambda, fairOdds, calcCLV,
   brierScore, logLoss, calcMaxDrawdown,
   marketCalibration, calibrateProb, evFilter, oddsBandFilter,
+  timeDecayBlend, extractLastXStats,
   fmt2, fmt3, fmtPct, fmtSign, fmtSignPct
 } from './math'
 
@@ -119,6 +120,20 @@ async function fetchTeamStats(teamId, seasonId) {
     const data = json?.data
     return Array.isArray(data) ? data[0] : data || null
   } catch (e) {
+    return null
+  }
+}
+
+// Načítaj last 5/6/10 zápasov tímu
+async function fetchTeamLastX(teamId) {
+  try {
+    const url = `/api/footystats?endpoint=lastx&team_id=${teamId}`
+    const res = await fetch(url)
+    if (!res.ok) return null
+    const json = await res.json()
+    // FootyStats vracia { data: { last_5: {...}, last_6: {...}, last_10: {...} } }
+    return json?.data || json || null
+  } catch {
     return null
   }
 }
@@ -282,7 +297,7 @@ export default function App() {
   const [expandedId, setExpandedId] = useState(null)
 
   // Team autofill
-  const [allTeams, setAllTeams] = useState([])         // všetky tímy zo všetkých líg
+  const [allTeams, setAllTeams] = useState([])
   const [teamsLoading, setTeamsLoading] = useState(false)
   const [homeTeamSearch, setHomeTeamSearch] = useState('')
   const [awayTeamSearch, setAwayTeamSearch] = useState('')
@@ -291,6 +306,12 @@ export default function App() {
   const [selectedHomeTeam, setSelectedHomeTeam] = useState(null)
   const [selectedAwayTeam, setSelectedAwayTeam] = useState(null)
   const [autofillInfo, setAutofillInfo] = useState(null)
+
+  // Time decay / forma
+  const [homeLastX, setHomeLastX] = useState(null)   // raw lastx data pre home tím
+  const [awayLastX, setAwayLastX] = useState(null)   // raw lastx data pre away tím
+  const [formWindow, setFormWindow] = useState('last_5')  // last_5 | last_6 | last_10
+  const [formWeight, setFormWeight] = useState('0.40')    // váha formy vs sezóna
 
   // Pokročilé nastavenia
   const [showAdvanced, setShowAdvanced] = useState(false)
@@ -372,14 +393,17 @@ export default function App() {
         }))
         allLoadedTeams = allLoadedTeams.concat(results.flat())
       }
-      // Deduplikácia — odstráň len duplicity rovnaký tím+liga+sezóna
-      const seen = new Set()
-      const unique = allLoadedTeams.filter(t => {
-        const key = t.id + '|' + t.leagueName + '|' + t.seasonId
-        if (seen.has(key)) return false
-        seen.add(key)
-        return true
+      // Deduplikácia — pre každý tím zachovaj len najnovšiu sezónu
+      const teamMap = new Map()
+      allLoadedTeams.forEach(t => {
+        const key = t.id + '|' + t.leagueName
+        const existing = teamMap.get(key)
+        if (!existing || (t.seasonId ?? 0) > (existing.seasonId ?? 0)) {
+          teamMap.set(key, t)
+        }
       })
+      // Zoraď abecedne podľa mena
+      const unique = Array.from(teamMap.values()).sort((a, b) => a.name.localeCompare(b.name))
       setAllTeams(unique)
       setTeamsLoading(false)
     })
@@ -433,17 +457,22 @@ export default function App() {
     setSelectedHomeTeam({ ...team, loading: true })
     setHomeTeamOpen(false)
     setHomeTeamSearch('')
-    const raw = await fetchTeamStats(team.id, team.seasonId)
+    setHomeLastX(null)
+    // Fetch sezónne stats + lastx paralelne
+    const [raw, lastx] = await Promise.all([
+      fetchTeamStats(team.id, team.seasonId),
+      fetchTeamLastX(team.id),
+    ])
     const s = raw ? extractTeamStats(raw) : null
     const finalTeam = { ...team, stats: s, loading: false }
     setSelectedHomeTeam(finalTeam)
+    setHomeLastX(lastx)
     if (s) {
       if (s.xgH != null) setXgH(String(s.xgH))
       if (s.xgaH != null) setXgaH(String(s.xgaH))
       if (s.gfH != null) setGfH(String(s.gfH))
       if (s.gaH != null) setGaH(String(s.gaH))
     }
-    // Auto-vyplň názov zápasu
     const awayName = selectedAwayTeam?.name || ''
     if (team.name) setMatchName(awayName ? `${team.name} vs ${awayName}` : team.name)
     updateAutofillInfo(finalTeam, selectedAwayTeam, s, null)
@@ -453,17 +482,22 @@ export default function App() {
     setSelectedAwayTeam({ ...team, loading: true })
     setAwayTeamOpen(false)
     setAwayTeamSearch('')
-    const raw = await fetchTeamStats(team.id, team.seasonId)
+    setAwayLastX(null)
+    // Fetch sezónne stats + lastx paralelne
+    const [raw, lastx] = await Promise.all([
+      fetchTeamStats(team.id, team.seasonId),
+      fetchTeamLastX(team.id),
+    ])
     const s = raw ? extractTeamStats(raw) : null
     const finalTeam = { ...team, stats: s, loading: false }
     setSelectedAwayTeam(finalTeam)
+    setAwayLastX(lastx)
     if (s) {
       if (s.xgA != null) setXgA(String(s.xgA))
       if (s.xgaA != null) setXgaA(String(s.xgaA))
       if (s.gfA != null) setGfA(String(s.gfA))
       if (s.gaA != null) setGaA(String(s.gaA))
     }
-    // Auto-vyplň názov zápasu
     const homeName = selectedHomeTeam?.name || ''
     if (team.name) setMatchName(homeName ? `${homeName} vs ${team.name}` : team.name)
     updateAutofillInfo(selectedHomeTeam, finalTeam, null, s)
@@ -484,6 +518,7 @@ export default function App() {
   function clearHomeTeam() {
     setSelectedHomeTeam(null)
     setHomeTeamSearch('')
+    setHomeLastX(null)
     setXgH(''); setXgaH(''); setGfH(''); setGaH('')
     setAutofillInfo(null)
   }
@@ -491,6 +526,7 @@ export default function App() {
   function clearAwayTeam() {
     setSelectedAwayTeam(null)
     setAwayTeamSearch('')
+    setAwayLastX(null)
     setXgA(''); setXgaA(''); setGfA(''); setGaA('')
     setAutofillInfo(null)
   }
@@ -498,10 +534,26 @@ export default function App() {
   function filterTeams(query) {
     if (!query.trim()) return []
     const q = query.toLowerCase()
-    return allTeams.filter(t =>
-      t.name?.toLowerCase().includes(q) ||
-      t.cleanName?.toLowerCase().includes(q)
-    ).slice(0, 12)
+    const results = allTeams
+      .map(t => {
+        const name = t.name?.toLowerCase() || ''
+        const clean = t.cleanName?.toLowerCase() || ''
+        const league = t.leagueName?.toLowerCase() || ''
+        const country = t.leagueCountry?.toLowerCase() || ''
+        // Skóre: 0=neshoda, 1=obsahuje, 2=začína menom, 3=presná zhoda
+        let score = 0
+        if (name.includes(q) || clean.includes(q)) score = 1
+        if (name.startsWith(q) || clean.startsWith(q)) score = 2
+        if (name === q || clean === q) score = 3
+        // Bonus ak query obsahuje aj ligu/krajinu
+        if (league.includes(q) || country.includes(q)) score = Math.max(score, 1)
+        return { t, score }
+      })
+      .filter(x => x.score > 0)
+      .sort((a, b) => b.score - a.score || a.t.name.localeCompare(b.t.name))
+      .map(x => x.t)
+      .slice(0, 12)
+    return results
   }
 
   function handleCalc() {
@@ -525,6 +577,52 @@ export default function App() {
       lH = blendLambda(h, aa); lA = blendLambda(a, ha)
     } else {
       lH = h; lA = a
+    }
+
+    // ── TIME DECAY / FORMA ──
+    const fw = pf(formWeight) || 0.40
+    const homeForm = homeLastX ? extractLastXStats(homeLastX, formWindow) : null
+    const awayForm = awayLastX ? extractLastXStats(awayLastX, formWindow) : null
+    let formInfo = null
+
+    if (homeForm || awayForm) {
+      const lHbefore = lH
+      const lAbefore = lA
+
+      // Home λ — blend sezóna vs forma
+      if (homeForm) {
+        const formXgH = homeForm.xgH ?? homeForm.gfH ?? null
+        const formXgaA = awayForm?.xgaA ?? awayForm?.gaA ?? null
+        if (formXgH != null) {
+          const formLH = formXgaA != null ? Math.sqrt(formXgH * formXgaA) : formXgH
+          lH = timeDecayBlend(lH, formLH, fw)
+        }
+      }
+
+      // Away λ — blend sezóna vs forma
+      if (awayForm) {
+        const formXgA = awayForm.xgA ?? awayForm.gfA ?? null
+        const formXgaH = homeForm?.xgaH ?? homeForm?.gaH ?? null
+        if (formXgA != null) {
+          const formLA = formXgaH != null ? Math.sqrt(formXgA * formXgaH) : formXgA
+          lA = timeDecayBlend(lA, formLA, fw)
+        }
+      }
+
+      formInfo = {
+        window: formWindow,
+        weight: fw,
+        lHbefore: lHbefore.toFixed(3),
+        lAbefore: lAbefore.toFixed(3),
+        lHafter: lH.toFixed(3),
+        lAafter: lA.toFixed(3),
+        homeFormMp: homeForm?.mp ?? null,
+        awayFormMp: awayForm?.mp ?? null,
+        homeFormXg: homeForm?.xgH ?? homeForm?.gfH ?? null,
+        awayFormXg: awayForm?.xgA ?? awayForm?.gfA ?? null,
+        hasHomeForm: !!homeForm,
+        hasAwayForm: !!awayForm,
+      }
     }
 
     // Shrinkage
@@ -599,6 +697,7 @@ export default function App() {
       marketCalibUsed: { over: moOver > 1, under: moUnder > 1, w: mw },
       evMinVal,
       oLow, oHigh,
+      formInfo,
     })
   }
 
@@ -840,6 +939,51 @@ export default function App() {
                     ? <span style={{ color: 'var(--green)' }}>· ✓ xG + GF/GA natiahnuté</span>
                     : <span style={{ color: 'var(--yellow)' }}>· ⚠ xG nedostupné pre túto ligu, natiahnuté len GF/GA</span>
                   }
+                </div>
+              )}
+
+              {/* Forma (lastx) info + nastavenia */}
+              {(homeLastX || awayLastX) && (
+                <div style={{ marginTop: 10, background: 'rgba(108,92,231,0.07)', border: '1px solid rgba(108,92,231,0.2)', borderRadius: 6, padding: '10px 12px' }}>
+                  <div style={{ fontSize: 10, color: 'var(--accent2)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>
+                    📈 Forma — last X zápasov načítaná
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}>
+                    <span style={{ fontSize: 11, color: 'var(--text3)' }}>Okno:</span>
+                    {['last_5', 'last_6', 'last_10'].map(w => (
+                      <button key={w} onClick={() => setFormWindow(w)}
+                        style={{ padding: '4px 10px', borderRadius: 4, border: '1px solid', fontSize: 10, cursor: 'pointer', fontFamily: 'var(--mono)',
+                          borderColor: formWindow === w ? 'var(--accent)' : 'var(--border)',
+                          background: formWindow === w ? 'rgba(108,92,231,0.2)' : 'transparent',
+                          color: formWindow === w ? 'var(--accent2)' : 'var(--text3)' }}>
+                        {w.replace('last_', 'Last ')}
+                      </button>
+                    ))}
+                    <span style={{ fontSize: 11, color: 'var(--text3)', marginLeft: 8 }}>Váha formy:</span>
+                    <input className="inp" style={{ width: 70, padding: '4px 8px', fontSize: 11 }}
+                      placeholder="0.40" value={formWeight} onChange={e => setFormWeight(e.target.value)} />
+                    <span style={{ fontSize: 10, color: 'var(--text3)' }}>(0=len sezóna, 1=len forma)</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 16, fontSize: 11, flexWrap: 'wrap' }}>
+                    {homeLastX && (() => {
+                      const f = extractLastXStats(homeLastX, formWindow)
+                      return f ? (
+                        <span style={{ color: 'var(--text2)' }}>
+                          🏠 xG forma: <b style={{ color: 'var(--accent2)' }}>{f.xgH ?? f.gfH ?? '—'}</b>
+                          {f.mp && <span style={{ color: 'var(--text3)' }}> ({f.mp} záp.)</span>}
+                        </span>
+                      ) : <span style={{ color: 'var(--yellow)' }}>🏠 forma: bez dát</span>
+                    })()}
+                    {awayLastX && (() => {
+                      const f = extractLastXStats(awayLastX, formWindow)
+                      return f ? (
+                        <span style={{ color: 'var(--text2)' }}>
+                          ✈️ xG forma: <b style={{ color: 'var(--accent2)' }}>{f.xgA ?? f.gfA ?? '—'}</b>
+                          {f.mp && <span style={{ color: 'var(--text3)' }}> ({f.mp} záp.)</span>}
+                        </span>
+                      ) : <span style={{ color: 'var(--yellow)' }}>✈️ forma: bez dát</span>
+                    })()}
+                  </div>
                 </div>
               )}
 
@@ -1229,6 +1373,11 @@ export default function App() {
                   + shrink {calc.shrinkInfo.source === 'api' ? '📡' : '✍'} ({calc.shrinkInfo.rawTotal} → {calc.shrinkInfo.shrunkTotal})
                 </span>
               )}
+              {calc.formInfo && (
+                <span style={{ color: 'var(--accent2)' }}>
+                  + forma {calc.formInfo.window.replace('last_', 'L')} (w={fmt2(calc.formInfo.weight)}) {calc.formInfo.lHbefore}→{calc.formInfo.lHafter} / {calc.formInfo.lAbefore}→{calc.formInfo.lAafter}
+                </span>
+              )}
               {(calc.marketCalibUsed?.over || calc.marketCalibUsed?.under) && (
                 <span style={{ color: 'var(--yellow)' }}>+ mkt blend (w={fmt2(calc.marketCalibUsed.w)})</span>
               )}
@@ -1359,6 +1508,8 @@ export default function App() {
         {tab === 'stats' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             {settled.length === 0 ? <div className="empty">Žiadne uzavreté bety.<br />Settle aspoň jeden bet.</div> : (<>
+
+              {/* ── FINANCE ── */}
               <div>
                 <div className="section-title">💰 Finance</div>
                 <div className="grid3">
@@ -1377,6 +1528,8 @@ export default function App() {
                   ))}
                 </div>
               </div>
+
+              {/* ── EDGE ── */}
               <div>
                 <div className="section-title">📈 Edge</div>
                 <div className="grid3">
@@ -1396,6 +1549,215 @@ export default function App() {
                   ))}
                 </div>
               </div>
+
+              {/* ── EV PÁSMA ── */}
+              <div>
+                <div className="section-title">🎯 EV pásma — kde ti to reálne vychádza</div>
+                <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 10 }}>
+                  Rozdelenie betov podľa EV pri uložení. Ukazuje kde má model reálny edge vs šum.
+                </div>
+                {(() => {
+                  const bands = [
+                    { label: '0–5%', min: 0, max: 5 },
+                    { label: '5–10%', min: 5, max: 10 },
+                    { label: '10–15%', min: 10, max: 15 },
+                    { label: '15%+', min: 15, max: Infinity },
+                  ]
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {/* Header */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr 1fr 1fr 1fr 1fr', gap: 8, fontSize: 9, color: 'var(--text3)', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0 14px' }}>
+                        <span>EV pásmo</span><span>Bety</span><span>Hit Rate</span><span>Avg CLV</span><span>ROI</span><span>PnL</span>
+                      </div>
+                      {bands.map(band => {
+                        const bb = settled.filter(b => b.ev_pct != null && b.ev_pct >= band.min && b.ev_pct < band.max)
+                        if (bb.length === 0) return (
+                          <div key={band.label} className="card" style={{ padding: '10px 14px', display: 'grid', gridTemplateColumns: '80px 1fr 1fr 1fr 1fr 1fr', gap: 8, alignItems: 'center', opacity: 0.4 }}>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)' }}>{band.label}</span>
+                            <span style={{ fontSize: 11, color: 'var(--text3)' }}>0 betov</span>
+                            <span>—</span><span>—</span><span>—</span><span>—</span>
+                          </div>
+                        )
+                        const bWins = bb.filter(b => b.result === 1).length
+                        const bHR = bWins / bb.length * 100
+                        const bPnL = bb.reduce((s, b) => s + (b.pnl || 0), 0)
+                        const bStake = bb.reduce((s, b) => s + b.stake, 0)
+                        const bROI = bStake > 0 ? bPnL / bStake * 100 : null
+                        const bCLV = bb.filter(b => b.clv != null)
+                        const bAvgCLV = bCLV.length > 0 ? bCLV.reduce((s, b) => s + b.clv, 0) / bCLV.length : null
+                        const isGood = bROI > 0
+                        return (
+                          <div key={band.label} className="card" style={{ padding: '10px 14px', display: 'grid', gridTemplateColumns: '80px 1fr 1fr 1fr 1fr 1fr', gap: 8, alignItems: 'center', borderLeft: `3px solid ${isGood ? 'var(--green)' : 'var(--red)'}` }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent2)' }}>{band.label}</span>
+                            <span style={{ fontSize: 12 }}>{bb.length}</span>
+                            <span style={{ fontSize: 12, color: bHR > 50 ? 'var(--green)' : 'var(--text2)' }}>{fmtPct(bHR)}</span>
+                            <span style={{ fontSize: 12, color: bAvgCLV > 0 ? 'var(--green)' : 'var(--red)' }}>{bAvgCLV != null ? fmtSignPct(bAvgCLV) : '—'}</span>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: bROI > 0 ? 'var(--green)' : 'var(--red)' }}>{bROI != null ? fmtSignPct(bROI) : '—'}</span>
+                            <span style={{ fontSize: 12, color: bPnL >= 0 ? 'var(--green)' : 'var(--red)' }}>{fmtSign(bPnL)}€</span>
+                          </div>
+                        )
+                      })}
+                      <div style={{ fontSize: 10, color: 'var(--text3)', padding: '4px 14px' }}>
+                        💡 Pásma s pozitívnym ROI = tam má tvoj model reálny edge. Zvýš EV filter na minimálne toto pásmo.
+                      </div>
+                    </div>
+                  )
+                })()}
+              </div>
+
+              {/* ── OVER vs UNDER BREAKDOWN ── */}
+              <div>
+                <div className="section-title">⚖️ Over 2.5 vs Under 2.5</div>
+                {(() => {
+                  const mkts = ['over2.5', 'under2.5']
+                  return (
+                    <div className="grid2">
+                      {mkts.map(mkt => {
+                        const mb = settled.filter(b => b.market === mkt)
+                        if (mb.length === 0) return <div key={mkt} className="card" style={{ padding: 14, opacity: 0.4 }}><div className="label">{mkt === 'over2.5' ? 'Over 2.5' : 'Under 2.5'}</div><div style={{ color: 'var(--text3)', fontSize: 12 }}>Žiadne bety</div></div>
+                        const mWins = mb.filter(b => b.result === 1).length
+                        const mHR = mWins / mb.length * 100
+                        const mPnL = mb.reduce((s, b) => s + (b.pnl || 0), 0)
+                        const mStake = mb.reduce((s, b) => s + b.stake, 0)
+                        const mROI = mStake > 0 ? mPnL / mStake * 100 : null
+                        const mCLV = mb.filter(b => b.clv != null)
+                        const mAvgCLV = mCLV.length > 0 ? mCLV.reduce((s, b) => s + b.clv, 0) / mCLV.length : null
+                        const mAvgProb = mb.reduce((s, b) => s + b.sel_prob, 0) / mb.length
+                        const mCalib = (mHR / 100 - mAvgProb) * 100
+                        const isOver = mkt === 'over2.5'
+                        return (
+                          <div key={mkt} className="card" style={{ padding: 14, borderTop: `3px solid ${isOver ? 'var(--accent)' : 'var(--green)'}` }}>
+                            <div className="label" style={{ color: isOver ? 'var(--accent2)' : 'var(--green)', marginBottom: 10 }}>
+                              {isOver ? '▲ Over 2.5' : '▼ Under 2.5'}
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 5, fontSize: 12 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <span style={{ color: 'var(--text3)' }}>Bety</span>
+                                <b>{mb.length}</b>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <span style={{ color: 'var(--text3)' }}>Hit Rate</span>
+                                <b style={{ color: mHR > 50 ? 'var(--green)' : 'var(--text2)' }}>{fmtPct(mHR)}</b>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <span style={{ color: 'var(--text3)' }}>Avg Prob</span>
+                                <b>{fmtPct(mAvgProb * 100)}</b>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <span style={{ color: 'var(--text3)' }}>Kalibrácia</span>
+                                <b style={{ color: Math.abs(mCalib) < 5 ? 'var(--green)' : 'var(--red)' }}>{fmtSign(mCalib)}pp</b>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <span style={{ color: 'var(--text3)' }}>Avg CLV</span>
+                                <b style={{ color: mAvgCLV > 0 ? 'var(--green)' : 'var(--red)' }}>{mAvgCLV != null ? fmtSignPct(mAvgCLV) : '—'}</b>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border)', paddingTop: 5, marginTop: 2 }}>
+                                <span style={{ color: 'var(--text3)' }}>ROI</span>
+                                <b style={{ color: mROI > 0 ? 'var(--green)' : 'var(--red)', fontSize: 14 }}>{mROI != null ? fmtSignPct(mROI) : '—'}</b>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <span style={{ color: 'var(--text3)' }}>PnL</span>
+                                <b style={{ color: mPnL >= 0 ? 'var(--green)' : 'var(--red)' }}>{fmtSign(mPnL)}€</b>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )
+                })()}
+              </div>
+
+              {/* ── CLV ANALÝZA ── */}
+              {clvBets.length > 0 && (
+                <div>
+                  <div className="section-title">📊 CLV analýza — trh vs model</div>
+                  <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 10 }}>
+                    CLV = closing line value. Pozitívne = bol si pred trhom. Záporné = trh vedel viac ako ty.
+                  </div>
+                  <div className="grid3">
+                    {(() => {
+                      const posC = clvBets.filter(b => b.clv > 0)
+                      const negC = clvBets.filter(b => b.clv <= 0)
+                      const posWR = posC.length > 0 ? posC.filter(b => b.result === 1).length / posC.length * 100 : null
+                      const negWR = negC.length > 0 ? negC.filter(b => b.result === 1).length / negC.length * 100 : null
+                      const posPnL = posC.reduce((s, b) => s + (b.pnl || 0), 0)
+                      const negPnL = negC.reduce((s, b) => s + (b.pnl || 0), 0)
+                      return [
+                        { l: '✅ Pos CLV bety', v: posC.length, hint: `Win rate: ${posWR != null ? fmtPct(posWR) : '—'} · PnL: ${fmtSign(posPnL)}€` },
+                        { l: '❌ Neg CLV bety', v: negC.length, hint: `Win rate: ${negWR != null ? fmtPct(negWR) : '—'} · PnL: ${fmtSign(negPnL)}€` },
+                        { l: 'Avg CLV (všetky)', v: fmtSignPct(avgCLV), cls: avgCLV > 0 ? 'pos' : 'neg', hint: 'cieľ: > +1%' },
+                      ].map(({ l, v, cls, hint }) => (
+                        <div key={l} className="card" style={{ padding: 14 }}>
+                          <div className="label">{l}</div>
+                          <div className={`stat-val ${cls || ''}`}>{v}</div>
+                          <div className="hint">{hint}</div>
+                        </div>
+                      ))
+                    })()}
+                  </div>
+                  {/* CLV distribution bar */}
+                  <div className="card" style={{ marginTop: 10, padding: 14 }}>
+                    <div className="label" style={{ marginBottom: 10 }}>CLV distribúcia</div>
+                    <div style={{ display: 'flex', gap: 3, alignItems: 'flex-end', height: 48 }}>
+                      {(() => {
+                        const sorted = [...clvBets].sort((a, b) => a.clv - b.clv)
+                        const mn = Math.min(...sorted.map(b => b.clv))
+                        const mx = Math.max(...sorted.map(b => b.clv))
+                        const range = Math.max(0.01, mx - mn)
+                        return sorted.map((b, i) => (
+                          <div key={i} title={`${b.match_name || ''} CLV: ${fmtSignPct(b.clv)}`}
+                            style={{ flex: 1, minWidth: 4, borderRadius: '2px 2px 0 0', background: b.clv > 0 ? 'var(--green)' : 'var(--red)', opacity: 0.85, height: Math.max(4, ((b.clv - mn) / range) * 44) + 'px' }} />
+                        ))
+                      })()}
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text3)', marginTop: 4 }}>
+                      <span>najhorší CLV</span><span>najlepší CLV</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ── ODPORÚČANIA ── */}
+              <div className="card" style={{ padding: 16, borderLeft: '3px solid var(--yellow)' }}>
+                <div className="section-title" style={{ marginBottom: 10 }}>💡 Odporúčania na základe tvojich dát</div>
+                {(() => {
+                  const recs = []
+                  if (calib != null && calib < -5) recs.push({ icon: '⚠️', text: `Model je preoptimistický o ${Math.abs(calib).toFixed(1)}pp — zníž k na 0.85 v pokročilých nastaveniach`, color: 'var(--red)' })
+                  if (avgCLV != null && avgCLV < 0) recs.push({ icon: '📉', text: `Avg CLV je záporné (${fmtSignPct(avgCLV)}) — trh vie viac ako model. Zvýš EV filter.`, color: 'var(--red)' })
+                  if (posCLV != null && posCLV < 50) recs.push({ icon: '🎯', text: `Len ${fmtPct(posCLV)} betov má pozitívne CLV — betuješ príliš veľa "šumu". Odporúčaný EV filter: 12–15%`, color: 'var(--yellow)' })
+                  // Find best EV band
+                  const bands2 = [{ label: '15%+', min: 15, max: Infinity }, { label: '10–15%', min: 10, max: 15 }, { label: '5–10%', min: 5, max: 10 }]
+                  for (const band of bands2) {
+                    const bb = settled.filter(b => b.ev_pct != null && b.ev_pct >= band.min && b.ev_pct < band.max)
+                    if (bb.length >= 3) {
+                      const bPnL = bb.reduce((s, b) => s + (b.pnl || 0), 0)
+                      const bStake = bb.reduce((s, b) => s + b.stake, 0)
+                      const bROI = bStake > 0 ? bPnL / bStake * 100 : null
+                      if (bROI > 0) { recs.push({ icon: '✅', text: `EV pásmo ${band.label} má ROI ${fmtSignPct(bROI)} — toto je tvoj skutočný edge. Fokusuj sa na tieto bety.`, color: 'var(--green)' }); break }
+                    }
+                  }
+                  // Over vs Under
+                  const overB = settled.filter(b => b.market === 'over2.5')
+                  const underB = settled.filter(b => b.market === 'under2.5')
+                  if (overB.length > 3 && underB.length > 3) {
+                    const overROI = overB.reduce((s, b) => s + b.stake, 0) > 0 ? overB.reduce((s, b) => s + (b.pnl || 0), 0) / overB.reduce((s, b) => s + b.stake, 0) * 100 : null
+                    const underROI = underB.reduce((s, b) => s + b.stake, 0) > 0 ? underB.reduce((s, b) => s + (b.pnl || 0), 0) / underB.reduce((s, b) => s + b.stake, 0) * 100 : null
+                    if (overROI != null && underROI != null && underROI > overROI + 5) recs.push({ icon: '⚽', text: `Under 2.5 ti vychádza lepšie (ROI ${fmtSignPct(underROI)}) ako Over (${fmtSignPct(overROI)}) — zvýš pozornosť na Under bety`, color: 'var(--green)' })
+                    if (overROI != null && underROI != null && overROI > underROI + 5) recs.push({ icon: '⚽', text: `Over 2.5 ti vychádza lepšie (ROI ${fmtSignPct(overROI)}) ako Under (${fmtSignPct(underROI)})`, color: 'var(--green)' })
+                  }
+                  if (settled.length < 50) recs.push({ icon: '📊', text: `Vzorka ${settled.length} betov je malá — žiadne závery nie sú štatisticky spoľahlivé. Potrebuješ 100+ betov.`, color: 'var(--text3)' })
+                  if (recs.length === 0) recs.push({ icon: '✅', text: 'Model vyzerá dobre kalibrovaný. Pokračuj zbierať dáta.', color: 'var(--green)' })
+                  return recs.map((r, i) => (
+                    <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 8, fontSize: 12, color: r.color }}>
+                      <span style={{ flexShrink: 0 }}>{r.icon}</span>
+                      <span>{r.text}</span>
+                    </div>
+                  ))
+                })()}
+              </div>
+
+              {/* ── MODEL ── */}
               <div>
                 <div className="section-title">🧠 Model</div>
                 <div className="grid3">
@@ -1412,6 +1774,8 @@ export default function App() {
                   ))}
                 </div>
               </div>
+
+              {/* ── PNL TIMELINE ── */}
               <div className="card">
                 <div className="label" style={{ marginBottom: 12 }}>PnL timeline</div>
                 <div className="pnl-bar-wrap">
@@ -1430,6 +1794,7 @@ export default function App() {
                   <span>posledný</span>
                 </div>
               </div>
+
             </>)}
           </div>
         )}

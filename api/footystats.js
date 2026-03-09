@@ -6,7 +6,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Missing API key' })
   }
 
-  const allowedEndpoints = ['league-list', 'league-season', 'league-teams', 'team']
+  const allowedEndpoints = ['league-list', 'league-season', 'league-teams', 'team', 'lastx']
   if (!allowedEndpoints.includes(endpoint)) {
     return res.status(400).json({ error: 'Invalid endpoint' })
   }
