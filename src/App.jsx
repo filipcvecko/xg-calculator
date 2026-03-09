@@ -132,9 +132,9 @@ async function fetchTeamLastX(teamId) {
     const res = await fetch(url)
     if (!res.ok) return null
     const json = await res.json()
-    console.log('[lastx raw]', JSON.stringify(json).slice(0, 2000))
-    // FootyStats vracia { data: { last_5: {...}, last_6: {...}, last_10: {...} } }
-    return json?.data || json || null
+    // FootyStats vracia { success: true, data: [{last_x_match_num: 5, stats: {...}}, ...] }
+    // Vraciame cely json, extractLastXStats cita json.data
+    return json || null
   } catch {
     return null
   }
