@@ -93,7 +93,7 @@ async function loadMyLeagues() {
 // Načítaj len mená tímov z danej sezóny (bez štatistík — rýchle)
 async function fetchTeamNamesForSeason(seasonId, leagueName, leagueCountry) {
   try {
-    const url = `/api/footystats?endpoint=league-teams&season_id=${seasonId}`
+    const url = `/api/footystats?endpoint=league-teams&season_id=${seasonId}&include=stats`
     const res = await fetch(url)
     if (!res.ok) return []
     const json = await res.json()
@@ -105,6 +105,7 @@ async function fetchTeamNamesForSeason(seasonId, leagueName, leagueCountry) {
       leagueName,
       leagueCountry,
       seasonId,
+      _statsRaw: t.stats || t,
     }))
   } catch {
     return []
@@ -475,11 +476,16 @@ export default function App() {
     setHomeTeamOpen(false)
     setHomeTeamSearch('')
     setHomeLastX(null)
-    // Fetch sezónne stats + lastx paralelne
-    const [raw, lastx] = await Promise.all([
-      fetchTeamStats(team.id, team.seasonId),
-      fetchTeamLastX(team.id),
-    ])
+    // Použi _statsRaw z league-teams ak dostupné, inak fetchTeamStats ako fallback
+    const lastxPromise = fetchTeamLastX(team.id)
+    let rawData = null
+    if (team._statsRaw && Object.keys(team._statsRaw).length > 5) {
+      rawData = team._statsRaw
+    } else {
+      rawData = await fetchTeamStats(team.id, team.seasonId)
+    }
+    const lastx = await lastxPromise
+    const raw = rawData
     const s = raw ? extractTeamStats(raw) : null
     const finalTeam = { ...team, stats: s, loading: false }
     setSelectedHomeTeam(finalTeam)
@@ -500,11 +506,16 @@ export default function App() {
     setAwayTeamOpen(false)
     setAwayTeamSearch('')
     setAwayLastX(null)
-    // Fetch sezónne stats + lastx paralelne
-    const [raw, lastx] = await Promise.all([
-      fetchTeamStats(team.id, team.seasonId),
-      fetchTeamLastX(team.id),
-    ])
+    // Použi _statsRaw z league-teams ak dostupné, inak fetchTeamStats ako fallback
+    const lastxPromise = fetchTeamLastX(team.id)
+    let rawData = null
+    if (team._statsRaw && Object.keys(team._statsRaw).length > 5) {
+      rawData = team._statsRaw
+    } else {
+      rawData = await fetchTeamStats(team.id, team.seasonId)
+    }
+    const lastx = await lastxPromise
+    const raw = rawData
     const s = raw ? extractTeamStats(raw) : null
     const finalTeam = { ...team, stats: s, loading: false }
     setSelectedAwayTeam(finalTeam)
