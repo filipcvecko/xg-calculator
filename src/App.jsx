@@ -424,7 +424,7 @@ export default function App() {
         allLoadedTeams = allLoadedTeams.concat(results.flat())
       }
       // Deduplikácia — len ligové tímy (poháre ignorujeme)
-      const isCup = (name) => /cup|copa|libertadores|sudamericana|champions|league cup|fa cup|afc|uafa|caf|concacaf/i.test(name)
+      const isCup = (name) => /\bfa cup\b|\bleague cup\b|\bcopa\b|\blibertadores\b|\bsudamericana\b|\bchampions league\b|\bafc\b|\buafa\b|\bcaf\b|\bconcacaf\b|\befl trophy\b|\bcommunity shield\b/i.test(name)
       const teamMap = new Map()
       allLoadedTeams.forEach(t => {
         if (isCup(t.leagueName || '')) return // preskočí pohárové tímy
