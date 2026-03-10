@@ -690,6 +690,10 @@ export default function App() {
     const pOverFinal = moOver > 1 ? marketCalibration(pOverCalib, moOver, mw) : pOverCalib
     const pUnderFinal = moUnder > 1 ? marketCalibration(pUnderCalib, moUnder, mw) : pUnderCalib
 
+    // Market probability z mid odds (bez margin)
+    const pMarketOver = moOver > 1 ? 1 / moOver : null
+    const pMarketUnder = moUnder > 1 ? 1 / moUnder : null
+
     const ferOver = fairOdds(pOverFinal)
     const ferUnder = fairOdds(pUnderFinal)
     const comm = pf(commission) / 100 || 0.05
@@ -711,6 +715,7 @@ export default function App() {
       lH, lA,
       pOverRaw, pUnderRaw,
       pOverCalib, pUnderCalib,
+      pMarketOver, pMarketUnder,
       pOver: pOverFinal, pUnder: pUnderFinal,
       ferOver, ferUnder, midO, midU, comm, st,
       evOBack: midO ? calcBackEV(pOverFinal, midO, comm) : null,
@@ -1276,6 +1281,7 @@ export default function App() {
                 const mkt = isOver ? 'over2.5' : 'under2.5'
                 const edge = mid && fer ? (mid / fer - 1) * 100 : null
                 const marketCalibUsed = isOver ? calc?.marketCalibUsed?.over : calc?.marketCalibUsed?.under
+                const pMarket = isOver ? calc?.pMarketOver : calc?.pMarketUnder
 
                 return (
                   <div key={mkt} className={`market-col ${isOver ? 'market-col-over' : 'market-col-under'}`}>
@@ -1305,6 +1311,21 @@ export default function App() {
                           <div className="prob-box-label">{marketCalibUsed ? 'Mkt blend' : 'Finálna'}</div>
                           <div className="prob-box-val" style={{ color: isOver ? 'var(--accent2)' : 'var(--green)' }}>{fmtPct(prob * 100)}</div>
                         </div>
+                        {pMarket != null && (
+                          <div className="prob-box">
+                            <div className="prob-box-label">Market (mid)</div>
+                            <div className="prob-box-val" style={{ color: 'var(--text3)' }}>{fmtPct(pMarket * 100)}</div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Debug súhrn: Market / Model / Final */}
+                    {calc && probCalib != null && pMarket != null && (
+                      <div style={{ marginTop: 8, padding: '8px 10px', background: 'var(--bg3)', borderRadius: 6, fontSize: 11, color: 'var(--text3)', lineHeight: 1.8, fontFamily: 'var(--mono)' }}>
+                        <div>Market prob: <b style={{ color: 'var(--text2)' }}>{fmtPct(pMarket * 100)}</b></div>
+                        <div>Model prob: <b style={{ color: 'var(--yellow)' }}>{fmtPct(probCalib * 100)}</b></div>
+                        <div>Final prob: <b style={{ color: isOver ? 'var(--accent2)' : 'var(--green)' }}>{fmtPct(prob * 100)}</b></div>
                       </div>
                     )}
 
