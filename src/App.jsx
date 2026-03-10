@@ -910,12 +910,23 @@ export default function App() {
                       const aId = Number(m.awayID ?? m.away_id)
                       const homeName = m.home_name || m.homeName || '?'
                       const awayName = m.away_name || m.awayName || '?'
-                      const isCupTeam = (t) => /cup|copa|libertadores|sudamericana|champions|league cup|fa cup|afc|uafa|caf|concacaf/i.test(t.leagueName || '')
-                      const preferLeague = (candidates) => candidates.find(t => !isCupTeam(t)) || candidates[0] || null
+                      // Zápas má season_id — podľa neho vyberieme správny záznam z allTeams
+                      const matchSeasonId = Number(m.season_id ?? m.seasonID ?? 0)
+                      const pickBest = (candidates) => {
+                        if (!candidates.length) return null
+                        // 1. presná zhoda season_id zo zápasu
+                        if (matchSeasonId) {
+                          const exact = candidates.find(t => Number(t.seasonId) === matchSeasonId)
+                          if (exact) return exact
+                        }
+                        // 2. uprednostni ligový záznam pred pohárový
+                        const isCup = (t) => /cup|copa|libertadores|sudamericana|champions|league cup|fa cup|afc|uafa|caf|concacaf/i.test(t.leagueName || '')
+                        return candidates.find(t => !isCup(t)) || candidates[0]
+                      }
                       const homeMatches = allTeams.filter(t => Number(t.id) === hId)
-                      const homeTeam = preferLeague(homeMatches.length ? homeMatches : (homeName !== '?' ? allTeams.filter(t => t.name?.toLowerCase() === homeName.toLowerCase() || t.cleanName?.toLowerCase() === homeName.toLowerCase()) : []))
+                      const homeTeam = pickBest(homeMatches.length ? homeMatches : (homeName !== '?' ? allTeams.filter(t => t.name?.toLowerCase() === homeName.toLowerCase() || t.cleanName?.toLowerCase() === homeName.toLowerCase()) : []))
                       const awayMatches = allTeams.filter(t => Number(t.id) === aId)
-                      const awayTeam = preferLeague(awayMatches.length ? awayMatches : (awayName !== '?' ? allTeams.filter(t => t.name?.toLowerCase() === awayName.toLowerCase() || t.cleanName?.toLowerCase() === awayName.toLowerCase()) : []))
+                      const awayTeam = pickBest(awayMatches.length ? awayMatches : (awayName !== '?' ? allTeams.filter(t => t.name?.toLowerCase() === awayName.toLowerCase() || t.cleanName?.toLowerCase() === awayName.toLowerCase()) : []))
                       const kickoff = m.date_unix ? new Date(m.date_unix * 1000) : null
                       const timeStr = kickoff ? kickoff.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }) : ''
                       const league = m.competition_name || m.league_name || ''
