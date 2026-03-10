@@ -397,10 +397,10 @@ export default function App() {
         const chunk = leagues.slice(i, i + CHUNK)
         const results = await Promise.all(chunk.map(async l => {
           const seasons = (l.season ?? []).slice().sort((a, b) => b.id - a.id)
-          // Načítaj top 2 sezóny (aktuálna + predchádzajúca) — zachytí tímy aj keď liga ešte nezačala
-          const top2 = seasons.slice(0, 2)
-          if (top2.length === 0) top2.push({ id: l.id })
-          const teamArrays = await Promise.all(top2.map(s => fetchTeamNamesForSeason(s.id, l.name, l.country)))
+          // Vždy len aktuálna (najnovšia) sezóna — čisté dáta bez miešania sezón
+          const top1 = seasons.slice(0, 1)
+          if (top1.length === 0) top1.push({ id: l.id })
+          const teamArrays = await Promise.all(top1.map(s => fetchTeamNamesForSeason(s.id, l.name, l.country)))
           return teamArrays.flat()
         }))
         allLoadedTeams = allLoadedTeams.concat(results.flat())
