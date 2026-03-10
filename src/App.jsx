@@ -75,15 +75,15 @@ async function fetchLeagueAvg(leagueId) {
   }
 }
 
-async function fetchTodaysMatches() {
+async function fetchTodaysMatches(dateStr) {
   try {
-    const url = '/api/footystats?endpoint=todays-matches&chosen_leagues_only=true'
+    // dateStr = 'YYYY-MM-DD', ak nie je zadané = dnes
+    let url = '/api/footystats?endpoint=todays-matches&chosen_leagues_only=true'
+    if (dateStr) url += `&date=${dateStr}`
     const res = await fetch(url)
     if (!res.ok) return []
     const json = await res.json()
-    const data = json?.data ?? []
-
-    return data
+    return json?.data ?? []
   } catch {
     return []
   }
@@ -321,6 +321,7 @@ export default function App() {
   const [todaysMatches, setTodaysMatches] = useState([])
   const [todaysMatchesOpen, setTodaysMatchesOpen] = useState(false)
   const [todaysMatchesLoading, setTodaysMatchesLoading] = useState(false)
+  const [matchesDate, setMatchesDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [calc, setCalc] = useState(null)
   const [savedKey, setSavedKey] = useState(null)
   const [expandedId, setExpandedId] = useState(null)
@@ -881,19 +882,36 @@ export default function App() {
             {/* Zápas + čas */}
             <div className="card">
               <div className="label">Zápas (voliteľné)</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <span style={{ fontSize: 11, color: 'var(--text3)' }}>Deň:</span>
+                <input
+                  type="date"
+                  className="inp"
+                  style={{ width: 150, padding: '4px 8px', fontSize: 12 }}
+                  value={matchesDate}
+                  onChange={async e => {
+                    setMatchesDate(e.target.value)
+                    setTodaysMatches([])
+                  }}
+                />
+                {matchesDate !== new Date().toISOString().slice(0, 10) && (
+                  <button
+                    style={{ fontSize: 11, color: 'var(--text3)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+                    onClick={() => { setMatchesDate(new Date().toISOString().slice(0, 10)); setTodaysMatches([]) }}
+                  >dnes</button>
+                )}
+              </div>
               <div style={{ position: 'relative' }}>
                 <input
                   className="inp"
-                  placeholder="napr. Arsenal vs Chelsea — klikni pre dnešné zápasy"
+                  placeholder="napr. Arsenal vs Chelsea — klikni pre zápasy v zvolený deň"
                   value={matchName}
                   onChange={e => { setMatchName(e.target.value); setTodaysMatchesOpen(false) }}
                   onFocus={async () => {
-                    if (todaysMatches.length === 0) {
-                      setTodaysMatchesLoading(true)
-                      const matches = await fetchTodaysMatches()
-                      setTodaysMatches(matches)
-                      setTodaysMatchesLoading(false)
-                    }
+                    setTodaysMatchesLoading(true)
+                    const matches = await fetchTodaysMatches(matchesDate)
+                    setTodaysMatches(matches)
+                    setTodaysMatchesLoading(false)
                     setTodaysMatchesOpen(true)
                   }}
                   onBlur={() => setTimeout(() => setTodaysMatchesOpen(false), 200)}
@@ -930,9 +948,13 @@ export default function App() {
                               const localDT = `${kickoff.getFullYear()}-${pad(kickoff.getMonth()+1)}-${pad(kickoff.getDate())}T${pad(kickoff.getHours())}:${pad(kickoff.getMinutes())}`
                               setMatchTime(localDT)
                             }
-                            // Automaticky načítaj oba tímy ak ich nájdeme
-                            if (homeTeam) handleSelectHomeTeam(homeTeam)
-                            if (awayTeam) handleSelectAwayTeam(awayTeam)
+                            // Ak tím nájdeme v allTeams — použij ho
+                            // Ak nie — vytvor syntetický objekt s season_id zo zápasu a fetchni štatistiky priamo
+                            const mSeasonId = m.season_id ?? m.seasonID ?? null
+                            const resolvedHome = homeTeam || (hId && mSeasonId ? { id: hId, name: homeName, cleanName: homeName, seasonId: mSeasonId, leagueName: league } : null)
+                            const resolvedAway = awayTeam || (aId && mSeasonId ? { id: aId, name: awayName, cleanName: awayName, seasonId: mSeasonId, leagueName: league } : null)
+                            if (resolvedHome) handleSelectHomeTeam(resolvedHome)
+                            if (resolvedAway) handleSelectAwayTeam(resolvedAway)
                           }}
                         >
                           <div style={{ fontWeight: 600, color: 'var(--text)' }}>{homeName} vs {awayName}</div>
