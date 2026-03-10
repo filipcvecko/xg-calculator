@@ -1441,7 +1441,7 @@ export default function App() {
               )}
               {calc.formInfo && (
                 <span style={{ color: 'var(--accent2)' }}>
-                  + forma {calc.formInfo.window.replace('last_', 'L')} (w={fmt2(calc.formInfo.weight)}) {calc.formInfo.lHbefore}→{calc.formInfo.lHafter} / {calc.formInfo.lAbefore}→{calc.formInfo.lAafter}
+                  + forma {'L' + calc.formInfo.window} (w={fmt2(calc.formInfo.weight)}) {calc.formInfo.lHbefore}→{calc.formInfo.lHafter} / {calc.formInfo.lAbefore}→{calc.formInfo.lAafter}
                 </span>
               )}
               {(calc.marketCalibUsed?.over || calc.marketCalibUsed?.under) && (
