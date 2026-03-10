@@ -420,20 +420,17 @@ export default function App() {
         }))
         allLoadedTeams = allLoadedTeams.concat(results.flat())
       }
-      // Deduplikácia — pre každý tím (podľa ID) zachovaj len záznam z ligového súťaženia
-      // Priorita: ligová sezóna > pohár (Copa, Cup, Libertadores...)
+      // Deduplikácia — zachovaj jeden záznam per tím per súťaž (ID + seasonId)
+      // Ak má tím ligovú aj pohárovu sezónu, zobrazí sa v dropdown dvakrát (s rôznym leagueName)
+      const isCup = (name) => /cup|copa|libertadores|sudamericana|champions|league cup|fa cup|afc|uafa|caf|concacaf/i.test(name)
       const teamMap = new Map()
       allLoadedTeams.forEach(t => {
-        const key = String(t.id)
+        // Kľúč = ID + či je pohár — ligový a pohárový záznam sú separátne
+        const cup = isCup(t.leagueName || '')
+        const key = String(t.id) + (cup ? '_cup' : '_league')
         const existing = teamMap.get(key)
         if (!existing) { teamMap.set(key, t); return }
-        // Preferuj domácu ligu pred pohármi
-        const isCup = (name) => /cup|copa|libertadores|sudamericana|champions|league cup|fa cup/i.test(name)
-        const existingIsCup = isCup(existing.leagueName || '')
-        const newIsCup = isCup(t.leagueName || '')
-        if (existingIsCup && !newIsCup) { teamMap.set(key, t); return }
-        if (!existingIsCup && newIsCup) return
-        // Ak obe sú ligy alebo obe poháre — zachovaj novšiu sezónu
+        // Zachovaj novšiu sezónu
         if ((t.seasonId ?? 0) > (existing.seasonId ?? 0)) teamMap.set(key, t)
       })
       const unique = Array.from(teamMap.values()).sort((a, b) => a.name.localeCompare(b.name))
