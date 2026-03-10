@@ -82,7 +82,7 @@ async function fetchTodaysMatches() {
     if (!res.ok) return []
     const json = await res.json()
     const data = json?.data ?? []
-    if (data.length > 0) console.log('[todays-matches] sample:', JSON.stringify(data[0]).slice(0, 500))
+
     return data
   } catch {
     return []
@@ -906,10 +906,14 @@ export default function App() {
                 {todaysMatchesOpen && todaysMatches.length > 0 && (
                   <div style={{ position: 'absolute', zIndex: 50, left: 0, right: 0, top: '100%', marginTop: 4, background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 6, maxHeight: 280, overflowY: 'auto' }}>
                     {todaysMatches.map((m, i) => {
-                      const homeTeam = allTeams.find(t => t.id === m.homeID || t.id === m.home_id)
-                      const awayTeam = allTeams.find(t => t.id === m.awayID || t.id === m.away_id)
-                      const homeName = m.home_name || m.homeName || homeTeam?.name || '?'
-                      const awayName = m.away_name || m.awayName || awayTeam?.name || '?'
+                      const hId = Number(m.homeID ?? m.home_id)
+                      const aId = Number(m.awayID ?? m.away_id)
+                      const homeName = m.home_name || m.homeName || '?'
+                      const awayName = m.away_name || m.awayName || '?'
+                      const homeTeam = allTeams.find(t => Number(t.id) === hId)
+                        || (homeName !== '?' ? allTeams.find(t => t.name?.toLowerCase() === homeName.toLowerCase() || t.cleanName?.toLowerCase() === homeName.toLowerCase()) : null)
+                      const awayTeam = allTeams.find(t => Number(t.id) === aId)
+                        || (awayName !== '?' ? allTeams.find(t => t.name?.toLowerCase() === awayName.toLowerCase() || t.cleanName?.toLowerCase() === awayName.toLowerCase()) : null)
                       const kickoff = m.date_unix ? new Date(m.date_unix * 1000) : null
                       const timeStr = kickoff ? kickoff.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }) : ''
                       const league = m.competition_name || m.league_name || ''
