@@ -536,7 +536,7 @@ export default function App() {
     const a = awayStats || away?.stats
     if (!h && !a) { setAutofillInfo(null); return }
     setAutofillInfo({
-      home: home ? { name: home.name, league: home.leagueName, mp_h: h?.mp_h } : null,
+      home: home ? { name: home.name, league: home.leagueName, mp_h: h?.mp_h, seasonId: home.seasonId } : null,
       away: away ? { name: away.name, league: away.leagueName, mp_a: a?.mp_a } : null,
       hasXG: (h?.xgH != null) || (a?.xgA != null),
       debugRaw: { ...(h?._raw || {}), ...(a?._raw || {}) },
@@ -967,7 +967,7 @@ export default function App() {
               {/* Autofill info */}
               {autofillInfo && (
                 <div className="autofill-info">
-                  {autofillInfo.home && <span>🏠 <b>{autofillInfo.home.name}</b> ({autofillInfo.home.league}, {autofillInfo.home.mp_h} dom. zápasov) </span>}
+                  {autofillInfo.home && <span>🏠 <b>{autofillInfo.home.name}</b> ({autofillInfo.home.league}, {autofillInfo.home.mp_h} dom. zápasov, seasonId: {autofillInfo.home.seasonId}) </span>}
                   {autofillInfo.away && <span>✈️ <b>{autofillInfo.away.name}</b> ({autofillInfo.away.league}, {autofillInfo.away.mp_a} vonk. zápasov) </span>}
                   {autofillInfo.hasXG
                     ? <span style={{ color: 'var(--green)' }}>· ✓ xG + GF/GA natiahnuté</span>
