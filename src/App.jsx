@@ -75,6 +75,18 @@ async function fetchLeagueAvg(leagueId) {
   }
 }
 
+async function fetchTodaysMatches() {
+  try {
+    const url = '/api/footystats?endpoint=todays-matches&chosen_leagues_only=true'
+    const res = await fetch(url)
+    if (!res.ok) return []
+    const json = await res.json()
+    return json?.data ?? []
+  } catch {
+    return []
+  }
+}
+
 async function loadMyLeagues() {
   try {
     const url = `/api/footystats?endpoint=league-list&chosen_leagues_only=true`
@@ -304,6 +316,9 @@ export default function App() {
   const [stake, setStake] = useState('10')
   const [commission, setCommission] = useState('5')
   const [matchName, setMatchName] = useState('')
+  const [todaysMatches, setTodaysMatches] = useState([])
+  const [todaysMatchesOpen, setTodaysMatchesOpen] = useState(false)
+  const [todaysMatchesLoading, setTodaysMatchesLoading] = useState(false)
   const [calc, setCalc] = useState(null)
   const [savedKey, setSavedKey] = useState(null)
   const [expandedId, setExpandedId] = useState(null)
@@ -869,7 +884,69 @@ export default function App() {
             {/* Zápas + čas */}
             <div className="card">
               <div className="label">Zápas (voliteľné)</div>
-              <input className="inp" placeholder="napr. Arsenal vs Chelsea" value={matchName} onChange={e => setMatchName(e.target.value)} />
+              <div style={{ position: 'relative' }}>
+                <input
+                  className="inp"
+                  placeholder="napr. Arsenal vs Chelsea — klikni pre dnešné zápasy"
+                  value={matchName}
+                  onChange={e => { setMatchName(e.target.value); setTodaysMatchesOpen(false) }}
+                  onFocus={async () => {
+                    if (todaysMatches.length === 0) {
+                      setTodaysMatchesLoading(true)
+                      const matches = await fetchTodaysMatches()
+                      setTodaysMatches(matches)
+                      setTodaysMatchesLoading(false)
+                    }
+                    setTodaysMatchesOpen(true)
+                  }}
+                  onBlur={() => setTimeout(() => setTodaysMatchesOpen(false), 200)}
+                />
+                {todaysMatchesLoading && (
+                  <div style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'var(--text3)' }}>načítavam...</div>
+                )}
+                {todaysMatchesOpen && todaysMatches.length > 0 && (
+                  <div style={{ position: 'absolute', zIndex: 50, left: 0, right: 0, top: '100%', marginTop: 4, background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 6, maxHeight: 280, overflowY: 'auto' }}>
+                    {todaysMatches.map((m, i) => {
+                      const homeTeam = allTeams.find(t => t.id === m.homeID || t.id === m.home_id)
+                      const awayTeam = allTeams.find(t => t.id === m.awayID || t.id === m.away_id)
+                      const homeName = m.home_name || m.homeName || homeTeam?.name || '?'
+                      const awayName = m.away_name || m.awayName || awayTeam?.name || '?'
+                      const kickoff = m.date_unix ? new Date(m.date_unix * 1000) : null
+                      const timeStr = kickoff ? kickoff.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }) : ''
+                      const league = m.competition_name || m.league_name || ''
+                      return (
+                        <div
+                          key={i}
+                          style={{ padding: '9px 12px', cursor: 'pointer', borderBottom: '1px solid var(--border)', fontSize: 12 }}
+                          onMouseEnter={e => e.currentTarget.style.background = 'var(--bg2)'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                          onMouseDown={async () => {
+                            setMatchName(`${homeName} vs ${awayName}`)
+                            setTodaysMatchesOpen(false)
+                            // Nastav čas výkopu
+                            if (kickoff) {
+                              const pad = n => String(n).padStart(2, '0')
+                              const localDT = `${kickoff.getFullYear()}-${pad(kickoff.getMonth()+1)}-${pad(kickoff.getDate())}T${pad(kickoff.getHours())}:${pad(kickoff.getMinutes())}`
+                              setMatchTime(localDT)
+                            }
+                            // Automaticky načítaj oba tímy ak ich nájdeme
+                            if (homeTeam) handleSelectHomeTeam(homeTeam)
+                            if (awayTeam) handleSelectAwayTeam(awayTeam)
+                          }}
+                        >
+                          <div style={{ fontWeight: 600, color: 'var(--text)' }}>{homeName} vs {awayName}</div>
+                          <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 2 }}>{league}{timeStr ? ` · ${timeStr}` : ''}</div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+                {todaysMatchesOpen && !todaysMatchesLoading && todaysMatches.length === 0 && (
+                  <div style={{ position: 'absolute', zIndex: 50, left: 0, right: 0, top: '100%', marginTop: 4, background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 6, padding: '10px 12px', fontSize: 12, color: 'var(--text3)' }}>
+                    Žiadne dnešné zápasy z tvojich líg
+                  </div>
+                )}
+              </div>
               <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                 <div style={{ flex: 1, minWidth: 180 }}>
                   <div className="label" style={{ marginBottom: 4 }}>⏰ Čas výkopu (pre CLV notifikáciu)</div>
