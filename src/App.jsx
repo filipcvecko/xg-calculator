@@ -329,9 +329,9 @@ export default function App() {
   const [rho, setRho] = useState('-0.10')
   const [marketOddsOver, setMarketOddsOver] = useState('')
   const [marketOddsUnder, setMarketOddsUnder] = useState('')
-  const [marketWeight, setMarketWeight] = useState('0.60')
-  const [calibK, setCalibK] = useState('0.95')
-  const [evMin, setEvMin] = useState('4')
+  const [marketWeight, setMarketWeight] = useState('0.50')
+  const [calibK, setCalibK] = useState('0.85')
+  const [evMin, setEvMin] = useState('12')
   const [oddsLow, setOddsLow] = useState('1.4')
   const [oddsHigh, setOddsHigh] = useState('3.5')
 
@@ -668,12 +668,12 @@ export default function App() {
     const { pOver: pOverRaw, pUnder: pUnderRaw } = calcOverUnder(lH, lA, rhoVal)
 
     // Probability calibration (P^k)
-    const kVal = pf(calibK) || 0.95
+    const kVal = pf(calibK) || 0.85
     const pOverCalib = calibrateProb(pOverRaw, kVal)
     const pUnderCalib = calibrateProb(pUnderRaw, kVal)
 
     // Market calibration
-    const mw = pf(marketWeight) || 0.60
+    const mw = pf(marketWeight) || 0.50
     const moOver = pf(marketOddsOver)
     const moUnder = pf(marketOddsUnder)
     const pOverFinal = moOver > 1 ? marketCalibration(pOverCalib, moOver, mw) : pOverCalib
@@ -691,7 +691,7 @@ export default function App() {
     const midU = midPrice(bu, lu)
 
     // EV + filters
-    const evMinVal = pf(evMin) / 100 || 0.04
+    const evMinVal = pf(evMin) / 100 || 0.12
     const oLow = pf(oddsLow) || 1.4
     const oHigh = pf(oddsHigh) || 3.5
 
@@ -1198,8 +1198,8 @@ export default function App() {
                       </div>
                     </div>
                     <div>
-                      <div className="label">w — váha modelu <span style={{ color: 'var(--accent2)' }}>(0.60 = 60% model, 40% market)</span></div>
-                      <input className="inp" placeholder="0.60" value={marketWeight} onChange={e => setMarketWeight(e.target.value)} />
+                      <div className="label">w — váha modelu <span style={{ color: 'var(--accent2)' }}>(0.50 = 50% model, 50% market)</span></div>
+                      <input className="inp" placeholder="0.50" value={marketWeight} onChange={e => setMarketWeight(e.target.value)} />
                     </div>
                   </div>
 
@@ -1210,8 +1210,8 @@ export default function App() {
                       Power transform P^k. k &lt; 1 = zníž istotu, k = 1 = bez zmeny, k &gt; 1 = zvýš polarizáciu.
                     </div>
                     <div>
-                      <div className="label">k — kalibračný exponent <span style={{ color: 'var(--accent2)' }}>(default 0.95)</span></div>
-                      <input className="inp" placeholder="0.95" value={calibK} onChange={e => setCalibK(e.target.value)} />
+                      <div className="label">k — kalibračný exponent <span style={{ color: 'var(--accent2)' }}>(default 0.85)</span></div>
+                      <input className="inp" placeholder="0.85" value={calibK} onChange={e => setCalibK(e.target.value)} />
                     </div>
                   </div>
 
@@ -1224,7 +1224,7 @@ export default function App() {
                     <div className="grid3">
                       <div>
                         <div className="label">Min EV% <span style={{ color: 'var(--accent2)' }}>(default 4)</span></div>
-                        <input className="inp" placeholder="4" value={evMin} onChange={e => setEvMin(e.target.value)} />
+                        <input className="inp" placeholder="12" value={evMin} onChange={e => setEvMin(e.target.value)} />
                       </div>
                       <div>
                         <div className="label">Min kurz</div>
@@ -1330,7 +1330,7 @@ export default function App() {
                         const usingMyOdds = myO > 1
 
                         // Filtre
-                        const evMinVal = calc?.evMinVal || 0.04
+                        const evMinVal = calc?.evMinVal || 0.12
                         const oLow = calc?.oLow || 1.4
                         const oHigh = calc?.oHigh || 3.5
                         const evPassB = evFilter(evB, evMinVal)
