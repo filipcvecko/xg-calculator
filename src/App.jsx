@@ -691,8 +691,23 @@ export default function App() {
     const pUnderFinal = moUnder > 1 ? marketCalibration(pUnderCalib, moUnder, mw) : pUnderCalib
 
     // Market probability z mid odds (bez margin)
-    const pMarketOver = moOver > 1 ? 1 / moOver : null
-    const pMarketUnder = moUnder > 1 ? 1 / moUnder : null
+    // Priorita: mid z back/lay, fallback: market odds input
+    const midOEarly = midPrice(pf(backOver) || null, pf(layOver) || null)
+    const midUEarly = midPrice(pf(backUnder) || null, pf(layUnder) || null)
+    const pMarketOver = midOEarly ? 1 / midOEarly : (moOver > 1 ? 1 / moOver : null)
+    const pMarketUnder = midUEarly ? 1 / midUEarly : (moUnder > 1 ? 1 / moUnder : null)
+
+    // ΔP vs market — modelProb (po P^k, pred market blendom) mínus market implied prob
+    const deltaPOver = (pOverCalib != null && pMarketOver != null) ? (pOverCalib - pMarketOver) * 100 : null
+    const deltaPUnder = (pUnderCalib != null && pMarketUnder != null) ? (pUnderCalib - pMarketUnder) * 100 : null
+
+    function deltaPLabel(dp) {
+      const abs = Math.abs(dp)
+      if (abs < 3) return 'blízko trhu'
+      if (abs < 6) return 'mierna odchýlka'
+      if (abs < 10) return 'veľká odchýlka'
+      return 'extrémna odchýlka'
+    }
 
     const ferOver = fairOdds(pOverFinal)
     const ferUnder = fairOdds(pUnderFinal)
@@ -716,6 +731,7 @@ export default function App() {
       pOverRaw, pUnderRaw,
       pOverCalib, pUnderCalib,
       pMarketOver, pMarketUnder,
+      deltaPOver, deltaPUnder,
       pOver: pOverFinal, pUnder: pUnderFinal,
       ferOver, ferUnder, midO, midU, comm, st,
       evOBack: midO ? calcBackEV(pOverFinal, midO, comm) : null,
@@ -758,6 +774,7 @@ export default function App() {
       odds_open: actualOdds, odds_close: null,
       stake: calc.st, commission: calc.comm * 100,
       ev, ev_pct: ev != null ? ev * 100 : null,
+      delta_p: market === 'over2.5' ? calc.deltaPOver : calc.deltaPUnder,
       clv: null, result: null, pnl: null, brier: null, log_loss: null,
       match_time: kickoff,
     }).select()
@@ -1282,6 +1299,7 @@ export default function App() {
                 const edge = mid && fer ? (mid / fer - 1) * 100 : null
                 const marketCalibUsed = isOver ? calc?.marketCalibUsed?.over : calc?.marketCalibUsed?.under
                 const pMarket = isOver ? calc?.pMarketOver : calc?.pMarketUnder
+                const deltaP = isOver ? calc?.deltaPOver : calc?.deltaPUnder
 
                 return (
                   <div key={mkt} className={`market-col ${isOver ? 'market-col-over' : 'market-col-under'}`}>
@@ -1320,14 +1338,24 @@ export default function App() {
                       </div>
                     )}
 
-                    {/* Debug súhrn: Market / Model / Final */}
-                    {calc && probCalib != null && pMarket != null && (
-                      <div style={{ marginTop: 8, padding: '8px 10px', background: 'var(--bg3)', borderRadius: 6, fontSize: 11, color: 'var(--text3)', lineHeight: 1.8, fontFamily: 'var(--mono)' }}>
-                        <div>Market prob: <b style={{ color: 'var(--text2)' }}>{fmtPct(pMarket * 100)}</b></div>
-                        <div>Model prob: <b style={{ color: 'var(--yellow)' }}>{fmtPct(probCalib * 100)}</b></div>
-                        <div>Final prob: <b style={{ color: isOver ? 'var(--accent2)' : 'var(--green)' }}>{fmtPct(prob * 100)}</b></div>
-                      </div>
-                    )}
+                    {/* Debug súhrn: Market / Model / Final / ΔP */}
+                    {calc && probCalib != null && pMarket != null && (() => {
+                      const dpLabel = deltaP != null ? (Math.abs(deltaP) < 3 ? 'blízko trhu' : Math.abs(deltaP) < 6 ? 'mierna odchýlka' : Math.abs(deltaP) < 10 ? 'veľká odchýlka' : 'extrémna odchýlka') : null
+                      const dpColor = deltaP == null ? 'var(--text3)' : Math.abs(deltaP) < 1 ? 'var(--text3)' : deltaP > 0 ? 'var(--green)' : 'var(--red)'
+                      return (
+                        <div style={{ marginTop: 8, padding: '8px 10px', background: 'var(--bg3)', borderRadius: 6, fontSize: 11, color: 'var(--text3)', lineHeight: 1.8, fontFamily: 'var(--mono)' }}>
+                          <div>Market prob: <b style={{ color: 'var(--text2)' }}>{fmtPct(pMarket * 100)}</b></div>
+                          <div>Model prob: <b style={{ color: 'var(--yellow)' }}>{fmtPct(probCalib * 100)}</b></div>
+                          <div>Final prob: <b style={{ color: isOver ? 'var(--accent2)' : 'var(--green)' }}>{fmtPct(prob * 100)}</b></div>
+                          {deltaP != null && (
+                            <div style={{ marginTop: 4, paddingTop: 4, borderTop: '1px solid var(--border)' }}>
+                              ΔP vs market: <b style={{ color: dpColor }}>{deltaP > 0 ? '+' : ''}{deltaP.toFixed(1)} pp</b>
+                              {dpLabel && <span style={{ marginLeft: 6, fontSize: 10, opacity: 0.7 }}>({dpLabel})</span>}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })()}
 
                     <div style={{ marginTop: 10, marginBottom: 8 }}>
                       <div className="label">Best Back</div>
