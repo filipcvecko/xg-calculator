@@ -422,14 +422,12 @@ export default function App() {
         }))
         allLoadedTeams = allLoadedTeams.concat(results.flat())
       }
-      // Deduplikácia — zachovaj jeden záznam per tím per súťaž (ID + seasonId)
-      // Ak má tím ligovú aj pohárovu sezónu, zobrazí sa v dropdown dvakrát (s rôznym leagueName)
+      // Deduplikácia — len ligové tímy (poháre ignorujeme)
       const isCup = (name) => /cup|copa|libertadores|sudamericana|champions|league cup|fa cup|afc|uafa|caf|concacaf/i.test(name)
       const teamMap = new Map()
       allLoadedTeams.forEach(t => {
-        // Kľúč = ID + či je pohár — ligový a pohárový záznam sú separátne
-        const cup = isCup(t.leagueName || '')
-        const key = String(t.id) + (cup ? '_cup' : '_league')
+        if (isCup(t.leagueName || '')) return // preskočí pohárové tímy
+        const key = String(t.id)
         const existing = teamMap.get(key)
         if (!existing) { teamMap.set(key, t); return }
         // Zachovaj novšiu sezónu
@@ -910,23 +908,10 @@ export default function App() {
                       const aId = Number(m.awayID ?? m.away_id)
                       const homeName = m.home_name || m.homeName || '?'
                       const awayName = m.away_name || m.awayName || '?'
-                      // Zápas má season_id — podľa neho vyberieme správny záznam z allTeams
-                      const matchSeasonId = Number(m.season_id ?? m.seasonID ?? 0)
-                      const pickBest = (candidates) => {
-                        if (!candidates.length) return null
-                        // 1. presná zhoda season_id zo zápasu
-                        if (matchSeasonId) {
-                          const exact = candidates.find(t => Number(t.seasonId) === matchSeasonId)
-                          if (exact) return exact
-                        }
-                        // 2. uprednostni ligový záznam pred pohárový
-                        const isCup = (t) => /cup|copa|libertadores|sudamericana|champions|league cup|fa cup|afc|uafa|caf|concacaf/i.test(t.leagueName || '')
-                        return candidates.find(t => !isCup(t)) || candidates[0]
-                      }
-                      const homeMatches = allTeams.filter(t => Number(t.id) === hId)
-                      const homeTeam = pickBest(homeMatches.length ? homeMatches : (homeName !== '?' ? allTeams.filter(t => t.name?.toLowerCase() === homeName.toLowerCase() || t.cleanName?.toLowerCase() === homeName.toLowerCase()) : []))
-                      const awayMatches = allTeams.filter(t => Number(t.id) === aId)
-                      const awayTeam = pickBest(awayMatches.length ? awayMatches : (awayName !== '?' ? allTeams.filter(t => t.name?.toLowerCase() === awayName.toLowerCase() || t.cleanName?.toLowerCase() === awayName.toLowerCase()) : []))
+                      const homeTeam = allTeams.find(t => Number(t.id) === hId)
+                        || (homeName !== '?' ? allTeams.find(t => t.name?.toLowerCase() === homeName.toLowerCase() || t.cleanName?.toLowerCase() === homeName.toLowerCase()) : null)
+                      const awayTeam = allTeams.find(t => Number(t.id) === aId)
+                        || (awayName !== '?' ? allTeams.find(t => t.name?.toLowerCase() === awayName.toLowerCase() || t.cleanName?.toLowerCase() === awayName.toLowerCase()) : null)
                       const kickoff = m.date_unix ? new Date(m.date_unix * 1000) : null
                       const timeStr = kickoff ? kickoff.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }) : ''
                       const league = m.competition_name || m.league_name || ''
