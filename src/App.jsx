@@ -81,7 +81,9 @@ async function fetchTodaysMatches() {
     const res = await fetch(url)
     if (!res.ok) return []
     const json = await res.json()
-    return json?.data ?? []
+    const data = json?.data ?? []
+    if (data.length > 0) console.log('[todays-matches] sample:', JSON.stringify(data[0]).slice(0, 500))
+    return data
   } catch {
     return []
   }
