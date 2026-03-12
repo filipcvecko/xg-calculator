@@ -782,7 +782,6 @@ export default function App() {
     const betTimeNow = new Date().toISOString()
     const hoursToKO = kickoff ? (new Date(kickoff) - new Date(betTimeNow)) / 3600000 : null
     const league = selectedHomeTeam?.leagueName || selectedAwayTeam?.leagueName || null
-    const isOver = market === 'over2.5'
     const modelProb = isOver ? calc.pOverCalib : calc.pUnderCalib
     const marketProb = isOver ? calc.pMarketOver : calc.pMarketUnder
     const { data: inserted, error } = await supabase.from('bets').insert({
@@ -877,10 +876,8 @@ export default function App() {
       { label: '2–6h', min: 2, max: 6 },
       { label: '0–2h', min: 0, max: 2 },
     ]
-    const withTime = clvBets.filter(x => x.hours_to_ko != null)
-    if (withTime.length === 0) return []
     return buckets.map(b => {
-      const group = withTime.filter(x => x.hours_to_ko >= b.min && x.hours_to_ko < b.max)
+      const group = clvBets.filter(x => x.hours_to_ko != null && x.hours_to_ko >= b.min && x.hours_to_ko < b.max)
       const avg = group.length > 0 ? group.reduce((s, x) => s + x.clv, 0) / group.length : null
       return { label: b.label, avg, count: group.length }
     }).filter(b => b.count > 0)
@@ -1973,7 +1970,7 @@ export default function App() {
               )}
 
               {/* ── CLV BREAKDOWN ── */}
-              {clvBets.length >= 1 && (
+              {clvBets.length >= 5 && (
                 <div className="card" style={{ padding: 16 }}>
                   <div className="section-title" style={{ marginBottom: 12 }}>📊 CLV analýza</div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
@@ -2013,7 +2010,7 @@ export default function App() {
                     )}
 
                     {/* CLV podľa ligy */}
-                    {clvByLeague.length > 0 && (
+                    {clvByLeague.length > 1 && (
                       <div style={{ gridColumn: '1 / -1' }}>
                         <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 8, fontWeight: 600, letterSpacing: 1 }}>CLV PODĽA LIGY</div>
                         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '4px 8px', fontSize: 12 }}>
