@@ -779,6 +779,12 @@ export default function App() {
       : calcLayEV(selProb, actualOdds, calc.comm)
 
     const kickoff = matchTime ? new Date(matchTime).toISOString() : null
+    const betTimeNow = new Date().toISOString()
+    const hoursToKO = kickoff ? (new Date(kickoff) - new Date(betTimeNow)) / 3600000 : null
+    const league = selectedHomeTeam?.leagueName || selectedAwayTeam?.leagueName || null
+    const isOver = market === 'over2.5'
+    const modelProb = isOver ? calc.pOverCalib : calc.pUnderCalib
+    const marketProb = isOver ? calc.pMarketOver : calc.pMarketUnder
     const { data: inserted, error } = await supabase.from('bets').insert({
       match_name: matchName.trim() || calc.matchName || null, market, bet_type: betType,
       lambda_h: calc.lH, lambda_a: calc.lA,
@@ -787,9 +793,14 @@ export default function App() {
       odds_open: actualOdds, odds_close: null,
       stake: calc.st, commission: calc.comm * 100,
       ev, ev_pct: ev != null ? ev * 100 : null,
-      delta_p: market === 'over2.5' ? calc.deltaPOver : calc.deltaPUnder,
+      delta_p: isOver ? calc.deltaPOver : calc.deltaPUnder,
       clv: null, result: null, pnl: null, brier: null, log_loss: null,
       match_time: kickoff,
+      bet_time: betTimeNow,
+      hours_to_ko: hoursToKO != null ? Math.round(hoursToKO * 10) / 10 : null,
+      league,
+      model_prob: modelProb,
+      market_prob: marketProb,
     }).select()
     if (!error) {
       await loadBets()
@@ -856,6 +867,55 @@ export default function App() {
   const maxDD = calcMaxDrawdown(settled)
   const calib = hitRate != null && avgProb != null ? (hitRate - avgProb) * 100 : null
   const MARKET = { 'over2.5': 'Over 2.5', 'under2.5': 'Under 2.5' }
+
+  // CLV podľa času betu (hodiny do KO)
+  const clvByTime = (() => {
+    const buckets = [
+      { label: '24h+', min: 24, max: Infinity },
+      { label: '12–24h', min: 12, max: 24 },
+      { label: '6–12h', min: 6, max: 12 },
+      { label: '2–6h', min: 2, max: 6 },
+      { label: '0–2h', min: 0, max: 2 },
+    ]
+    const withTime = clvBets.filter(x => x.hours_to_ko != null)
+    if (withTime.length === 0) return []
+    return buckets.map(b => {
+      const group = withTime.filter(x => x.hours_to_ko >= b.min && x.hours_to_ko < b.max)
+      const avg = group.length > 0 ? group.reduce((s, x) => s + x.clv, 0) / group.length : null
+      return { label: b.label, avg, count: group.length }
+    }).filter(b => b.count > 0)
+  })()
+
+  // CLV podľa ligy
+  const clvByLeague = (() => {
+    const map = {}
+    clvBets.forEach(b => {
+      const key = b.league || 'Neznáma'
+      if (!map[key]) map[key] = []
+      map[key].push(b.clv)
+    })
+    return Object.entries(map)
+      .map(([league, vals]) => ({ league, avg: vals.reduce((s, v) => s + v, 0) / vals.length, count: vals.length }))
+      .sort((a, b) => b.avg - a.avg)
+  })()
+
+  // CLV podľa marketu
+  const clvByMarket = (() => {
+    const map = {}
+    clvBets.forEach(b => {
+      const key = MARKET[b.market] || b.market || 'Iný'
+      if (!map[key]) map[key] = []
+      map[key].push(b.clv)
+    })
+    return Object.entries(map)
+      .map(([market, vals]) => ({ market, avg: vals.reduce((s, v) => s + v, 0) / vals.length, count: vals.length }))
+      .sort((a, b) => b.avg - a.avg)
+  })()
+
+  // Model prob vs Market prob
+  const probComparison = settled.filter(b => b.model_prob != null && b.market_prob != null)
+  const avgModelProb = probComparison.length > 0 ? probComparison.reduce((s, b) => s + b.model_prob, 0) / probComparison.length : null
+  const avgMarketProb = probComparison.length > 0 ? probComparison.reduce((s, b) => s + b.market_prob, 0) / probComparison.length : null
 
   return (
     <>
@@ -1908,6 +1968,92 @@ export default function App() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text3)', marginTop: 4 }}>
                       <span>najhorší CLV</span><span>najlepší CLV</span>
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ── CLV BREAKDOWN ── */}
+              {clvBets.length >= 1 && (
+                <div className="card" style={{ padding: 16 }}>
+                  <div className="section-title" style={{ marginBottom: 12 }}>📊 CLV analýza</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+
+                    {/* CLV podľa času */}
+                    {clvByTime.length > 0 && (
+                      <div>
+                        <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 8, fontWeight: 600, letterSpacing: 1 }}>CLV PODĽA ČASU BETU</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px 8px', fontSize: 12 }}>
+                          <span style={{ color: 'var(--text3)', fontSize: 10 }}>Hodiny do KO</span>
+                          <span style={{ color: 'var(--text3)', fontSize: 10 }}>Bety</span>
+                          <span style={{ color: 'var(--text3)', fontSize: 10 }}>Avg CLV</span>
+                          {clvByTime.map(r => (<>
+                            <span key={r.label+'l'} style={{ color: 'var(--text2)' }}>{r.label}</span>
+                            <span key={r.label+'c'} style={{ color: 'var(--text3)' }}>{r.count}</span>
+                            <span key={r.label+'v'} style={{ color: r.avg > 0 ? 'var(--green)' : 'var(--red)', fontWeight: 600 }}>{fmtSignPct(r.avg)}</span>
+                          </>))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* CLV podľa marketu */}
+                    {clvByMarket.length > 0 && (
+                      <div>
+                        <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 8, fontWeight: 600, letterSpacing: 1 }}>CLV PODĽA MARKETU</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px 8px', fontSize: 12 }}>
+                          <span style={{ color: 'var(--text3)', fontSize: 10 }}>Market</span>
+                          <span style={{ color: 'var(--text3)', fontSize: 10 }}>Bety</span>
+                          <span style={{ color: 'var(--text3)', fontSize: 10 }}>Avg CLV</span>
+                          {clvByMarket.map(r => (<>
+                            <span key={r.market+'l'} style={{ color: 'var(--text2)' }}>{r.market}</span>
+                            <span key={r.market+'c'} style={{ color: 'var(--text3)' }}>{r.count}</span>
+                            <span key={r.market+'v'} style={{ color: r.avg > 0 ? 'var(--green)' : 'var(--red)', fontWeight: 600 }}>{fmtSignPct(r.avg)}</span>
+                          </>))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* CLV podľa ligy */}
+                    {clvByLeague.length > 0 && (
+                      <div style={{ gridColumn: '1 / -1' }}>
+                        <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 8, fontWeight: 600, letterSpacing: 1 }}>CLV PODĽA LIGY</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '4px 8px', fontSize: 12 }}>
+                          <span style={{ color: 'var(--text3)', fontSize: 10 }}>Liga</span>
+                          <span style={{ color: 'var(--text3)', fontSize: 10 }}>Bety</span>
+                          <span style={{ color: 'var(--text3)', fontSize: 10 }}>Avg CLV</span>
+                          {clvByLeague.map(r => (<>
+                            <span key={r.league+'l'} style={{ color: 'var(--text2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.league}</span>
+                            <span key={r.league+'c'} style={{ color: 'var(--text3)' }}>{r.count}</span>
+                            <span key={r.league+'v'} style={{ color: r.avg > 0 ? 'var(--green)' : 'var(--red)', fontWeight: 600 }}>{fmtSignPct(r.avg)}</span>
+                          </>))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Model vs Market prob */}
+                    {avgModelProb != null && avgMarketProb != null && (
+                      <div style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--border)', paddingTop: 12, marginTop: 4 }}>
+                        <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 8, fontWeight: 600, letterSpacing: 1 }}>MODEL vs MARKET PRAVDEPODOBNOSŤ</div>
+                        <div style={{ display: 'flex', gap: 24, fontSize: 12 }}>
+                          <div>
+                            <span style={{ color: 'var(--text3)' }}>Avg model prob: </span>
+                            <b style={{ color: 'var(--text2)' }}>{fmtPct(avgModelProb * 100)}</b>
+                          </div>
+                          <div>
+                            <span style={{ color: 'var(--text3)' }}>Avg market prob: </span>
+                            <b style={{ color: 'var(--text2)' }}>{fmtPct(avgMarketProb * 100)}</b>
+                          </div>
+                          <div>
+                            <span style={{ color: 'var(--text3)' }}>Rozdiel: </span>
+                            <b style={{ color: (avgModelProb - avgMarketProb) > 0 ? 'var(--green)' : 'var(--red)' }}>
+                              {fmtSignPct((avgModelProb - avgMarketProb) * 100)}
+                            </b>
+                            <span style={{ color: 'var(--text3)', marginLeft: 6, fontSize: 11 }}>
+                              {(avgModelProb - avgMarketProb) > 0.02 ? '↑ model preceňuje góly' : (avgModelProb - avgMarketProb) < -0.02 ? '↓ model podceňuje góly' : '≈ model a trh súhlasia'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
