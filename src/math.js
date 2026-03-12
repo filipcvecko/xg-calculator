@@ -61,11 +61,14 @@ export function marketCalibration(pModel, marketOdds, w = 0.6) {
   return w * pModel + (1 - w) * pMarket
 }
 
-// Probability calibration: power transform P^k
-// k < 1 = zníž istotu | k > 1 = zvýš polarizáciu
+// Probability calibration: logistic shrinkage toward 50%
+// k < 1 = stiahni k 50% (znížiš istotu) | k = 1 = žiadna zmena | k > 1 = polarizuj
+// Vzorec: p_adj = 1 / (1 + ((1-p)/p)^(1/k))
+// Príklad k=0.85: p=0.53 → 0.508 (nie 0.60 ako starý P^k)
 export function calibrateProb(p, k = 0.95) {
   if (!p || p <= 0 || p >= 1) return p
-  return Math.pow(p, k)
+  if (k === 1) return p
+  return 1 / (1 + Math.pow((1 - p) / p, 1 / k))
 }
 
 // EV threshold filter — true ak bet spĺňa minimálny EV

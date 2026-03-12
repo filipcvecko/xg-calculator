@@ -691,7 +691,7 @@ export default function App() {
     // Poisson + Dixon-Coles
     const { pOver: pOverRaw, pUnder: pUnderRaw } = calcOverUnder(lH, lA, rhoVal)
 
-    // Probability calibration (P^k)
+    // Probability calibration (logistic shrinkage)
     const kVal = pf(calibK) || 0.85
     const pOverCalib = calibrateProb(pOverRaw, kVal)
     const pUnderCalib = calibrateProb(pUnderRaw, kVal)
@@ -710,7 +710,7 @@ export default function App() {
     const pMarketOver = midOEarly ? 1 / midOEarly : (moOver > 1 ? 1 / moOver : null)
     const pMarketUnder = midUEarly ? 1 / midUEarly : (moUnder > 1 ? 1 / moUnder : null)
 
-    // ΔP vs market — modelProb (po P^k, pred market blendom) mínus market implied prob
+    // ΔP vs market — modelProb (po kalibrácii, pred market blendom) mínus market implied prob
     const deltaPOver = (pOverCalib != null && pMarketOver != null) ? (pOverCalib - pMarketOver) * 100 : null
     const deltaPUnder = (pUnderCalib != null && pMarketUnder != null) ? (pUnderCalib - pMarketUnder) * 100 : null
 
@@ -1397,7 +1397,7 @@ export default function App() {
                   <div>
                     <div className="section-title" style={{ marginBottom: 8 }}>🎯 Probability calibration</div>
                     <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 8 }}>
-                      Power transform P^k. k &lt; 1 = zníž istotu, k = 1 = bez zmeny, k &gt; 1 = zvýš polarizáciu.
+                      Kalibrácia k 50%. k &lt; 1 = stiahni k 50%, k = 1 = bez zmeny, k &gt; 1 = polarizuj.
                     </div>
                     <div>
                       <div className="label">k — kalibračný exponent <span style={{ color: 'var(--accent2)' }}>(default 0.85)</span></div>
@@ -1479,7 +1479,7 @@ export default function App() {
                           <div className="prob-box-val" style={{ color: 'var(--text2)' }}>{fmtPct(probRaw * 100)}</div>
                         </div>
                         <div className="prob-box">
-                          <div className="prob-box-label">P^k calib</div>
+                          <div className="prob-box-label">Calib</div>
                           <div className="prob-box-val" style={{ color: 'var(--yellow)' }}>{fmtPct(probCalib * 100)}</div>
                         </div>
                         <div className="prob-box">
@@ -1647,7 +1647,7 @@ export default function App() {
             {calc && (calc.calibK !== 1 || calc.marketCalibUsed?.over || calc.marketCalibUsed?.under) && (
               <div className="calib-info">
                 <b>Kalibrácia:</b>
-                {` P^k (k=${fmt2(calc.calibK)}) aplikovaná`}
+                {` Kalibrácia (k=${fmt2(calc.calibK)}) aplikovaná`}
                 {calc.marketCalibUsed?.over && ` · Over market blend (w=${fmt2(calc.marketCalibUsed.w)})`}
                 {calc.marketCalibUsed?.under && ` · Under market blend (w=${fmt2(calc.marketCalibUsed.w)})`}
               </div>
