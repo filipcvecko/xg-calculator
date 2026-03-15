@@ -1781,6 +1781,7 @@ export default function App() {
         )}
 
         {tab === 'stats' && (
+          <>
           <div style={{ padding: '8px 16px 0' }}>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
               <span style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 600, letterSpacing: 1 }}>MODEL VERZIA:</span>
@@ -2177,6 +2178,7 @@ export default function App() {
 
             </>)}
           </div>
+          </>
         )}
       </div>
     </>
