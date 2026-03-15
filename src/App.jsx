@@ -296,6 +296,7 @@ const css = `
 
 export default function App() {
   const [tab, setTab] = useState('calc')
+  const [modelVersion, setModelVersion] = useState('all') // 'all' | 'v1' | 'v2'
   const [bets, setBets] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -364,6 +365,7 @@ export default function App() {
   const [leagueAvgA, setLeagueAvgA] = useState('')
   const [leagueAvgSource, setLeagueAvgSource] = useState(null)
   const [shrinkage, setShrinkage] = useState('0.15')
+  const [xgScaler, setXgScaler] = useState('0.90')
 
   // Čas zápasu pre CLV notifikáciu
   const [matchTime, setMatchTime] = useState('')
@@ -599,9 +601,10 @@ export default function App() {
   }
 
   function handleCalc() {
-    const h = pf(xgH), a = pf(xgA)
+    const sc = pf(xgScaler) || 0.90
+    const h = pf(xgH) * sc, a = pf(xgA) * sc
     if (!h || !a) return
-    const ha = pf(xgaH), aa = pf(xgaA)
+    const ha = pf(xgaH) * sc, aa = pf(xgaA) * sc
     const gfHv = pf(gfH), gaHv = pf(gaH), gfAv = pf(gfA), gaAv = pf(gaA)
     const alph = pf(alpha) || 0.70
     let lH, lA
@@ -761,6 +764,7 @@ export default function App() {
       evMinVal,
       oLow, oHigh,
       formInfo,
+      xgScaler: pf(xgScaler) || 0.90,
     })
   }
 
@@ -848,7 +852,15 @@ export default function App() {
     await loadBets()
   }
 
-  const settled = bets.filter(b => b.result != null)
+  const MODEL_V2_DATE = '2026-03-12' // dátum opravy calibrateProb
+  const settled_all = bets.filter(b => b.result != null)
+  const settled = settled_all.filter(b => {
+    if (modelVersion === 'all') return true
+    const d = b.created_at ? b.created_at.slice(0, 10) : null
+    if (modelVersion === 'v1') return !d || d < MODEL_V2_DATE
+    if (modelVersion === 'v2') return d && d >= MODEL_V2_DATE
+    return true
+  })
   const pending = bets.filter(b => b.result == null)
   const totalStake = settled.reduce((s, b) => s + b.stake, 0)
   const totalPnL = settled.reduce((s, b) => s + (b.pnl || 0), 0)
@@ -1342,6 +1354,15 @@ export default function App() {
                   <input className="inp" placeholder="0.15" value={shrinkage} onChange={e => setShrinkage(e.target.value)} />
                 </div>
               )}
+              <div style={{ marginTop: 10 }}>
+                <div className="label">
+                  xG scaler
+                  <span style={{ color: 'var(--accent2)', marginLeft: 6, textTransform: 'none', letterSpacing: 0 }}>
+                    (0.90 = FootyStats xG × 0.90, kompenzuje nafúknuté hodnoty)
+                  </span>
+                </div>
+                <input className="inp" placeholder="0.90" value={xgScaler} onChange={e => setXgScaler(e.target.value)} />
+              </div>
             </div>
 
             {/* ── POKROČILÉ NASTAVENIA ── */}
@@ -1619,6 +1640,9 @@ export default function App() {
               </span>
               <span style={{ color: 'var(--text3)' }}>ρ={fmt2(calc.rho)}</span>
               <span style={{ color: 'var(--yellow)' }}>k={fmt2(calc.calibK)}</span>
+              {calc.xgScaler != null && calc.xgScaler !== 1 && (
+                <span style={{ color: 'var(--yellow)' }}>sc={fmt2(calc.xgScaler)}</span>
+              )}
               {calc.shrinkInfo && (
                 <span style={{ color: 'var(--green)' }}>
                   + shrink {calc.shrinkInfo.source === 'api' ? '📡' : '✍'} ({calc.shrinkInfo.rawTotal} → {calc.shrinkInfo.shrunkTotal})
@@ -1757,6 +1781,25 @@ export default function App() {
         )}
 
         {tab === 'stats' && (
+          <div style={{ padding: '8px 16px 0' }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
+              <span style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 600, letterSpacing: 1 }}>MODEL VERZIA:</span>
+              {[['all', 'Všetky'], ['v1', 'V1 (starý P^k)'], ['v2', 'V2 (nová kalib)']].map(([id, lbl]) => (
+                <button key={id} onClick={() => setModelVersion(id)} style={{
+                  fontSize: 11, padding: '3px 10px', borderRadius: 6, border: '1px solid',
+                  borderColor: modelVersion === id ? 'var(--accent)' : 'var(--border)',
+                  background: modelVersion === id ? 'var(--accent)' : 'transparent',
+                  color: modelVersion === id ? '#fff' : 'var(--text3)',
+                  cursor: 'pointer', fontWeight: modelVersion === id ? 700 : 400
+                }}>{lbl}</button>
+              ))}
+              {modelVersion !== 'all' && (
+                <span style={{ fontSize: 11, color: 'var(--text3)' }}>
+                  {settled.length} betov
+                </span>
+              )}
+            </div>
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             {settled.length === 0 ? <div className="empty">Žiadne uzavreté bety.<br />Settle aspoň jeden bet.</div> : (<>
 
