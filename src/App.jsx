@@ -1539,7 +1539,11 @@ export default function App() {
                       <div className="label">Best Back</div>
                       <input className="inp inp-sm" placeholder="1.85"
                         value={isOver ? backOver : backUnder}
-                        onChange={e => isOver ? setBackOver(e.target.value) : setBackUnder(e.target.value)} />
+                        onChange={e => {
+                          const val = e.target.value
+                          if (isOver) { setBackOver(val); setMarketOddsOver(val) }
+                          else { setBackUnder(val); setMarketOddsUnder(val) }
+                        }} />
                     </div>
                     <div style={{ marginBottom: 8 }}>
                       <div className="label">Best Lay</div>
