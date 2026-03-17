@@ -325,6 +325,8 @@ export default function App() {
   const [layAHHome, setLayAHHome] = useState('')
   const [backAHAway, setBackAHAway] = useState('')
   const [layAHAway, setLayAHAway] = useState('')
+  const [myOddsAHHome, setMyOddsAHHome] = useState('')
+  const [myOddsAHAway, setMyOddsAHAway] = useState('')
   const [todaysMatches, setTodaysMatches] = useState([])
   const [todaysMatchesOpen, setTodaysMatchesOpen] = useState(false)
   const [todaysMatchesLoading, setTodaysMatchesLoading] = useState(false)
@@ -814,7 +816,9 @@ export default function App() {
     }
 
     if (!midOdds) { setSaving(false); return }
-    const myO = isAH ? null : pf(isOver ? myOddsOver : myOddsUnder)
+    const myO = isAH
+      ? pf(market === 'ah_home_minus05' ? myOddsAHHome : myOddsAHAway)
+      : pf(isOver ? myOddsOver : myOddsUnder)
     const actualOdds = (myO && myO > 1) ? myO : midOdds
     const ev = betType === 'back'
       ? calcBackEV(selProb, actualOdds, calc.comm)
@@ -1687,22 +1691,25 @@ export default function App() {
 
               {/* AH ±0.5 markets */}
               {marketMode === 'ah' && calc?.ah && [
-                { label: 'AH Home -0.5', sublabel: 'Domáci musí vyhrať', prob: calc.ah.pHomeMinus05, mkt: 'ah_home_minus05', backVal: backAHHome, setBack: setBackAHHome, layVal: layAHHome, setLay: setLayAHHome, color: 'var(--accent2)', borderColor: 'var(--accent)' },
-                { label: 'AH Away -0.5', sublabel: 'Hosť musí vyhrať', prob: calc.ah.pAwayMinus05, mkt: 'ah_away_minus05', backVal: backAHAway, setBack: setBackAHAway, layVal: layAHAway, setLay: setLayAHAway, color: 'var(--green)', borderColor: 'var(--green)' },
-              ].map(({ label, sublabel, prob, mkt, backVal, setBack, layVal, setLay, color, borderColor }) => {
+                { label: 'AH Home -0.5', sublabel: 'Domáci musí vyhrať', prob: calc.ah.pHomeMinus05, mkt: 'ah_home_minus05', backVal: backAHHome, setBack: setBackAHHome, layVal: layAHHome, setLay: setLayAHHome, myOddsVal: myOddsAHHome, setMyOdds: setMyOddsAHHome, color: 'var(--accent2)', borderColor: 'var(--accent)' },
+                { label: 'AH Away -0.5', sublabel: 'Hosť musí vyhrať', prob: calc.ah.pAwayMinus05, mkt: 'ah_away_minus05', backVal: backAHAway, setBack: setBackAHAway, layVal: layAHAway, setLay: setLayAHAway, myOddsVal: myOddsAHAway, setMyOdds: setMyOddsAHAway, color: 'var(--green)', borderColor: 'var(--green)' },
+              ].map(({ label, sublabel, prob, mkt, backVal, setBack, layVal, setLay, myOddsVal, setMyOdds, color, borderColor }) => {
                 const fer = fairOdds(prob)
                 const mid = midPrice(pf(backVal) || null, pf(layVal) || null)
+                const myO = pf(myOddsVal)
+                const actualOdds = myO > 1 ? myO : mid
+                const usingMyOdds = myO > 1
                 const comm = calc.comm || 0.05
                 const st = calc.st || 10
                 const evMinVal = calc.evMinVal || 0.12
                 const oLow = calc.oLow || 1.4
                 const oHigh = calc.oHigh || 3.5
-                const evB = mid ? calcBackEV(prob, mid, comm) : null
-                const evL = mid ? calcLayEV(prob, mid, comm) : null
+                const evB = actualOdds ? calcBackEV(prob, actualOdds, comm) : null
+                const evL = actualOdds ? calcLayEV(prob, actualOdds, comm) : null
                 const evPassB = evFilter(evB, evMinVal)
                 const evPassL = evFilter(evL, evMinVal)
-                const oddsPass = mid ? oddsBandFilter(mid, oLow, oHigh) : false
-                const edge = mid && fer ? (mid / fer - 1) * 100 : null
+                const oddsPass = actualOdds ? oddsBandFilter(actualOdds, oLow, oHigh) : false
+                const edge = actualOdds && fer ? (actualOdds / fer - 1) * 100 : null
                 return (
                   <div key={mkt} className="market-col" style={{ borderTop: `3px solid ${borderColor}` }}>
                     <div className="market-title" style={{ color }}>{label}</div>
@@ -1728,28 +1735,32 @@ export default function App() {
                       <div className="label">Best Lay</div>
                       <input className="inp inp-sm" placeholder="1.88" value={layVal} onChange={e => setLay(e.target.value)} />
                     </div>
-                    {mid ? <>
+                    <div style={{ marginBottom: 8 }}>
+                      <div className="label">Môj kurz <span style={{ color: 'var(--accent2)' }}>(opt — ak líši od mid)</span></div>
+                      <input className="inp inp-sm" placeholder="napr. 2.08" value={myOddsVal} onChange={e => setMyOdds(e.target.value)} />
+                    </div>
+                    {actualOdds ? <>
                       <div className="mid-row">
-                        <span style={{ color: 'var(--text3)' }}>Mid:</span>
-                        <span className="mid-val">{fmt3(mid)}</span>
+                        <span style={{ color: 'var(--text3)' }}>{usingMyOdds ? 'Kurz:' : 'Mid:'}</span>
+                        <span className="mid-val">{fmt3(actualOdds)}</span>
                         {edge != null && <span className={edge > 0 ? 'pos' : 'neg'} style={{ marginLeft: 'auto', fontSize: 11 }}>Edge {fmtSignPct(edge)}</span>}
                       </div>
                       <div>
-                        <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 2 }}>▲ Back EV</div>
+                        <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 2 }}>▲ Back EV {usingMyOdds && <span style={{ color: 'var(--accent2)' }}>(@{fmt3(actualOdds)})</span>}</div>
                         <div className={`ev-big ${evB > 0 ? 'pos' : 'neg'}`}>
                           {fmtSignPct(evB * 100)}<span className="ev-eur">{fmtSign(evB * st)}€</span>
                         </div>
                       </div>
                       <div style={{ marginTop: 6 }}>
-                        <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 2 }}>▼ Lay EV</div>
+                        <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 2 }}>▼ Lay EV {usingMyOdds && <span style={{ color: 'var(--accent2)' }}>(@{fmt3(actualOdds)})</span>}</div>
                         <div className={`ev-big ${evL > 0 ? 'pos' : 'neg'}`}>
                           {fmtSignPct(evL * 100)}<span className="ev-eur">{fmtSign(evL * st)}€</span>
                         </div>
-                        <div className="liability-note">Liability: {fmt2(layLiability(mid, st))}€</div>
+                        <div className="liability-note">Liability: {fmt2(layLiability(actualOdds, st))}€</div>
                       </div>
                       <div style={{ marginTop: 8, fontSize: 10, display: 'flex', flexDirection: 'column', gap: 3 }}>
                         <div style={{ color: oddsPass ? 'var(--green)' : 'var(--red)' }}>
-                          {oddsPass ? '✓' : '✗'} Kurz {fmt3(mid)} {oddsPass ? `v pásme (${oLow}–${oHigh})` : `mimo pásma`}
+                          {oddsPass ? '✓' : '✗'} Kurz {fmt3(actualOdds)} {oddsPass ? `v pásme (${oLow}–${oHigh})` : `mimo pásma`}
                         </div>
                         <div style={{ color: evPassB ? 'var(--green)' : 'var(--text3)' }}>
                           {evPassB ? '✓' : '✗'} Back EV {evPassB ? 'spĺňa' : 'nespĺňa'} min {fmtPct(evMinVal * 100)}
@@ -1769,7 +1780,7 @@ export default function App() {
                         </button>
                       </div>
                       <div style={{ fontSize: 9, color: 'var(--text3)', textAlign: 'center', marginTop: 4 }}>kom {(comm * 100).toFixed(0)}%</div>
-                    </> : <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 8 }}>Zadaj Back aj Lay pre mid price</div>}
+                    </> : <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 8 }}>Zadaj Back kurz pre výpočet EV</div>}
                   </div>
                 )
               })}
