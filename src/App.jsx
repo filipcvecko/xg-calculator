@@ -967,6 +967,30 @@ export default function App() {
       .sort((a, b) => b.avg - a.avg)
   })()
 
+  // Odds bucket analysis
+  const ODDS_BUCKETS = [
+    { label: '1.40–1.79', min: 1.40, max: 1.80 },
+    { label: '1.80–2.19', min: 1.80, max: 2.20 },
+    { label: '2.20–2.79', min: 2.20, max: 2.80 },
+    { label: '2.80+',     min: 2.80, max: Infinity },
+  ]
+  const oddsBucketStats = ODDS_BUCKETS.map(bucket => {
+    const bb = settled.filter(b => b.odds_open != null && b.odds_open >= bucket.min && b.odds_open < bucket.max)
+    if (bb.length === 0) return { ...bucket, count: 0, avgCLV: null, posCLV: null, avgEV: null, roi: null }
+    const clvB = bb.filter(b => b.clv != null)
+    const evB = bb.filter(b => b.ev_pct != null)
+    const totalStakeB = bb.reduce((s, b) => s + b.stake, 0)
+    const totalPnLB = bb.reduce((s, b) => s + (b.pnl || 0), 0)
+    return {
+      ...bucket,
+      count: bb.length,
+      avgCLV: clvB.length > 0 ? clvB.reduce((s, b) => s + b.clv, 0) / clvB.length : null,
+      posCLV: clvB.length > 0 ? (clvB.filter(b => b.clv > 0).length / clvB.length) * 100 : null,
+      avgEV: evB.length > 0 ? evB.reduce((s, b) => s + b.ev_pct, 0) / evB.length : null,
+      roi: totalStakeB > 0 ? (totalPnLB / totalStakeB) * 100 : null,
+    }
+  })
+
   // Model prob vs Market prob
   const probComparison = settled.filter(b => b.model_prob != null && b.market_prob != null)
   const avgModelProb = probComparison.length > 0 ? probComparison.reduce((s, b) => s + b.model_prob, 0) / probComparison.length : null
@@ -2135,6 +2159,45 @@ export default function App() {
                     </div>
                   )
                 })()}
+              </div>
+
+              {/* ── ODDS BUCKET ANALYSIS ── */}
+              <div>
+                <div className="section-title">📐 Odds bucket analýza</div>
+                <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 10 }}>
+                  Výkonnosť podľa výšky kurzu. Ukazuje kde model reálne nájde edge.
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '90px 1fr 1fr 1fr 1fr 1fr', gap: 8, fontSize: 9, color: 'var(--text3)', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0 14px' }}>
+                    <span>Kurz</span><span>Bety</span><span>Avg CLV</span><span>Pos CLV</span><span>Avg EV</span><span>ROI</span>
+                  </div>
+                  {oddsBucketStats.map(b => (
+                    <div key={b.label} className="card" style={{
+                      padding: '10px 14px',
+                      display: 'grid',
+                      gridTemplateColumns: '90px 1fr 1fr 1fr 1fr 1fr',
+                      gap: 8,
+                      alignItems: 'center',
+                      opacity: b.count === 0 ? 0.4 : 1,
+                      borderLeft: b.count > 0 ? `3px solid ${b.roi > 0 ? 'var(--green)' : 'var(--red)'}` : '3px solid var(--border)',
+                    }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent2)' }}>{b.label}</span>
+                      <span style={{ fontSize: 12, color: 'var(--text2)' }}>{b.count === 0 ? '—' : b.count}</span>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: b.avgCLV == null ? 'var(--text3)' : b.avgCLV > 0 ? 'var(--green)' : 'var(--red)' }}>
+                        {b.avgCLV == null ? '—' : fmtSignPct(b.avgCLV)}
+                      </span>
+                      <span style={{ fontSize: 12, color: b.posCLV == null ? 'var(--text3)' : b.posCLV >= 50 ? 'var(--green)' : 'var(--red)' }}>
+                        {b.posCLV == null ? '—' : fmtPct(b.posCLV)}
+                      </span>
+                      <span style={{ fontSize: 12, color: b.avgEV == null ? 'var(--text3)' : b.avgEV > 0 ? 'var(--green)' : 'var(--red)' }}>
+                        {b.avgEV == null ? '—' : fmtSignPct(b.avgEV)}
+                      </span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: b.roi == null ? 'var(--text3)' : b.roi > 0 ? 'var(--green)' : 'var(--red)' }}>
+                        {b.roi == null ? '—' : fmtSignPct(b.roi)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* ── CLV ANALÝZA ── */}
