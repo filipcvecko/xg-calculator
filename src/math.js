@@ -31,14 +31,22 @@ export function calcOverUnder(lambdaH, lambdaA, rho = -0.10) {
 }
 
 // Score matrix — generuje pravdepodobnosti všetkých skóre až do maxG gólov
-// Vracia Map: key = "h-a", value = pravdepodobnosť
-export function buildScoreMatrix(lambdaH, lambdaA, rho = -0.10, maxG = 8) {
+// Vracia Map: key = "h-a", value = pravdepodobnosť (normalizovaná na súčet = 1)
+export function buildScoreMatrix(lambdaH, lambdaA, rho = -0.10, maxG = 10) {
   const matrix = new Map()
   for (let h = 0; h <= maxG; h++) {
     for (let a = 0; a <= maxG; a++) {
       const tau = dixonColesTau(h, a, lambdaH, lambdaA, rho)
       const p = poissonPMF(h, lambdaH) * poissonPMF(a, lambdaA) * tau
       matrix.set(`${h}-${a}`, p)
+    }
+  }
+  // Normalizácia — Dixon-Coles tau mení súčet, treba renormalizovať na 1
+  let sum = 0
+  for (const p of matrix.values()) sum += p
+  if (sum > 0) {
+    for (const key of matrix.keys()) {
+      matrix.set(key, matrix.get(key) / sum)
     }
   }
   return matrix

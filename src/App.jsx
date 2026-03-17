@@ -297,6 +297,7 @@ const css = `
 export default function App() {
   const [tab, setTab] = useState('calc')
   const [modelVersion, setModelVersion] = useState('all') // 'all' | 'v1' | 'v2'
+  const [statsMarket, setStatsMarket] = useState('ou') // 'ou' | 'ah'
   const [bets, setBets] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -892,8 +893,14 @@ export default function App() {
   }
 
   const MODEL_V2_DATE = '2026-03-12' // dátum opravy calibrateProb
+  const OU_MARKETS = ['over2.5', 'under2.5']
+  const AH_MARKETS = ['ah_home_minus05', 'ah_away_minus05']
   const settled_all = bets.filter(b => b.result != null)
   const settled = settled_all.filter(b => {
+    // Filter podľa market skupiny
+    if (statsMarket === 'ou' && !OU_MARKETS.includes(b.market)) return false
+    if (statsMarket === 'ah' && !AH_MARKETS.includes(b.market)) return false
+    // Filter podľa model verzie
     if (modelVersion === 'all') return true
     const d = b.created_at ? b.created_at.slice(0, 10) : null
     if (modelVersion === 'v1') return !d || d < MODEL_V2_DATE
@@ -1938,7 +1945,19 @@ export default function App() {
         {tab === 'stats' && (
           <>
           <div style={{ padding: '8px 16px 0' }}>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 600, letterSpacing: 1 }}>MARKET:</span>
+              {[['ou', 'O/U 2.5'], ['ah', 'AH ±0.5']].map(([id, lbl]) => (
+                <button key={id} onClick={() => setStatsMarket(id)} style={{
+                  fontSize: 11, padding: '3px 10px', borderRadius: 6, border: '1px solid',
+                  borderColor: statsMarket === id ? 'var(--green)' : 'var(--border)',
+                  background: statsMarket === id ? 'var(--green)' : 'transparent',
+                  color: statsMarket === id ? '#fff' : 'var(--text3)',
+                  cursor: 'pointer', fontWeight: statsMarket === id ? 700 : 400
+                }}>{lbl}</button>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 600, letterSpacing: 1 }}>MODEL VERZIA:</span>
               {[['all', 'Všetky'], ['v1', 'V1 (starý P^k)'], ['v2', 'V2 (nová kalib)']].map(([id, lbl]) => (
                 <button key={id} onClick={() => setModelVersion(id)} style={{
