@@ -393,15 +393,17 @@ export default function App() {
     setNotifPermission(perm)
   }
 
-  function scheduleClvNotification(betId, betMatchName, kickoffStr) {
+  function scheduleClvNotification(betId, betMatchName, kickoffStr, market) {
     if (!kickoffStr || typeof Notification === 'undefined' || Notification.permission !== 'granted') return
     const kickoff = new Date(kickoffStr).getTime()
     const notifTime = kickoff - 5 * 60 * 1000
     const delay = notifTime - Date.now()
     if (delay < 0) return
+    const marketLabels = { 'over2.5': 'Over 2.5', 'under2.5': 'Under 2.5', 'ah_home_minus05': 'AH Home -0.5', 'ah_away_minus05': 'AH Away -0.5' }
+    const marketLabel = marketLabels[market] || market || ''
     setTimeout(() => {
       const n = new Notification('⏰ CLV pripomienka', {
-        body: `${betMatchName || 'Zápas'} začína o 5 min — skontroluj záverečný kurz!`,
+        body: `${betMatchName || 'Zápas'} [${marketLabel}] začína o 5 min — skontroluj záverečný kurz!`,
         icon: '/favicon.ico',
         tag: `clv-${betId}`,
       })
@@ -455,12 +457,6 @@ export default function App() {
     const { data, error } = await supabase.from('bets').select('*').order('created_at', { ascending: false })
     if (!error) {
       setBets(data || [])
-      // Obnov naplánované notifikácie pre pending bety s budúcim časom
-      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-        (data || []).filter(b => b.result === null && b.match_time).forEach(b => {
-          scheduleClvNotification(b.id, b.match_name, b.match_time)
-        })
-      }
     }
     setLoading(false)
   }
@@ -852,7 +848,7 @@ export default function App() {
       await loadBets()
       setSavedKey(market + '-' + betType)
       if (kickoff && inserted?.[0]?.id) {
-        scheduleClvNotification(inserted[0].id, calc.matchName, kickoff)
+        scheduleClvNotification(inserted[0].id, calc.matchName, kickoff, market)
       }
     }
     setSaving(false)
