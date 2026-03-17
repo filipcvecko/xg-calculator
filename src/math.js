@@ -30,6 +30,45 @@ export function calcOverUnder(lambdaH, lambdaA, rho = -0.10) {
   return { pOver: 1 - pUnder, pUnder }
 }
 
+// Score matrix — generuje pravdepodobnosti všetkých skóre až do maxG gólov
+// Vracia Map: key = "h-a", value = pravdepodobnosť
+export function buildScoreMatrix(lambdaH, lambdaA, rho = -0.10, maxG = 8) {
+  const matrix = new Map()
+  for (let h = 0; h <= maxG; h++) {
+    for (let a = 0; a <= maxG; a++) {
+      const tau = dixonColesTau(h, a, lambdaH, lambdaA, rho)
+      const p = poissonPMF(h, lambdaH) * poissonPMF(a, lambdaA) * tau
+      matrix.set(`${h}-${a}`, p)
+    }
+  }
+  return matrix
+}
+
+// Asian Handicap ±0.5 z score matrix
+// Vracia: pHomeWin, pDraw, pAwayWin, pHomeMinus05, pHomePlus05, pAwayMinus05, pAwayPlus05
+export function calcAH(matrix) {
+  let pHomeWin = 0, pDraw = 0, pAwayWin = 0
+  for (const [key, p] of matrix) {
+    const [h, a] = key.split('-').map(Number)
+    if (h > a) pHomeWin += p
+    else if (h === a) pDraw += p
+    else pAwayWin += p
+  }
+  return {
+    pHomeWin,
+    pDraw,
+    pAwayWin,
+    // AH Home -0.5: domáci musí vyhrať
+    pHomeMinus05: pHomeWin,
+    // AH Home +0.5: domáci nesmie prehrať (výhra alebo remíza)
+    pHomePlus05: pHomeWin + pDraw,
+    // AH Away -0.5: hosť musí vyhrať
+    pAwayMinus05: pAwayWin,
+    // AH Away +0.5: hosť nesmie prehrať (výhra alebo remíza)
+    pAwayPlus05: pAwayWin + pDraw,
+  }
+}
+
 // Blend xG + xGA using geometric mean
 export function blendLambda(xg, xgaOpponent) {
   return Math.sqrt(xg * xgaOpponent)
