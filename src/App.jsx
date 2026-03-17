@@ -705,12 +705,13 @@ export default function App() {
     // Score matrix pre AH (rovnaké λ, rovnaké rho — engine sa nemení)
     const scoreMatrix = buildScoreMatrix(lH, lA, rhoVal)
     const ahRaw = calcAH(scoreMatrix)
-    // Kalibruj AH pravdepodobnosti rovnakým k ako O/U
+    // AH -0.5 = čistý výsledok (home win / away win) — BEZ kalibrácie
+    // calibrateProb by deformovalo pravdepodobnosti a dávalo fake EV
     const kVal = pf(calibK) || 0.85
-    const pAHHomeMinus05 = calibrateProb(ahRaw.pHomeMinus05, kVal)
-    const pAHHomePlus05 = calibrateProb(ahRaw.pHomePlus05, kVal)
-    const pAHAwayMinus05 = calibrateProb(ahRaw.pAwayMinus05, kVal)
-    const pAHAwayPlus05 = calibrateProb(ahRaw.pAwayPlus05, kVal)
+    const pAHHomeMinus05 = ahRaw.pHomeMinus05
+    const pAHHomePlus05 = ahRaw.pHomePlus05
+    const pAHAwayMinus05 = ahRaw.pAwayMinus05
+    const pAHAwayPlus05 = ahRaw.pAwayPlus05
     const pOverCalib = calibrateProb(pOverRaw, kVal)
     const pUnderCalib = calibrateProb(pUnderRaw, kVal)
 
