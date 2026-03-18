@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import {
-  calcOverUnder, buildScoreMatrix, calcAH, blendLambda, fairOdds, calcCLV,
+  calcOverUnder, calcOU30, calcEVOU30, buildScoreMatrix, blendLambda, fairOdds, calcCLV,
   brierScore, logLoss, calcMaxDrawdown,
   marketCalibration, calibrateProb, evFilter, oddsBandFilter,
   timeDecayBlend, extractLastXStats,
@@ -321,13 +321,13 @@ export default function App() {
   const [commission, setCommission] = useState('5')
   const [matchName, setMatchName] = useState('')
   // Market mode: 'ou' = Over/Under 2.5, 'ah' = Asian Handicap ±0.5
-  const [marketMode, setMarketMode] = useState('ou')
-  const [backAHHome, setBackAHHome] = useState('')
-  const [layAHHome, setLayAHHome] = useState('')
-  const [backAHAway, setBackAHAway] = useState('')
-  const [layAHAway, setLayAHAway] = useState('')
-  const [myOddsAHHome, setMyOddsAHHome] = useState('')
-  const [myOddsAHAway, setMyOddsAHAway] = useState('')
+  const [marketMode, setMarketMode] = useState('ou25') // 'ou25' | 'ou30'
+  const [backOver30, setBackOver30] = useState('')
+  const [layOver30, setLayOver30] = useState('')
+  const [backUnder30, setBackUnder30] = useState('')
+  const [layUnder30, setLayUnder30] = useState('')
+  const [myOddsOver30, setMyOddsOver30] = useState('')
+  const [myOddsUnder30, setMyOddsUnder30] = useState('')
   const [todaysMatches, setTodaysMatches] = useState([])
   const [todaysMatchesOpen, setTodaysMatchesOpen] = useState(false)
   const [todaysMatchesLoading, setTodaysMatchesLoading] = useState(false)
@@ -699,16 +699,11 @@ export default function App() {
     // Poisson + Dixon-Coles
     const { pOver: pOverRaw, pUnder: pUnderRaw } = calcOverUnder(lH, lA, rhoVal)
 
-    // Score matrix pre AH (rovnaké λ, rovnaké rho — engine sa nemení)
-    const scoreMatrix = buildScoreMatrix(lH, lA, rhoVal)
-    const ahRaw = calcAH(scoreMatrix)
-    // AH -0.5 = čistý výsledok (home win / away win) — BEZ kalibrácie
-    // calibrateProb by deformovalo pravdepodobnosti a dávalo fake EV
+    // O/U 3.0 — total goals Poisson (lambda_total = lH + lA)
+    // Push pri presne 3 góloch, win/lose inak
+    const ou30 = calcOU30(lH, lA)
+
     const kVal = pf(calibK) || 0.85
-    const pAHHomeMinus05 = ahRaw.pHomeMinus05
-    const pAHHomePlus05 = ahRaw.pHomePlus05
-    const pAHAwayMinus05 = ahRaw.pAwayMinus05
-    const pAHAwayPlus05 = ahRaw.pAwayPlus05
     const pOverCalib = calibrateProb(pOverRaw, kVal)
     const pUnderCalib = calibrateProb(pUnderRaw, kVal)
 
@@ -778,65 +773,60 @@ export default function App() {
       oLow, oHigh,
       formInfo,
       xgScaler: pf(xgScaler) || 0.90,
-      ah: {
-        pHomeMinus05: pAHHomeMinus05,
-        pHomePlus05: pAHHomePlus05,
-        pAwayMinus05: pAHAwayMinus05,
-        pAwayPlus05: pAHAwayPlus05,
-        pHomeWin: ahRaw.pHomeWin,
-        pDraw: ahRaw.pDraw,
-        pAwayWin: ahRaw.pAwayWin,
-      },
+      ou30,
     })
   }
 
   async function handleSave(market, betType) {
     if (!calc || saving) return
     setSaving(true)
-    const isOver = market === 'over2.5'
-    const isAH = market.startsWith('ah_')
+    const isOver25 = market === 'over2.5'
+    const isOU30 = market === 'over3.0' || market === 'under3.0'
+    const isOver30 = market === 'over3.0'
 
     // Pravdepodobnosť a FER podľa marketu
-    let selProb, ferO, midOdds
-    if (isAH) {
-      if (market === 'ah_home_minus05') {
-        selProb = calc.ah.pHomeMinus05
-        midOdds = midPrice(pf(backAHHome) || null, pf(layAHHome) || null)
-      } else {
-        selProb = calc.ah.pAwayMinus05
-        midOdds = midPrice(pf(backAHAway) || null, pf(layAHAway) || null)
-      }
-      ferO = fairOdds(selProb)
+    let selProb, ferO, midOdds, pushProb = null
+    if (isOU30) {
+      selProb = isOver30 ? calc.ou30.pOver3 : calc.ou30.pUnder2
+      pushProb = calc.ou30.pExact3
+      ferO = isOver30 ? calc.ou30.fairOver : calc.ou30.fairUnder
+      midOdds = isOver30
+        ? midPrice(pf(backOver30) || null, pf(layOver30) || null)
+        : midPrice(pf(backUnder30) || null, pf(layUnder30) || null)
     } else {
-      selProb = isOver ? calc.pOver : calc.pUnder
-      ferO = isOver ? calc.ferOver : calc.ferUnder
-      midOdds = isOver ? calc.midO : calc.midU
+      selProb = isOver25 ? calc.pOver : calc.pUnder
+      ferO = isOver25 ? calc.ferOver : calc.ferUnder
+      midOdds = isOver25 ? calc.midO : calc.midU
     }
 
     if (!midOdds) { setSaving(false); return }
-    const myO = isAH
-      ? pf(market === 'ah_home_minus05' ? myOddsAHHome : myOddsAHAway)
-      : pf(isOver ? myOddsOver : myOddsUnder)
+    const myO = isOU30
+      ? pf(isOver30 ? myOddsOver30 : myOddsUnder30)
+      : pf(isOver25 ? myOddsOver : myOddsUnder)
     const actualOdds = (myO && myO > 1) ? myO : midOdds
-    const ev = betType === 'back'
-      ? calcBackEV(selProb, actualOdds, calc.comm)
-      : calcLayEV(selProb, actualOdds, calc.comm)
+    // EV: O/U 3.0 používa špeciálny vzorec s pushom
+    const ev = isOU30
+      ? calcEVOU30(isOver30, calc.ou30.pOver3, calc.ou30.pUnder2, actualOdds)
+      : betType === 'back'
+        ? calcBackEV(selProb, actualOdds, calc.comm)
+        : calcLayEV(selProb, actualOdds, calc.comm)
 
     const kickoff = matchTime ? new Date(matchTime).toISOString() : null
     const betTimeNow = new Date().toISOString()
     const hoursToKO = kickoff ? (new Date(kickoff) - new Date(betTimeNow)) / 3600000 : null
     const league = selectedHomeTeam?.leagueName || selectedAwayTeam?.leagueName || null
-    const modelProb = isAH ? selProb : (isOver ? calc.pOverCalib : calc.pUnderCalib)
-    const marketProb = isAH ? null : (isOver ? calc.pMarketOver : calc.pMarketUnder)
+    const modelProb = isOU30 ? selProb : (isOver25 ? calc.pOverCalib : calc.pUnderCalib)
+    const marketProb = isOU30 ? null : (isOver25 ? calc.pMarketOver : calc.pMarketUnder)
     const { data: inserted, error } = await supabase.from('bets').insert({
       match_name: matchName.trim() || calc.matchName || null, market, bet_type: betType,
       lambda_h: calc.lH, lambda_a: calc.lA,
       p_over: calc.pOver, p_under: calc.pUnder,
       sel_prob: selProb, fer_odds: ferO,
+      push_prob: pushProb,
       odds_open: actualOdds, odds_close: null,
       stake: calc.st, commission: calc.comm * 100,
       ev, ev_pct: ev != null ? ev * 100 : null,
-      delta_p: isOver ? calc.deltaPOver : calc.deltaPUnder,
+      delta_p: isOU30 ? null : (isOver25 ? calc.deltaPOver : calc.deltaPUnder),
       clv: null, result: null, pnl: null, brier: null, log_loss: null,
       match_time: kickoff,
       bet_time: betTimeNow,
@@ -867,21 +857,24 @@ export default function App() {
 
   async function handleSettle(id) {
     const res = parseInt(settleResult)
-    if (res !== 0 && res !== 1) return
+    if (res !== 0 && res !== 1 && res !== 2) return
     const bet = bets.find(b => b.id === id)
     if (!bet) return
     const odds = bet.odds_open
     const comm = (bet.commission || 5) / 100
     let pnl
-    if (bet.bet_type === 'lay') {
+    if (res === 2) {
+      // Push — stake sa vráti, pnl = 0
+      pnl = 0
+    } else if (bet.bet_type === 'lay') {
       pnl = res === 0 ? bet.stake * (1 - comm) : -bet.stake * (odds - 1)
     } else {
       pnl = res === 1 ? bet.stake * (odds - 1) * (1 - comm) : -bet.stake
     }
     await supabase.from('bets').update({
       result: res, pnl,
-      brier: brierScore(bet.sel_prob, res),
-      log_loss: logLoss(bet.sel_prob, res),
+      brier: res === 2 ? null : brierScore(bet.sel_prob, res),
+      log_loss: res === 2 ? null : logLoss(bet.sel_prob, res),
     }).eq('id', id)
     setSettlingId(null); setSettleResult(''); setSettleClose(''); setSettleMode('clv')
     await loadBets()
@@ -892,15 +885,13 @@ export default function App() {
     await loadBets()
   }
 
-  const MODEL_V2_DATE = '2026-03-12' // dátum opravy calibrateProb
-  const OU_MARKETS = ['over2.5', 'under2.5']
-  const AH_MARKETS = ['ah_home_minus05', 'ah_away_minus05']
+  const MODEL_V2_DATE = '2026-03-12'
+  const OU25_MARKETS = ['over2.5', 'under2.5']
+  const OU30_MARKETS = ['over3.0', 'under3.0']
   const settled_all = bets.filter(b => b.result != null)
   const settled = settled_all.filter(b => {
-    // Filter podľa market skupiny
-    if (statsMarket === 'ou' && !OU_MARKETS.includes(b.market)) return false
-    if (statsMarket === 'ah' && !AH_MARKETS.includes(b.market)) return false
-    // Filter podľa model verzie
+    if (statsMarket === 'ou25' && !OU25_MARKETS.includes(b.market)) return false
+    if (statsMarket === 'ou30' && !OU30_MARKETS.includes(b.market)) return false
     if (modelVersion === 'all') return true
     const d = b.created_at ? b.created_at.slice(0, 10) : null
     if (modelVersion === 'v1') return !d || d < MODEL_V2_DATE
@@ -923,7 +914,7 @@ export default function App() {
   const avgEV = evBets.length > 0 ? evBets.reduce((s, b) => s + b.ev_pct, 0) / evBets.length : null
   const maxDD = calcMaxDrawdown(settled)
   const calib = hitRate != null && avgProb != null ? (hitRate - avgProb) * 100 : null
-  const MARKET = { 'over2.5': 'Over 2.5', 'under2.5': 'Under 2.5', 'ah_home_minus05': 'AH Home -0.5', 'ah_away_minus05': 'AH Away -0.5' }
+  const MARKET = { 'over2.5': 'Over 2.5', 'under2.5': 'Under 2.5', 'over3.0': 'Over 3.0', 'under3.0': 'Under 3.0' }
 
   // CLV podľa času betu (hodiny do KO)
   const clvByTime = (() => {
@@ -1537,7 +1528,7 @@ export default function App() {
             {calc && (
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
                 <span style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 600, letterSpacing: 1 }}>MARKET:</span>
-                {[['ou', 'O/U 2.5'], ['ah', 'AH ±0.5']].map(([id, lbl]) => (
+                {[['ou25', 'O/U 2.5'], ['ou30', 'O/U 3.0']].map(([id, lbl]) => (
                   <button key={id} onClick={() => setMarketMode(id)} style={{
                     fontSize: 11, padding: '3px 12px', borderRadius: 6, border: '1px solid',
                     borderColor: marketMode === id ? 'var(--accent)' : 'var(--border)',
@@ -1551,7 +1542,7 @@ export default function App() {
 
             {/* Markets */}
             <div className="markets-grid">
-              {marketMode === 'ou' && [true, false].map(isOver => {
+              {marketMode === 'ou25' && [true, false].map(isOver => {
                 const fer = isOver ? calc?.ferOver : calc?.ferUnder
                 const prob = isOver ? calc?.pOver : calc?.pUnder
                 const probRaw = isOver ? calc?.pOverRaw : calc?.pUnderRaw
@@ -1717,12 +1708,11 @@ export default function App() {
                 )
               })}
 
-              {/* AH ±0.5 markets */}
-              {marketMode === 'ah' && calc?.ah && [
-                { label: 'AH Home -0.5', sublabel: 'Domáci musí vyhrať', prob: calc.ah.pHomeMinus05, mkt: 'ah_home_minus05', backVal: backAHHome, setBack: setBackAHHome, layVal: layAHHome, setLay: setLayAHHome, myOddsVal: myOddsAHHome, setMyOdds: setMyOddsAHHome, color: 'var(--accent2)', borderColor: 'var(--accent)' },
-                { label: 'AH Away -0.5', sublabel: 'Hosť musí vyhrať', prob: calc.ah.pAwayMinus05, mkt: 'ah_away_minus05', backVal: backAHAway, setBack: setBackAHAway, layVal: layAHAway, setLay: setLayAHAway, myOddsVal: myOddsAHAway, setMyOdds: setMyOddsAHAway, color: 'var(--green)', borderColor: 'var(--green)' },
-              ].map(({ label, sublabel, prob, mkt, backVal, setBack, layVal, setLay, myOddsVal, setMyOdds, color, borderColor }) => {
-                const fer = fairOdds(prob)
+              {/* O/U 3.0 markets */}
+              {marketMode === 'ou30' && calc?.ou30 && [
+                { label: 'Over 3.0', mkt: 'over3.0', prob: calc.ou30.pOver3, fer: calc.ou30.fairOver, backVal: backOver30, setBack: setBackOver30, layVal: layOver30, setLay: setLayOver30, myOddsVal: myOddsOver30, setMyOdds: setMyOddsOver30, color: 'var(--accent2)', borderColor: 'var(--accent)', isOver: true },
+                { label: 'Under 3.0', mkt: 'under3.0', prob: calc.ou30.pUnder2, fer: calc.ou30.fairUnder, backVal: backUnder30, setBack: setBackUnder30, layVal: layUnder30, setLay: setLayUnder30, myOddsVal: myOddsUnder30, setMyOdds: setMyOddsUnder30, color: 'var(--green)', borderColor: 'var(--green)', isOver: false },
+              ].map(({ label, mkt, prob, fer, backVal, setBack, layVal, setLay, myOddsVal, setMyOdds, color, borderColor, isOver }) => {
                 const mid = midPrice(pf(backVal) || null, pf(layVal) || null)
                 const myO = pf(myOddsVal)
                 const actualOdds = myO > 1 ? myO : mid
@@ -1732,16 +1722,14 @@ export default function App() {
                 const evMinVal = calc.evMinVal || 0.12
                 const oLow = calc.oLow || 1.4
                 const oHigh = calc.oHigh || 3.5
-                const evB = actualOdds ? calcBackEV(prob, actualOdds, comm) : null
-                const evL = actualOdds ? calcLayEV(prob, actualOdds, comm) : null
+                // EV pre 3.0 s push logikou
+                const evB = actualOdds ? calcEVOU30(isOver, calc.ou30.pOver3, calc.ou30.pUnder2, actualOdds) : null
                 const evPassB = evFilter(evB, evMinVal)
-                const evPassL = evFilter(evL, evMinVal)
                 const oddsPass = actualOdds ? oddsBandFilter(actualOdds, oLow, oHigh) : false
                 const edge = actualOdds && fer ? (actualOdds / fer - 1) * 100 : null
                 return (
                   <div key={mkt} className="market-col" style={{ borderTop: `3px solid ${borderColor}` }}>
                     <div className="market-title" style={{ color }}>{label}</div>
-                    <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 8 }}>{sublabel}</div>
                     {fer && (
                       <div style={{ marginBottom: 10 }}>
                         <div className="label">FER kurz</div>
@@ -1750,10 +1738,11 @@ export default function App() {
                         </div>
                       </div>
                     )}
+                    {/* Win / Push / Lose breakdown */}
                     <div style={{ marginBottom: 8, padding: '6px 10px', background: 'var(--bg3)', borderRadius: 6, fontSize: 11, color: 'var(--text3)', lineHeight: 1.8 }}>
-                      <div>P(Home win): <b style={{ color: 'var(--text2)' }}>{fmtPct(calc.ah.pHomeWin * 100)}</b></div>
-                      <div>P(Draw): <b style={{ color: 'var(--text2)' }}>{fmtPct(calc.ah.pDraw * 100)}</b></div>
-                      <div>P(Away win): <b style={{ color: 'var(--text2)' }}>{fmtPct(calc.ah.pAwayWin * 100)}</b></div>
+                      <div>P(Win): <b style={{ color: 'var(--green)' }}>{fmtPct(prob * 100)}</b></div>
+                      <div>P(Push — 3 góly): <b style={{ color: 'var(--accent2)' }}>{fmtPct(calc.ou30.pExact3 * 100)}</b></div>
+                      <div>P(Lose): <b style={{ color: 'var(--red)' }}>{fmtPct((1 - prob - calc.ou30.pExact3) * 100)}</b></div>
                     </div>
                     <div style={{ marginTop: 10, marginBottom: 8 }}>
                       <div className="label">Best Back</div>
@@ -1774,41 +1763,29 @@ export default function App() {
                         {edge != null && <span className={edge > 0 ? 'pos' : 'neg'} style={{ marginLeft: 'auto', fontSize: 11 }}>Edge {fmtSignPct(edge)}</span>}
                       </div>
                       <div>
-                        <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 2 }}>▲ Back EV {usingMyOdds && <span style={{ color: 'var(--accent2)' }}>(@{fmt3(actualOdds)})</span>}</div>
+                        <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 2 }}>▲ Back EV (s push) {usingMyOdds && <span style={{ color: 'var(--accent2)' }}>(@{fmt3(actualOdds)})</span>}</div>
                         <div className={`ev-big ${evB > 0 ? 'pos' : 'neg'}`}>
                           {fmtSignPct(evB * 100)}<span className="ev-eur">{fmtSign(evB * st)}€</span>
                         </div>
-                      </div>
-                      <div style={{ marginTop: 6 }}>
-                        <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 2 }}>▼ Lay EV {usingMyOdds && <span style={{ color: 'var(--accent2)' }}>(@{fmt3(actualOdds)})</span>}</div>
-                        <div className={`ev-big ${evL > 0 ? 'pos' : 'neg'}`}>
-                          {fmtSignPct(evL * 100)}<span className="ev-eur">{fmtSign(evL * st)}€</span>
-                        </div>
-                        <div className="liability-note">Liability: {fmt2(layLiability(actualOdds, st))}€</div>
                       </div>
                       <div style={{ marginTop: 8, fontSize: 10, display: 'flex', flexDirection: 'column', gap: 3 }}>
                         <div style={{ color: oddsPass ? 'var(--green)' : 'var(--red)' }}>
                           {oddsPass ? '✓' : '✗'} Kurz {fmt3(actualOdds)} {oddsPass ? `v pásme (${oLow}–${oHigh})` : `mimo pásma`}
                         </div>
                         <div style={{ color: evPassB ? 'var(--green)' : 'var(--text3)' }}>
-                          {evPassB ? '✓' : '✗'} Back EV {evPassB ? 'spĺňa' : 'nespĺňa'} min {fmtPct(evMinVal * 100)}
+                          {evPassB ? '✓' : '✗'} EV {evPassB ? 'spĺňa' : 'nespĺňa'} min {fmtPct(evMinVal * 100)}
                         </div>
-                        {oddsPass && (evPassB || evPassL) && (
-                          <div style={{ marginTop: 4, color: 'var(--green)', fontWeight: 700 }}>
-                            ✅ BET SIGNAL: {evPassB ? 'BACK ' : ''}{evPassL ? 'LAY' : ''}
-                          </div>
+                        {oddsPass && evPassB && (
+                          <div style={{ marginTop: 4, color: 'var(--green)', fontWeight: 700 }}>✅ BET SIGNAL: BACK</div>
                         )}
                       </div>
                       <div className="save-btns">
                         <button className="btn-save-back" onClick={() => handleSave(mkt, 'back')} disabled={saving}>
                           {savedKey === mkt + '-back' ? '✓' : '+ Back'}
                         </button>
-                        <button className="btn-save-lay" onClick={() => handleSave(mkt, 'lay')} disabled={saving}>
-                          {savedKey === mkt + '-lay' ? '✓' : '+ Lay'}
-                        </button>
                       </div>
-                      <div style={{ fontSize: 9, color: 'var(--text3)', textAlign: 'center', marginTop: 4 }}>kom {(comm * 100).toFixed(0)}%</div>
-                    </> : <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 8 }}>Zadaj Back kurz pre výpočet EV</div>}
+                      <div style={{ fontSize: 9, color: 'var(--text3)', textAlign: 'center', marginTop: 4 }}>kom {(comm * 100).toFixed(0)}% · Push = stake späť</div>
+                    </> : <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 8 }}>Zadaj Back aj Lay pre mid price</div>}
                   </div>
                 )
               })}
@@ -1878,6 +1855,7 @@ export default function App() {
                       {b.result == null && <span className="badge badge-pending">PENDING</span>}
                       {b.result === 1 && <span className="badge badge-won">WON</span>}
                       {b.result === 0 && <span className="badge badge-lost">LOST</span>}
+                      {b.result === 2 && <span className="badge" style={{ background: 'rgba(108,92,231,0.15)', color: 'var(--accent2)' }}>PUSH</span>}
                       <span className={`badge ${b.bet_type === 'lay' ? 'badge-lay' : 'badge-back'}`}>{b.bet_type === 'lay' ? '▼ LAY' : '▲ BACK'}</span>
                       <span style={{ fontSize: 12, fontWeight: 600 }}>{MARKET[b.market]}</span>
                       {b.match_name && <span style={{ fontSize: 11, color: 'var(--text3)' }}>{b.match_name}</span>}
@@ -1957,6 +1935,9 @@ export default function App() {
                       <option value="">— vyber výsledok —</option>
                       <option value="1">{b.bet_type === 'lay' ? '✅ Lay Won (event NOT happened)' : '✅ Back Won'}</option>
                       <option value="0">{b.bet_type === 'lay' ? '❌ Lay Lost (event happened)' : '❌ Back Lost'}</option>
+                      {(b.market === 'over3.0' || b.market === 'under3.0') && (
+                        <option value="2">↩️ Push (presne 3 góly — stake sa vráti)</option>
+                      )}
                     </select>
                     <button className="btn btn-primary" style={{ padding: '10px' }} onClick={() => handleSettle(b.id)}>Potvrdiť výsledok</button>
                   </div>
@@ -1971,7 +1952,7 @@ export default function App() {
           <div style={{ padding: '8px 16px 0' }}>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 600, letterSpacing: 1 }}>MARKET:</span>
-              {[['ou', 'O/U 2.5'], ['ah', 'AH ±0.5']].map(([id, lbl]) => (
+              {[['ou25', 'O/U 2.5'], ['ou30', 'O/U 3.0']].map(([id, lbl]) => (
                 <button key={id} onClick={() => setStatsMarket(id)} style={{
                   fontSize: 11, padding: '3px 10px', borderRadius: 6, border: '1px solid',
                   borderColor: statsMarket === id ? 'var(--green)' : 'var(--border)',

@@ -52,29 +52,36 @@ export function buildScoreMatrix(lambdaH, lambdaA, rho = -0.10, maxG = 10) {
   return matrix
 }
 
-// Asian Handicap ±0.5 z score matrix
-// Vracia: pHomeWin, pDraw, pAwayWin, pHomeMinus05, pHomePlus05, pAwayMinus05, pAwayPlus05
-export function calcAH(matrix) {
-  let pHomeWin = 0, pDraw = 0, pAwayWin = 0
-  for (const [key, p] of matrix) {
-    const [h, a] = key.split('-').map(Number)
-    if (h > a) pHomeWin += p
-    else if (h === a) pDraw += p
-    else pAwayWin += p
-  }
-  return {
-    pHomeWin,
-    pDraw,
-    pAwayWin,
-    // AH Home -0.5: domáci musí vyhrať
-    pHomeMinus05: pHomeWin,
-    // AH Home +0.5: domáci nesmie prehrať (výhra alebo remíza)
-    pHomePlus05: pHomeWin + pDraw,
-    // AH Away -0.5: hosť musí vyhrať
-    pAwayMinus05: pAwayWin,
-    // AH Away +0.5: hosť nesmie prehrať (výhra alebo remíza)
-    pAwayPlus05: pAwayWin + pDraw,
-  }
+// Over/Under 3.0 s push logikou
+// T ~ Poisson(lambdaH + lambdaA)
+// Over 3.0: T<=2 lose, T=3 push, T>=4 win
+// Under 3.0: T<=2 win, T=3 push, T>=4 lose
+export function calcOU30(lambdaH, lambdaA) {
+  const lt = lambdaH + lambdaA
+  const p0 = poissonPMF(0, lt)
+  const p1 = poissonPMF(1, lt)
+  const p2 = poissonPMF(2, lt)
+  const p3 = poissonPMF(3, lt)
+  const pUnder2 = p0 + p1 + p2          // T <= 2
+  const pExact3 = p3                     // T = 3 (push)
+  const pOver3  = 1 - pUnder2 - pExact3 // T >= 4
+  // Fair odds: rátame cez win/lose s pushom
+  // fair_over  = 1 + pUnder2 / pOver3
+  // fair_under = 1 + pOver3  / pUnder2
+  const fairOver  = pOver3  > 0 ? 1 + pUnder2 / pOver3  : null
+  const fairUnder = pUnder2 > 0 ? 1 + pOver3  / pUnder2 : null
+  return { pOver3, pExact3, pUnder2, fairOver, fairUnder }
+}
+
+// EV pre O/U 3.0 (back bet)
+// Over:  EV = pOver3 * (odds-1) - pUnder2
+// Under: EV = pUnder2 * (odds-1) - pOver3
+// Push sa ignoruje v EV (stake sa vráti)
+export function calcEVOU30(isOver, pOver3, pUnder2, odds) {
+  if (!odds || odds <= 1) return null
+  return isOver
+    ? pOver3  * (odds - 1) - pUnder2
+    : pUnder2 * (odds - 1) - pOver3
 }
 
 // Blend xG + xGA using geometric mean
