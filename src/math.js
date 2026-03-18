@@ -73,15 +73,15 @@ export function calcOU30(lambdaH, lambdaA) {
   return { pOver3, pExact3, pUnder2, fairOver, fairUnder }
 }
 
-// EV pre O/U 3.0 (back bet)
-// Over:  EV = pOver3 * (odds-1) - pUnder2
-// Under: EV = pUnder2 * (odds-1) - pOver3
+// EV pre O/U 3.0 (back bet) s komisiou
+// Over:  EV = pOver3 * (odds-1) * (1-comm) - pUnder2
+// Under: EV = pUnder2 * (odds-1) * (1-comm) - pOver3
 // Push sa ignoruje v EV (stake sa vráti)
-export function calcEVOU30(isOver, pOver3, pUnder2, odds) {
+export function calcEVOU30(isOver, pOver3, pUnder2, odds, comm = 0.05) {
   if (!odds || odds <= 1) return null
   return isOver
-    ? pOver3  * (odds - 1) - pUnder2
-    : pUnder2 * (odds - 1) - pOver3
+    ? pOver3  * (odds - 1) * (1 - comm) - pUnder2
+    : pUnder2 * (odds - 1) * (1 - comm) - pOver3
 }
 
 // Blend xG + xGA using geometric mean

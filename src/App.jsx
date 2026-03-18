@@ -806,7 +806,7 @@ export default function App() {
     const actualOdds = (myO && myO > 1) ? myO : midOdds
     // EV: O/U 3.0 používa špeciálny vzorec s pushom
     const ev = isOU30
-      ? calcEVOU30(isOver30, calc.ou30.pOver3, calc.ou30.pUnder2, actualOdds)
+      ? calcEVOU30(isOver30, calc.ou30.pOver3, calc.ou30.pUnder2, actualOdds, calc.comm)
       : betType === 'back'
         ? calcBackEV(selProb, actualOdds, calc.comm)
         : calcLayEV(selProb, actualOdds, calc.comm)
@@ -902,9 +902,13 @@ export default function App() {
   const totalStake = settled.reduce((s, b) => s + b.stake, 0)
   const totalPnL = settled.reduce((s, b) => s + (b.pnl || 0), 0)
   const roi = totalStake > 0 ? (totalPnL / totalStake) * 100 : null
+  const pushes = settled.filter(b => b.result === 2).length
   const wins = settled.filter(b => b.result === 1).length
-  const hitRate = settled.length > 0 ? wins / settled.length : null
-  const avgProb = settled.length > 0 ? settled.reduce((s, b) => s + b.sel_prob, 0) / settled.length : null
+  // Hit rate a kalibrácia sa počítajú len z non-push betov
+  // Push (result=2) nie je win ani loss — nezahŕňame ho do win rate
+  const nonPushSettled = settled.filter(b => b.result !== 2)
+  const hitRate = nonPushSettled.length > 0 ? wins / nonPushSettled.length : null
+  const avgProb = nonPushSettled.length > 0 ? nonPushSettled.reduce((s, b) => s + b.sel_prob, 0) / nonPushSettled.length : null
   const avgBrier = settled.length > 0 ? settled.reduce((s, b) => s + (b.brier || 0), 0) / settled.length : null
   const avgLL = settled.length > 0 ? settled.reduce((s, b) => s + (b.log_loss || 0), 0) / settled.length : null
   const clvBets = settled.filter(b => b.clv != null)
@@ -1723,7 +1727,7 @@ export default function App() {
                 const oLow = calc.oLow || 1.4
                 const oHigh = calc.oHigh || 3.5
                 // EV pre 3.0 s push logikou
-                const evB = actualOdds ? calcEVOU30(isOver, calc.ou30.pOver3, calc.ou30.pUnder2, actualOdds) : null
+                const evB = actualOdds ? calcEVOU30(isOver, calc.ou30.pOver3, calc.ou30.pUnder2, actualOdds, comm) : null
                 const evPassB = evFilter(evB, evMinVal)
                 const oddsPass = actualOdds ? oddsBandFilter(actualOdds, oLow, oHigh) : false
                 const edge = actualOdds && fer ? (actualOdds / fer - 1) * 100 : null
@@ -1993,7 +1997,7 @@ export default function App() {
                     { l: 'ROI', v: fmtSignPct(roi), cls: roi >= 0 ? 'pos' : 'neg' },
                     { l: 'Total Stake', v: totalStake + '€' },
                     { l: 'Max Drawdown', v: fmt2(maxDD) + '€', cls: 'neg' },
-                    { l: 'Výhry / Prehry', v: `${wins} / ${settled.length - wins}` },
+                    { l: 'Výhry / Prehry', v: pushes > 0 ? `${wins} / ${nonPushSettled.length - wins} / ${pushes}P` : `${wins} / ${settled.length - wins}` },
                   ].map(({ l, v, cls }) => (
                     <div key={l} className="card" style={{ padding: 14 }}>
                       <div className="label">{l}</div>
