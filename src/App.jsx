@@ -822,7 +822,6 @@ export default function App() {
       lambda_h: calc.lH, lambda_a: calc.lA,
       p_over: calc.pOver, p_under: calc.pUnder,
       sel_prob: selProb, fer_odds: ferO,
-      push_prob: pushProb,
       odds_open: actualOdds, odds_close: null,
       stake: calc.st, commission: calc.comm * 100,
       ev, ev_pct: ev != null ? ev * 100 : null,
@@ -835,7 +834,10 @@ export default function App() {
       model_prob: modelProb,
       market_prob: marketProb,
     }).select()
-    if (!error) {
+    if (error) {
+      console.error('Supabase insert error:', error)
+      alert('Chyba pri ukladaní: ' + (error.message || JSON.stringify(error)))
+    } else {
       await loadBets()
       setSavedKey(market + '-' + betType)
       if (kickoff && inserted?.[0]?.id) {
