@@ -97,8 +97,9 @@ export function calcOU275(lambdaH, lambdaA) {
   const p4plus = 1 - p0_2 - p3
   const pOver275  = p4plus + 0.5 * p3
   const pUnder275 = p0_2   + 0.5 * p3
-  const fairOver  = pOver275  > 0 ? 1 / pOver275  : null
-  const fairUnder = pUnder275 > 0 ? 1 / pUnder275 : null
+  // Fair odds z EV=0 podmienky pre Asian quarter line (half-win/half-loss)
+  const fairOver  = (p4plus + 0.5 * p3) > 0 ? 1 + p0_2  / (p4plus + 0.5 * p3) : null
+  const fairUnder = (p0_2   + 0.5 * p3) > 0 ? 1 + p4plus / (p0_2   + 0.5 * p3) : null
   return { pOver275, pUnder275, p0_2, p3, p4plus, fairOver, fairUnder }
 }
 
@@ -124,8 +125,10 @@ export function calcOU225(lambdaH, lambdaA) {
   const p3plus = 1 - p0_1 - p2
   const pOver225  = p3plus + 0.5 * p2
   const pUnder225 = p0_1   + 0.5 * p2
-  const fairOver  = pOver225  > 0 ? 1 / pOver225  : null
-  const fairUnder = pUnder225 > 0 ? 1 / pUnder225 : null
+  // Fair odds z EV=0 podmienky pre Asian quarter line (half-win/half-loss)
+  // EV = p_win*(odds-1) + p_half*0.5*(odds-1) - p_loss = 0 → odds = 1 + p_loss/(p_win + 0.5*p_half)
+  const fairOver  = (p3plus + 0.5 * p2) > 0 ? 1 + p0_1  / (p3plus + 0.5 * p2) : null
+  const fairUnder = (p0_1   + 0.5 * p2) > 0 ? 1 + p3plus / (p0_1   + 0.5 * p2) : null
   return { pOver225, pUnder225, p0_1, p2, p3plus, fairOver, fairUnder }
 }
 
