@@ -107,9 +107,13 @@ export function calcOU275(lambdaH, lambdaA) {
 export function calcEVOU275(isOver, p0_2, p3, p4plus, odds, comm = 0.05) {
   if (!odds || odds <= 1) return null
   if (isOver) {
-    return p4plus * (odds - 1) * (1 - comm) + p3 * 0.5 * (odds - 1) * (1 - comm) - p0_2
+    // Over 2.75: win=4+, half-lose=3, lose=0-2
+    // Half-lose: -stake/2
+    return p4plus * (odds - 1) * (1 - comm) - p3 * 0.5 - p0_2
   } else {
-    return p0_2 * (odds - 1) * (1 - comm) - p3 * 0.5 - p4plus
+    // Under 2.75: win=0-2, half-win=3, lose=4+
+    // Half-win: +stake/2*(odds-1)*(1-comm) - stake/2
+    return p0_2 * (odds - 1) * (1 - comm) + p3 * ((odds - 1) * (1 - comm) / 2 - 0.5) - p4plus
   }
 }
 
@@ -136,8 +140,12 @@ export function calcOU225(lambdaH, lambdaA) {
 export function calcEVOU225(isOver, p0_1, p2, p3plus, odds, comm = 0.05) {
   if (!odds || odds <= 1) return null
   if (isOver) {
-    return p3plus * (odds - 1) * (1 - comm) + p2 * 0.5 * (odds - 1) * (1 - comm) - p0_1
+    // Over 2.25: win=3+, half-win=2, lose=0-1
+    // Half-win: +stake/2*(odds-1)*(1-comm) - stake/2
+    return p3plus * (odds - 1) * (1 - comm) + p2 * ((odds - 1) * (1 - comm) / 2 - 0.5) - p0_1
   } else {
+    // Under 2.25: win=0-1, half-lose=2, lose=3+
+    // Half-lose: -stake/2
     return p0_1 * (odds - 1) * (1 - comm) - p2 * 0.5 - p3plus
   }
 }

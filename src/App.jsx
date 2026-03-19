@@ -13,6 +13,23 @@ function midPrice(back, lay) {
   if (!back || !lay || back <= 1 || lay <= 1) return null
   return (back + lay) / 2
 }
+
+// FER kurz pre Asian quarter lines s komisiou
+// isHalfWin=true:  win + half-win + lose (napr. Under 2.75, Over 2.25)
+//   EV=0: (odds-1)*(1-comm)*(pWin+pHalf*0.5) = pLose+pHalf*0.5
+//   → odds = 1 + (pLose+pHalf*0.5) / ((pWin+pHalf*0.5)*(1-comm))
+// isHalfWin=false: win + half-lose + lose (napr. Over 2.75, Under 2.25)
+//   EV=0: pWin*(odds-1)*(1-comm) - pHalf*0.5 - pLose = 0
+//   → odds = 1 + (pHalf*0.5+pLose) / (pWin*(1-comm))
+function asianFairOdds(pWin, pHalf, pLose, comm = 0.05, isHalfWin = true) {
+  if (isHalfWin) {
+    const denom = (pWin + pHalf * 0.5) * (1 - comm)
+    return denom > 0 ? 1 + (pLose + pHalf * 0.5) / denom : null
+  } else {
+    const denom = pWin * (1 - comm)
+    return denom > 0 ? 1 + (pHalf * 0.5 + pLose) / denom : null
+  }
+}
 function calcBackEV(prob, odds, comm = 0.05) {
   if (!prob || !odds) return null
   return prob * (odds - 1) * (1 - comm) - (1 - prob)
@@ -1987,17 +2004,18 @@ export default function App() {
                 const is275 = marketMode === 'ou275'
                 const ouData = is275 ? calc.ou275 : calc.ou225
                 if (!ouData) return null
+                const comm_ = calc.comm || 0.05
                 const cards = is275
                   ? [
-                      { label: 'Over 2.75', mkt: 'over2.75', prob: ouData.pOver275, fer: ouData.fairOver, backVal: backOver275, setBack: setBackOver275, layVal: layOver275, setLay: setLayOver275, myOddsVal: myOddsOver275, setMyOdds: setMyOddsOver275, color: 'var(--accent2)', borderColor: 'var(--accent)', isOver: true,
+                      { label: 'Over 2.75', mkt: 'over2.75', prob: ouData.pOver275, fer: asianFairOdds(ouData.p4plus, ouData.p3, ouData.p0_2, comm_, false), backVal: backOver275, setBack: setBackOver275, layVal: layOver275, setLay: setLayOver275, myOddsVal: myOddsOver275, setMyOdds: setMyOddsOver275, color: 'var(--accent2)', borderColor: 'var(--accent)', isOver: true,
                         winProb: ouData.p4plus, halfProb: ouData.p3, loseProb: ouData.p0_2, winLabel: '4+ gólov', halfLabel: '3 góly (half lose)', loseLabel: '0-2 góly' },
-                      { label: 'Under 2.75', mkt: 'under2.75', prob: ouData.pUnder275, fer: ouData.fairUnder, backVal: backUnder275, setBack: setBackUnder275, layVal: layUnder275, setLay: setLayUnder275, myOddsVal: myOddsUnder275, setMyOdds: setMyOddsUnder275, color: 'var(--green)', borderColor: 'var(--green)', isOver: false,
+                      { label: 'Under 2.75', mkt: 'under2.75', prob: ouData.pUnder275, fer: asianFairOdds(ouData.p0_2, ouData.p3, ouData.p4plus, comm_, true), backVal: backUnder275, setBack: setBackUnder275, layVal: layUnder275, setLay: setLayUnder275, myOddsVal: myOddsUnder275, setMyOdds: setMyOddsUnder275, color: 'var(--green)', borderColor: 'var(--green)', isOver: false,
                         winProb: ouData.p0_2, halfProb: ouData.p3, loseProb: ouData.p4plus, winLabel: '0-2 góly', halfLabel: '3 góly (half win)', loseLabel: '4+ gólov' },
                     ]
                   : [
-                      { label: 'Over 2.25', mkt: 'over2.25', prob: ouData.pOver225, fer: ouData.fairOver, backVal: backOver225, setBack: setBackOver225, layVal: layOver225, setLay: setLayOver225, myOddsVal: myOddsOver225, setMyOdds: setMyOddsOver225, color: 'var(--accent2)', borderColor: 'var(--accent)', isOver: true,
+                      { label: 'Over 2.25', mkt: 'over2.25', prob: ouData.pOver225, fer: asianFairOdds(ouData.p3plus, ouData.p2, ouData.p0_1, comm_, true), backVal: backOver225, setBack: setBackOver225, layVal: layOver225, setLay: setLayOver225, myOddsVal: myOddsOver225, setMyOdds: setMyOddsOver225, color: 'var(--accent2)', borderColor: 'var(--accent)', isOver: true,
                         winProb: ouData.p3plus, halfProb: ouData.p2, loseProb: ouData.p0_1, winLabel: '3+ gólov', halfLabel: '2 góly (half win)', loseLabel: '0-1 góly' },
-                      { label: 'Under 2.25', mkt: 'under2.25', prob: ouData.pUnder225, fer: ouData.fairUnder, backVal: backUnder225, setBack: setBackUnder225, layVal: layUnder225, setLay: setLayUnder225, myOddsVal: myOddsUnder225, setMyOdds: setMyOddsUnder225, color: 'var(--green)', borderColor: 'var(--green)', isOver: false,
+                      { label: 'Under 2.25', mkt: 'under2.25', prob: ouData.pUnder225, fer: asianFairOdds(ouData.p0_1, ouData.p2, ouData.p3plus, comm_, false), backVal: backUnder225, setBack: setBackUnder225, layVal: layUnder225, setLay: setLayUnder225, myOddsVal: myOddsUnder225, setMyOdds: setMyOddsUnder225, color: 'var(--green)', borderColor: 'var(--green)', isOver: false,
                         winProb: ouData.p0_1, halfProb: ouData.p2, loseProb: ouData.p3plus, winLabel: '0-1 góly', halfLabel: '2 góly (half lose)', loseLabel: '3+ gólov' },
                     ]
                 return cards.map(({ label, mkt, prob, fer, backVal, setBack, layVal, setLay, myOddsVal, setMyOdds, color, borderColor, isOver, winProb, halfProb, loseProb, winLabel, halfLabel, loseLabel }) => {
