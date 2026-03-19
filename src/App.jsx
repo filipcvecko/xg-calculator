@@ -297,8 +297,7 @@ const css = `
 
 export default function App() {
   const [tab, setTab] = useState('calc')
-  const [modelVersion, setModelVersion] = useState('all') // 'all' | 'v1' | 'v2'
-  const [statsMarket, setStatsMarket] = useState('ou') // 'ou' | 'ah'
+  const [statsMarket, setStatsMarket] = useState('all') // 'all' | 'ou25' | 'ou225' | 'ou275' | 'ou30'
   const [bets, setBets] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -958,17 +957,16 @@ export default function App() {
     await loadBets()
   }
 
-  const MODEL_V2_DATE = '2026-03-12'
-  const OU25_MARKETS = ['over2.5', 'under2.5']
-  const OU30_MARKETS = ['over3.0', 'under3.0']
+  const OU25_MARKETS  = ['over2.5', 'under2.5']
+  const OU225_MARKETS = ['over2.25', 'under2.25']
+  const OU275_MARKETS = ['over2.75', 'under2.75']
+  const OU30_MARKETS  = ['over3.0', 'under3.0']
   const settled_all = bets.filter(b => b.result != null)
   const settled = settled_all.filter(b => {
-    if (statsMarket === 'ou25' && !OU25_MARKETS.includes(b.market)) return false
-    if (statsMarket === 'ou30' && !OU30_MARKETS.includes(b.market)) return false
-    if (modelVersion === 'all') return true
-    const d = b.created_at ? b.created_at.slice(0, 10) : null
-    if (modelVersion === 'v1') return !d || d < MODEL_V2_DATE
-    if (modelVersion === 'v2') return d && d >= MODEL_V2_DATE
+    if (statsMarket === 'ou25'  && !OU25_MARKETS.includes(b.market))  return false
+    if (statsMarket === 'ou225' && !OU225_MARKETS.includes(b.market)) return false
+    if (statsMarket === 'ou275' && !OU275_MARKETS.includes(b.market)) return false
+    if (statsMarket === 'ou30'  && !OU30_MARKETS.includes(b.market))  return false
     return true
   })
   const pending = bets.filter(b => b.result == null)
@@ -2255,9 +2253,9 @@ export default function App() {
         {tab === 'stats' && (
           <>
           <div style={{ padding: '8px 16px 0' }}>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 600, letterSpacing: 1 }}>MARKET:</span>
-              {[['ou25', 'O/U 2.5'], ['ou30', 'O/U 3.0']].map(([id, lbl]) => (
+              {[['all', 'Všetky'], ['ou25', 'O/U 2.5'], ['ou225', 'O/U 2.25'], ['ou275', 'O/U 2.75'], ['ou30', 'O/U 3.0']].map(([id, lbl]) => (
                 <button key={id} onClick={() => setStatsMarket(id)} style={{
                   fontSize: 11, padding: '3px 10px', borderRadius: 6, border: '1px solid',
                   borderColor: statsMarket === id ? 'var(--green)' : 'var(--border)',
@@ -2266,23 +2264,7 @@ export default function App() {
                   cursor: 'pointer', fontWeight: statsMarket === id ? 700 : 400
                 }}>{lbl}</button>
               ))}
-            </div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 600, letterSpacing: 1 }}>MODEL VERZIA:</span>
-              {[['all', 'Všetky'], ['v1', 'V1 (starý P^k)'], ['v2', 'V2 (nová kalib)']].map(([id, lbl]) => (
-                <button key={id} onClick={() => setModelVersion(id)} style={{
-                  fontSize: 11, padding: '3px 10px', borderRadius: 6, border: '1px solid',
-                  borderColor: modelVersion === id ? 'var(--accent)' : 'var(--border)',
-                  background: modelVersion === id ? 'var(--accent)' : 'transparent',
-                  color: modelVersion === id ? '#fff' : 'var(--text3)',
-                  cursor: 'pointer', fontWeight: modelVersion === id ? 700 : 400
-                }}>{lbl}</button>
-              ))}
-              {modelVersion !== 'all' && (
-                <span style={{ fontSize: 11, color: 'var(--text3)' }}>
-                  {settled.length} betov
-                </span>
-              )}
+              <span style={{ fontSize: 11, color: 'var(--text3)', marginLeft: 4 }}>{settled.length} betov</span>
             </div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
