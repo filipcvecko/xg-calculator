@@ -1021,6 +1021,90 @@ export default function App() {
   const avgModelProb = probComparison.length > 0 ? probComparison.reduce((s, b) => s + b.model_prob, 0) / probComparison.length : null
   const avgMarketProb = probComparison.length > 0 ? probComparison.reduce((s, b) => s + b.market_prob, 0) / probComparison.length : null
 
+  // ── RECOMMENDATION ENGINE ──────────────────────────────────────
+  function getRecommendedBet(candidates, filters) {
+    const { evMin, oddsLow, oddsHigh } = filters
+
+    // Ofiltruj hrateľné
+    const playable = candidates.filter(c =>
+      c.odds != null &&
+      c.ev_pct != null &&
+      c.ev_pct >= evMin &&
+      c.odds >= oddsLow &&
+      c.odds <= oddsHigh
+    )
+
+    if (playable.length === 0) return { bet: null, reason: 'Žiadny trh nesplnil filtre' }
+
+    // Zoraď podľa EV zostupne
+    const sorted = [...playable].sort((a, b) => b.ev_pct - a.ev_pct)
+    let best = sorted[0]
+
+    // Výnimka C — vysoké kurzy len pri silnom EV+edge
+    if (best.odds > 3.5 && (best.ev_pct < 12 || best.edge_pct < 10)) {
+      const fallback = sorted.find(c => c.odds <= 3.5)
+      if (fallback) { best = fallback }
+      else return { bet: null, reason: 'Kurz mimo komfortnej zóny bez dostatočného EV' }
+    }
+
+    // Výnimka B — ak je druhý kandidát rovnakého smeru a EV blízko, preferuj push ochranu
+    const sameDir = sorted.find(c =>
+      c !== best &&
+      c.direction === best.direction &&
+      Math.abs(c.ev_pct - best.ev_pct) < 2.0 &&
+      c.push_prob > 0 &&
+      best.push_prob === 0
+    )
+    if (sameDir) {
+      return { bet: sameDir, reason: 'EV podobné ako alternatíva, ale tento trh má push ochranu' }
+    }
+
+    return { bet: best, reason: 'Najvyššie EV po filtroch' }
+  }
+
+  // Zostav kandidátov z existujúcich výpočtov
+  const recommendation = (() => {
+    if (!calc) return null
+    const evMin = (calc.evMinVal || 0.12) * 100
+    const oddsLow = calc.oLow || 1.4
+    const oddsHigh = calc.oHigh || 3.5
+    const comm = calc.comm || 0.05
+
+    const candidates = []
+
+    // O/U 2.5
+    if (calc.midO) {
+      const ev = calcBackEV(calc.pOver, calc.midO, comm)
+      const edge = calc.ferOver ? (calc.midO / calc.ferOver - 1) * 100 : null
+      candidates.push({ market_key: 'over2.5', label: 'Over 2.5', direction: 'over', odds: calc.midO, fair_odds: calc.ferOver, ev_pct: ev != null ? ev * 100 : null, edge_pct: edge, win_prob: calc.pOver, push_prob: 0, market_type: 'ou25' })
+    }
+    if (calc.midU) {
+      const ev = calcBackEV(calc.pUnder, calc.midU, comm)
+      const edge = calc.ferUnder ? (calc.midU / calc.ferUnder - 1) * 100 : null
+      candidates.push({ market_key: 'under2.5', label: 'Under 2.5', direction: 'under', odds: calc.midU, fair_odds: calc.ferUnder, ev_pct: ev != null ? ev * 100 : null, edge_pct: edge, win_prob: calc.pUnder, push_prob: 0, market_type: 'ou25' })
+    }
+
+    // O/U 3.0
+    if (calc.ou30) {
+      const mid30O = midPrice(pf(backOver30) || null, pf(layOver30) || null)
+      const mid30U = midPrice(pf(backUnder30) || null, pf(layUnder30) || null)
+      if (mid30O) {
+        const ev = calcEVOU30(true, calc.ou30.pOver3, calc.ou30.pUnder2, mid30O, comm)
+        const edge = calc.ou30.fairOver ? (mid30O / calc.ou30.fairOver - 1) * 100 : null
+        candidates.push({ market_key: 'over3.0', label: 'Over 3.0', direction: 'over', odds: mid30O, fair_odds: calc.ou30.fairOver, ev_pct: ev != null ? ev * 100 : null, edge_pct: edge, win_prob: calc.ou30.pOver3, push_prob: calc.ou30.pExact3, market_type: 'ou30' })
+      }
+      if (mid30U) {
+        const ev = calcEVOU30(false, calc.ou30.pOver3, calc.ou30.pUnder2, mid30U, comm)
+        const edge = calc.ou30.fairUnder ? (mid30U / calc.ou30.fairUnder - 1) * 100 : null
+        candidates.push({ market_key: 'under3.0', label: 'Under 3.0', direction: 'under', odds: mid30U, fair_odds: calc.ou30.fairUnder, ev_pct: ev != null ? ev * 100 : null, edge_pct: edge, win_prob: calc.ou30.pUnder2, push_prob: calc.ou30.pExact3, market_type: 'ou30' })
+      }
+    }
+
+    if (candidates.length === 0) return null
+    return getRecommendedBet(candidates, { evMin, oddsLow, oddsHigh })
+  })()
+  // ──────────────────────────────────────────────────────────────
+
   return (
     <>
       <style>{css}</style>
@@ -1558,6 +1642,31 @@ export default function App() {
 
             <button className="btn btn-primary" onClick={handleCalc}>▶ Vypočítať</button>
 
+            {/* Recommendation Engine */}
+            {calc && recommendation && (
+              <div style={{
+                padding: '12px 16px', borderRadius: 8, marginTop: 8,
+                background: recommendation.bet ? 'rgba(0,184,148,0.08)' : 'rgba(214,48,49,0.08)',
+                border: `1px solid ${recommendation.bet ? 'rgba(0,184,148,0.3)' : 'rgba(214,48,49,0.3)'}`,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: recommendation.bet ? 'var(--green)' : 'var(--red)' }}>
+                    {recommendation.bet
+                      ? `✅ ODPORÚČANÝ BET: ${recommendation.bet.label} @ ${fmt3(recommendation.bet.odds)}`
+                      : '❌ NO BET'}
+                  </span>
+                  {recommendation.bet && (
+                    <span style={{ fontSize: 11, color: 'var(--green)', background: 'rgba(0,184,148,0.15)', padding: '2px 8px', borderRadius: 4, fontWeight: 700 }}>
+                      EV {fmtSignPct(recommendation.bet.ev_pct)}
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--text3)' }}>
+                  Dôvod: {recommendation.reason}
+                </div>
+              </div>
+            )}
+
             {/* Market toggle */}
             {calc && (
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
@@ -1589,11 +1698,15 @@ export default function App() {
                 const marketCalibUsed = isOver ? calc?.marketCalibUsed?.over : calc?.marketCalibUsed?.under
                 const pMarket = isOver ? calc?.pMarketOver : calc?.pMarketUnder
                 const deltaP = isOver ? calc?.deltaPOver : calc?.deltaPUnder
+                const isRecommended = recommendation?.bet?.market_key === mkt
 
                 return (
-                  <div key={mkt} className={`market-col ${isOver ? 'market-col-over' : 'market-col-under'}`}>
-                    <div className={`market-title ${isOver ? 'market-title-over' : 'market-title-under'}`}>
-                      {isOver ? 'Over 2.5' : 'Under 2.5'}
+                  <div key={mkt} className={`market-col ${isOver ? 'market-col-over' : 'market-col-under'}`} style={isRecommended ? { boxShadow: '0 0 0 2px var(--green)' } : {}}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <div className={`market-title ${isOver ? 'market-title-over' : 'market-title-under'}`} style={{ marginBottom: 0 }}>
+                        {isOver ? 'Over 2.5' : 'Under 2.5'}
+                      </div>
+                      {isRecommended && <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--green)', background: 'rgba(0,184,148,0.15)', padding: '2px 7px', borderRadius: 3, letterSpacing: '0.08em' }}>RECOMMENDED</span>}
                     </div>
 
                     {fer && <div style={{ marginBottom: 10 }}>
@@ -1756,14 +1869,17 @@ export default function App() {
                 const evMinVal = calc.evMinVal || 0.12
                 const oLow = calc.oLow || 1.4
                 const oHigh = calc.oHigh || 3.5
-                // EV pre 3.0 s push logikou
                 const evB = actualOdds ? calcEVOU30(isOver, calc.ou30.pOver3, calc.ou30.pUnder2, actualOdds, comm) : null
                 const evPassB = evFilter(evB, evMinVal)
                 const oddsPass = actualOdds ? oddsBandFilter(actualOdds, oLow, oHigh) : false
                 const edge = actualOdds && fer ? (actualOdds / fer - 1) * 100 : null
+                const isRecommended = recommendation?.bet?.market_key === mkt
                 return (
-                  <div key={mkt} className="market-col" style={{ borderTop: `3px solid ${borderColor}` }}>
-                    <div className="market-title" style={{ color }}>{label}</div>
+                  <div key={mkt} className="market-col" style={{ borderTop: `3px solid ${borderColor}`, ...(isRecommended ? { boxShadow: '0 0 0 2px var(--green)' } : {}) }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <div className="market-title" style={{ color, marginBottom: 0 }}>{label}</div>
+                      {isRecommended && <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--green)', background: 'rgba(0,184,148,0.15)', padding: '2px 7px', borderRadius: 3, letterSpacing: '0.08em' }}>RECOMMENDED</span>}
+                    </div>
                     {fer && (
                       <div style={{ marginBottom: 10 }}>
                         <div className="label">FER kurz</div>
