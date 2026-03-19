@@ -400,7 +400,7 @@ export default function App() {
     const notifTime = kickoff - 5 * 60 * 1000
     const delay = notifTime - Date.now()
     if (delay < 0) return
-    const marketLabels = { 'over2.5': 'Over 2.5', 'under2.5': 'Under 2.5', 'ah_home_minus05': 'AH Home -0.5', 'ah_away_minus05': 'AH Away -0.5' }
+    const marketLabels = { 'over2.5': 'Over 2.5', 'under2.5': 'Under 2.5', 'over3.0': 'Over 3.0', 'under3.0': 'Under 3.0' }
     const marketLabel = marketLabels[market] || market || ''
     setTimeout(() => {
       const n = new Notification('⏰ CLV pripomienka', {
