@@ -418,6 +418,30 @@ export default function App() {
 
   useEffect(() => {
     loadBets()
+
+    // Autofill z Tampermonkey scriptu (SharpExchange → xG Calc)
+    try {
+      const raw = localStorage.getItem('xgcalc_autofill')
+      if (raw) {
+        const data = JSON.parse(raw)
+        // Použi len ak je mladšie ako 60 sekúnd
+        if (data.timestamp && Date.now() - data.timestamp < 60000) {
+          if (data.backOver25)  setBackOver(String(data.backOver25))
+          if (data.layOver25)   setLayOver(String(data.layOver25))
+          if (data.backUnder25) setBackUnder(String(data.backUnder25))
+          if (data.layUnder25)  setLayUnder(String(data.layUnder25))
+          if (data.backOver30)  setBackOver30(String(data.backOver30))
+          if (data.layOver30)   setLayOver30(String(data.layOver30))
+          if (data.backUnder30) setBackUnder30(String(data.backUnder30))
+          if (data.layUnder30)  setLayUnder30(String(data.layUnder30))
+          // Market calibration auto-fill
+          if (data.backOver25)  setMarketOddsOver(String(data.backOver25))
+          if (data.backUnder25) setMarketOddsUnder(String(data.backUnder25))
+        }
+        localStorage.removeItem('xgcalc_autofill')
+      }
+    } catch (e) {}
+
     setLeagueLoading(true)
     loadMyLeagues().then(async leagues => {
       setAllLeagues(leagues)
