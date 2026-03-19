@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import {
-  calcOverUnder, calcOU30, calcEVOU30, buildScoreMatrix, blendLambda, fairOdds, calcCLV,
+  calcOverUnder, calcOU30, calcEVOU30, calcOU275, calcEVOU275, calcOU225, calcEVOU225,
+  buildScoreMatrix, blendLambda, fairOdds, calcCLV,
   brierScore, logLoss, calcMaxDrawdown,
   marketCalibration, calibrateProb, evFilter, oddsBandFilter,
   timeDecayBlend, extractLastXStats,
@@ -328,6 +329,18 @@ export default function App() {
   const [layUnder30, setLayUnder30] = useState('')
   const [myOddsOver30, setMyOddsOver30] = useState('')
   const [myOddsUnder30, setMyOddsUnder30] = useState('')
+  const [backOver275, setBackOver275] = useState('')
+  const [layOver275, setLayOver275] = useState('')
+  const [backUnder275, setBackUnder275] = useState('')
+  const [layUnder275, setLayUnder275] = useState('')
+  const [myOddsOver275, setMyOddsOver275] = useState('')
+  const [myOddsUnder275, setMyOddsUnder275] = useState('')
+  const [backOver225, setBackOver225] = useState('')
+  const [layOver225, setLayOver225] = useState('')
+  const [backUnder225, setBackUnder225] = useState('')
+  const [layUnder225, setLayUnder225] = useState('')
+  const [myOddsOver225, setMyOddsOver225] = useState('')
+  const [myOddsUnder225, setMyOddsUnder225] = useState('')
   const [todaysMatches, setTodaysMatches] = useState([])
   const [todaysMatchesOpen, setTodaysMatchesOpen] = useState(false)
   const [todaysMatchesLoading, setTodaysMatchesLoading] = useState(false)
@@ -730,7 +743,9 @@ export default function App() {
 
     // O/U 3.0 — total goals Poisson (lambda_total = lH + lA)
     // Push pri presne 3 góloch, win/lose inak
-    const ou30 = calcOU30(lH, lA)
+    const ou30  = calcOU30(lH, lA)
+    const ou275 = calcOU275(lH, lA)
+    const ou225 = calcOU225(lH, lA)
 
     const kVal = pf(calibK) || 0.85
     const pOverCalib = calibrateProb(pOverRaw, kVal)
@@ -803,6 +818,8 @@ export default function App() {
       formInfo,
       xgScaler: pf(xgScaler) || 0.90,
       ou30,
+      ou275,
+      ou225,
     })
   }
 
@@ -810,32 +827,51 @@ export default function App() {
     if (!calc || saving) return
     setSaving(true)
     const isOver25 = market === 'over2.5'
-    const isOU30 = market === 'over3.0' || market === 'under3.0'
-    const isOver30 = market === 'over3.0'
+    const isOU30  = market === 'over3.0'  || market === 'under3.0'
+    const isOU275 = market === 'over2.75' || market === 'under2.75'
+    const isOU225 = market === 'over2.25' || market === 'under2.25'
+    const isOver30  = market === 'over3.0'
+    const isOver275 = market === 'over2.75'
+    const isOver225 = market === 'over2.25'
 
     // Pravdepodobnosť a FER podľa marketu
-    let selProb, ferO, midOdds, pushProb = null
+    let selProb, ferO, midOdds
     if (isOU30) {
       selProb = isOver30 ? calc.ou30.pOver3 : calc.ou30.pUnder2
-      pushProb = calc.ou30.pExact3
-      ferO = isOver30 ? calc.ou30.fairOver : calc.ou30.fairUnder
+      ferO    = isOver30 ? calc.ou30.fairOver : calc.ou30.fairUnder
       midOdds = isOver30
         ? midPrice(pf(backOver30) || null, pf(layOver30) || null)
         : midPrice(pf(backUnder30) || null, pf(layUnder30) || null)
+    } else if (isOU275) {
+      selProb = isOver275 ? calc.ou275.pOver275 : calc.ou275.pUnder275
+      ferO    = isOver275 ? calc.ou275.fairOver : calc.ou275.fairUnder
+      midOdds = isOver275
+        ? midPrice(pf(backOver275) || null, pf(layOver275) || null)
+        : midPrice(pf(backUnder275) || null, pf(layUnder275) || null)
+    } else if (isOU225) {
+      selProb = isOver225 ? calc.ou225.pOver225 : calc.ou225.pUnder225
+      ferO    = isOver225 ? calc.ou225.fairOver : calc.ou225.fairUnder
+      midOdds = isOver225
+        ? midPrice(pf(backOver225) || null, pf(layOver225) || null)
+        : midPrice(pf(backUnder225) || null, pf(layUnder225) || null)
     } else {
       selProb = isOver25 ? calc.pOver : calc.pUnder
-      ferO = isOver25 ? calc.ferOver : calc.ferUnder
+      ferO    = isOver25 ? calc.ferOver : calc.ferUnder
       midOdds = isOver25 ? calc.midO : calc.midU
     }
 
     if (!midOdds) { setSaving(false); return }
-    const myO = isOU30
-      ? pf(isOver30 ? myOddsOver30 : myOddsUnder30)
-      : pf(isOver25 ? myOddsOver : myOddsUnder)
+    const myO = isOU275 ? pf(isOver275 ? myOddsOver275 : myOddsUnder275)
+              : isOU225 ? pf(isOver225 ? myOddsOver225 : myOddsUnder225)
+              : isOU30  ? pf(isOver30  ? myOddsOver30  : myOddsUnder30)
+              : pf(isOver25 ? myOddsOver : myOddsUnder)
     const actualOdds = (myO && myO > 1) ? myO : midOdds
-    // EV: O/U 3.0 používa špeciálny vzorec s pushom
     const ev = isOU30
       ? calcEVOU30(isOver30, calc.ou30.pOver3, calc.ou30.pUnder2, actualOdds, calc.comm)
+      : isOU275
+        ? calcEVOU275(isOver275, calc.ou275.p0_2, calc.ou275.p3, calc.ou275.p4plus, actualOdds, calc.comm)
+      : isOU225
+        ? calcEVOU225(isOver225, calc.ou225.p0_1, calc.ou225.p2, calc.ou225.p3plus, actualOdds, calc.comm)
       : betType === 'back'
         ? calcBackEV(selProb, actualOdds, calc.comm)
         : calcLayEV(selProb, actualOdds, calc.comm)
@@ -844,8 +880,8 @@ export default function App() {
     const betTimeNow = new Date().toISOString()
     const hoursToKO = kickoff ? (new Date(kickoff) - new Date(betTimeNow)) / 3600000 : null
     const league = selectedHomeTeam?.leagueName || selectedAwayTeam?.leagueName || null
-    const modelProb = isOU30 ? selProb : (isOver25 ? calc.pOverCalib : calc.pUnderCalib)
-    const marketProb = isOU30 ? null : (isOver25 ? calc.pMarketOver : calc.pMarketUnder)
+    const modelProb = (isOU30 || isOU275 || isOU225) ? selProb : (isOver25 ? calc.pOverCalib : calc.pUnderCalib)
+    const marketProb = (isOU30 || isOU275 || isOU225) ? null : (isOver25 ? calc.pMarketOver : calc.pMarketUnder)
     const { data: inserted, error } = await supabase.from('bets').insert({
       match_name: matchName.trim() || calc.matchName || null, market, bet_type: betType,
       lambda_h: calc.lH, lambda_a: calc.lA,
@@ -888,15 +924,21 @@ export default function App() {
 
   async function handleSettle(id) {
     const res = parseInt(settleResult)
-    if (res !== 0 && res !== 1 && res !== 2) return
+    if (![0, 1, 2, 3, 4].includes(res)) return
     const bet = bets.find(b => b.id === id)
     if (!bet) return
     const odds = bet.odds_open
     const comm = (bet.commission || 5) / 100
     let pnl
     if (res === 2) {
-      // Push — stake sa vráti, pnl = 0
+      // Push — stake sa vráti
       pnl = 0
+    } else if (res === 3) {
+      // Half win — výhra z polovice stávky
+      pnl = (bet.stake / 2) * (odds - 1) * (1 - comm)
+    } else if (res === 4) {
+      // Half lose — strata polovice stávky
+      pnl = -(bet.stake / 2)
     } else if (bet.bet_type === 'lay') {
       pnl = res === 0 ? bet.stake * (1 - comm) : -bet.stake * (odds - 1)
     } else {
@@ -904,8 +946,8 @@ export default function App() {
     }
     await supabase.from('bets').update({
       result: res, pnl,
-      brier: res === 2 ? null : brierScore(bet.sel_prob, res),
-      log_loss: res === 2 ? null : logLoss(bet.sel_prob, res),
+      brier: [2, 3, 4].includes(res) ? null : brierScore(bet.sel_prob, res),
+      log_loss: [2, 3, 4].includes(res) ? null : logLoss(bet.sel_prob, res),
     }).eq('id', id)
     setSettlingId(null); setSettleResult(''); setSettleClose(''); setSettleMode('clv')
     await loadBets()
@@ -934,10 +976,11 @@ export default function App() {
   const totalPnL = settled.reduce((s, b) => s + (b.pnl || 0), 0)
   const roi = totalStake > 0 ? (totalPnL / totalStake) * 100 : null
   const pushes = settled.filter(b => b.result === 2).length
+  const halfWins = settled.filter(b => b.result === 3).length
+  const halfLoses = settled.filter(b => b.result === 4).length
   const wins = settled.filter(b => b.result === 1).length
-  // Hit rate a kalibrácia sa počítajú len z non-push betov
-  // Push (result=2) nie je win ani loss — nezahŕňame ho do win rate
-  const nonPushSettled = settled.filter(b => b.result !== 2)
+  // Hit rate a kalibrácia — len z čistých win/lose (nie push, nie half)
+  const nonPushSettled = settled.filter(b => b.result === 0 || b.result === 1)
   const hitRate = nonPushSettled.length > 0 ? wins / nonPushSettled.length : null
   const avgProb = nonPushSettled.length > 0 ? nonPushSettled.reduce((s, b) => s + b.sel_prob, 0) / nonPushSettled.length : null
   const avgBrier = settled.length > 0 ? settled.reduce((s, b) => s + (b.brier || 0), 0) / settled.length : null
@@ -949,7 +992,7 @@ export default function App() {
   const avgEV = evBets.length > 0 ? evBets.reduce((s, b) => s + b.ev_pct, 0) / evBets.length : null
   const maxDD = calcMaxDrawdown(settled)
   const calib = hitRate != null && avgProb != null ? (hitRate - avgProb) * 100 : null
-  const MARKET = { 'over2.5': 'Over 2.5', 'under2.5': 'Under 2.5', 'over3.0': 'Over 3.0', 'under3.0': 'Under 3.0' }
+  const MARKET = { 'over2.5': 'Over 2.5', 'under2.5': 'Under 2.5', 'over3.0': 'Over 3.0', 'under3.0': 'Under 3.0', 'over2.75': 'Over 2.75', 'under2.75': 'Under 2.75', 'over2.25': 'Over 2.25', 'under2.25': 'Under 2.25' }
 
   // CLV podľa času betu (hodiny do KO)
   const clvByTime = (() => {
@@ -1672,7 +1715,7 @@ export default function App() {
             {calc && (
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
                 <span style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 600, letterSpacing: 1 }}>MARKET:</span>
-                {[['ou25', 'O/U 2.5'], ['ou30', 'O/U 3.0']].map(([id, lbl]) => (
+                {[['ou25', 'O/U 2.5'], ['ou225', 'O/U 2.25'], ['ou275', 'O/U 2.75'], ['ou30', 'O/U 3.0']].map(([id, lbl]) => (
                   <button key={id} onClick={() => setMarketMode(id)} style={{
                     fontSize: 11, padding: '3px 12px', borderRadius: 6, border: '1px solid',
                     borderColor: marketMode === id ? 'var(--accent)' : 'var(--border)',
@@ -1940,6 +1983,107 @@ export default function App() {
                   </div>
                 )
               })}
+
+              {/* O/U 2.75 a O/U 2.25 markets — rovnaká štruktúra */}
+              {(marketMode === 'ou275' || marketMode === 'ou225') && calc && (() => {
+                const is275 = marketMode === 'ou275'
+                const ouData = is275 ? calc.ou275 : calc.ou225
+                if (!ouData) return null
+                const cards = is275
+                  ? [
+                      { label: 'Over 2.75', mkt: 'over2.75', prob: ouData.pOver275, fer: ouData.fairOver, backVal: backOver275, setBack: setBackOver275, layVal: layOver275, setLay: setLayOver275, myOddsVal: myOddsOver275, setMyOdds: setMyOddsOver275, color: 'var(--accent2)', borderColor: 'var(--accent)', isOver: true,
+                        winProb: ouData.p4plus, halfProb: ouData.p3, loseProb: ouData.p0_2, winLabel: '4+ gólov', halfLabel: '3 góly (half lose)', loseLabel: '0-2 góly' },
+                      { label: 'Under 2.75', mkt: 'under2.75', prob: ouData.pUnder275, fer: ouData.fairUnder, backVal: backUnder275, setBack: setBackUnder275, layVal: layUnder275, setLay: setLayUnder275, myOddsVal: myOddsUnder275, setMyOdds: setMyOddsUnder275, color: 'var(--green)', borderColor: 'var(--green)', isOver: false,
+                        winProb: ouData.p0_2, halfProb: ouData.p3, loseProb: ouData.p4plus, winLabel: '0-2 góly', halfLabel: '3 góly (half win)', loseLabel: '4+ gólov' },
+                    ]
+                  : [
+                      { label: 'Over 2.25', mkt: 'over2.25', prob: ouData.pOver225, fer: ouData.fairOver, backVal: backOver225, setBack: setBackOver225, layVal: layOver225, setLay: setLayOver225, myOddsVal: myOddsOver225, setMyOdds: setMyOddsOver225, color: 'var(--accent2)', borderColor: 'var(--accent)', isOver: true,
+                        winProb: ouData.p3plus, halfProb: ouData.p2, loseProb: ouData.p0_1, winLabel: '3+ gólov', halfLabel: '2 góly (half win)', loseLabel: '0-1 góly' },
+                      { label: 'Under 2.25', mkt: 'under2.25', prob: ouData.pUnder225, fer: ouData.fairUnder, backVal: backUnder225, setBack: setBackUnder225, layVal: layUnder225, setLay: setLayUnder225, myOddsVal: myOddsUnder225, setMyOdds: setMyOddsUnder225, color: 'var(--green)', borderColor: 'var(--green)', isOver: false,
+                        winProb: ouData.p0_1, halfProb: ouData.p2, loseProb: ouData.p3plus, winLabel: '0-1 góly', halfLabel: '2 góly (half lose)', loseLabel: '3+ gólov' },
+                    ]
+                return cards.map(({ label, mkt, prob, fer, backVal, setBack, layVal, setLay, myOddsVal, setMyOdds, color, borderColor, isOver, winProb, halfProb, loseProb, winLabel, halfLabel, loseLabel }) => {
+                  const mid = midPrice(pf(backVal) || null, pf(layVal) || null)
+                  const myO = pf(myOddsVal)
+                  const actualOdds = myO > 1 ? myO : mid
+                  const usingMyOdds = myO > 1
+                  const comm = calc.comm || 0.05
+                  const st = calc.st || 10
+                  const evMinVal = calc.evMinVal || 0.12
+                  const oLow = calc.oLow || 1.4
+                  const oHigh = calc.oHigh || 3.5
+                  const evB = actualOdds
+                    ? (is275
+                        ? calcEVOU275(isOver, ouData.p0_2, ouData.p3, ouData.p4plus, actualOdds, comm)
+                        : calcEVOU225(isOver, ouData.p0_1, ouData.p2, ouData.p3plus, actualOdds, comm))
+                    : null
+                  const evPassB = evFilter(evB, evMinVal)
+                  const oddsPass = actualOdds ? oddsBandFilter(actualOdds, oLow, oHigh) : false
+                  const edge = actualOdds && fer ? (actualOdds / fer - 1) * 100 : null
+                  const isRecommended = recommendation?.bet?.market_key === mkt
+                  return (
+                    <div key={mkt} className="market-col" style={{ borderTop: `3px solid ${borderColor}`, ...(isRecommended ? { boxShadow: '0 0 0 2px var(--green)' } : {}) }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                        <div className="market-title" style={{ color, marginBottom: 0 }}>{label}</div>
+                        {isRecommended && <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--green)', background: 'rgba(0,184,148,0.15)', padding: '2px 7px', borderRadius: 3, letterSpacing: '0.08em' }}>RECOMMENDED</span>}
+                      </div>
+                      {fer && (
+                        <div style={{ marginBottom: 10 }}>
+                          <div className="label">FER kurz</div>
+                          <div className="fer-num" style={{ color }}>
+                            {fmt3(fer)} <span style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 400 }}>({fmtPct(prob * 100)})</span>
+                          </div>
+                        </div>
+                      )}
+                      <div style={{ marginBottom: 8, padding: '6px 10px', background: 'var(--bg3)', borderRadius: 6, fontSize: 11, color: 'var(--text3)', lineHeight: 1.8 }}>
+                        <div>P(Win — {winLabel}): <b style={{ color: 'var(--green)' }}>{fmtPct(winProb * 100)}</b></div>
+                        <div>P(Half — {halfLabel}): <b style={{ color: 'var(--yellow)' }}>{fmtPct(halfProb * 100)}</b></div>
+                        <div>P(Lose — {loseLabel}): <b style={{ color: 'var(--red)' }}>{fmtPct(loseProb * 100)}</b></div>
+                      </div>
+                      <div style={{ marginTop: 10, marginBottom: 8 }}>
+                        <div className="label">Best Back</div>
+                        <input className="inp inp-sm" placeholder="1.85" value={backVal} onChange={e => setBack(e.target.value)} />
+                      </div>
+                      <div style={{ marginBottom: 8 }}>
+                        <div className="label">Best Lay</div>
+                        <input className="inp inp-sm" placeholder="1.88" value={layVal} onChange={e => setLay(e.target.value)} />
+                      </div>
+                      <div style={{ marginBottom: 8 }}>
+                        <div className="label">Môj kurz <span style={{ color: 'var(--accent2)' }}>(opt)</span></div>
+                        <input className="inp inp-sm" placeholder="napr. 2.08" value={myOddsVal} onChange={e => setMyOdds(e.target.value)} />
+                      </div>
+                      {actualOdds ? <>
+                        <div className="mid-row">
+                          <span style={{ color: 'var(--text3)' }}>{usingMyOdds ? 'Kurz:' : 'Mid:'}</span>
+                          <span className="mid-val">{fmt3(actualOdds)}</span>
+                          {edge != null && <span className={edge > 0 ? 'pos' : 'neg'} style={{ marginLeft: 'auto', fontSize: 11 }}>Edge {fmtSignPct(edge)}</span>}
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 2 }}>▲ Back EV (s half)</div>
+                          <div className={`ev-big ${evB > 0 ? 'pos' : 'neg'}`}>
+                            {fmtSignPct(evB * 100)}<span className="ev-eur">{fmtSign(evB * st)}€</span>
+                          </div>
+                        </div>
+                        <div style={{ marginTop: 8, fontSize: 10, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                          <div style={{ color: oddsPass ? 'var(--green)' : 'var(--red)' }}>
+                            {oddsPass ? '✓' : '✗'} Kurz {fmt3(actualOdds)} {oddsPass ? `v pásme` : `mimo pásma`}
+                          </div>
+                          <div style={{ color: evPassB ? 'var(--green)' : 'var(--text3)' }}>
+                            {evPassB ? '✓' : '✗'} EV {evPassB ? 'spĺňa' : 'nespĺňa'} min {fmtPct(evMinVal * 100)}
+                          </div>
+                          {oddsPass && evPassB && <div style={{ marginTop: 4, color: 'var(--green)', fontWeight: 700 }}>✅ BET SIGNAL: BACK</div>}
+                        </div>
+                        <div className="save-btns">
+                          <button className="btn-save-back" onClick={() => handleSave(mkt, 'back')} disabled={saving}>
+                            {savedKey === mkt + '-back' ? '✓' : '+ Back'}
+                          </button>
+                        </div>
+                        <div style={{ fontSize: 9, color: 'var(--text3)', textAlign: 'center', marginTop: 4 }}>kom {(comm * 100).toFixed(0)}% · Half = 50% stake späť</div>
+                      </> : <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 8 }}>Zadaj Back aj Lay pre mid price</div>}
+                    </div>
+                  )
+                })
+              })()}
             </div>
 
             {/* Lambda info + shrink info */}
@@ -2007,6 +2151,8 @@ export default function App() {
                       {b.result === 1 && <span className="badge badge-won">WON</span>}
                       {b.result === 0 && <span className="badge badge-lost">LOST</span>}
                       {b.result === 2 && <span className="badge" style={{ background: 'rgba(108,92,231,0.15)', color: 'var(--accent2)' }}>PUSH</span>}
+                      {b.result === 3 && <span className="badge" style={{ background: 'rgba(0,184,148,0.12)', color: 'var(--green)' }}>½ WIN</span>}
+                      {b.result === 4 && <span className="badge" style={{ background: 'rgba(214,48,49,0.12)', color: 'var(--red)' }}>½ LOSE</span>}
                       <span className={`badge ${b.bet_type === 'lay' ? 'badge-lay' : 'badge-back'}`}>{b.bet_type === 'lay' ? '▼ LAY' : '▲ BACK'}</span>
                       <span style={{ fontSize: 12, fontWeight: 600 }}>{MARKET[b.market]}</span>
                       {b.match_name && <span style={{ fontSize: 11, color: 'var(--text3)' }}>{b.match_name}</span>}
@@ -2089,6 +2235,14 @@ export default function App() {
                       {(b.market === 'over3.0' || b.market === 'under3.0') && (
                         <option value="2">↩️ Push (presne 3 góly — stake sa vráti)</option>
                       )}
+                      {(b.market === 'over2.75' || b.market === 'under2.75') && (<>
+                        <option value="3">½ Win (3 góly — {b.market === 'under2.75' ? 'Under half win' : 'Over half lose'} — 50% výhra)</option>
+                        <option value="4">½ Lose (3 góly — {b.market === 'over2.75' ? 'Over half lose' : 'Under half win'} — 50% strata)</option>
+                      </>)}
+                      {(b.market === 'over2.25' || b.market === 'under2.25') && (<>
+                        <option value="3">½ Win (2 góly — {b.market === 'over2.25' ? 'Over half win' : 'Under half lose'} — 50% výhra)</option>
+                        <option value="4">½ Lose (2 góly — {b.market === 'under2.25' ? 'Under half lose' : 'Over half win'} — 50% strata)</option>
+                      </>)}
                     </select>
                     <button className="btn btn-primary" style={{ padding: '10px' }} onClick={() => handleSettle(b.id)}>Potvrdiť výsledok</button>
                   </div>
@@ -2144,7 +2298,12 @@ export default function App() {
                     { l: 'ROI', v: fmtSignPct(roi), cls: roi >= 0 ? 'pos' : 'neg' },
                     { l: 'Total Stake', v: totalStake + '€' },
                     { l: 'Max Drawdown', v: fmt2(maxDD) + '€', cls: 'neg' },
-                    { l: 'Výhry / Prehry', v: pushes > 0 ? `${wins} / ${nonPushSettled.length - wins} / ${pushes}P` : `${wins} / ${settled.length - wins}` },
+                    { l: 'Výhry / Prehry', v: (() => {
+                      let s = `${wins} / ${nonPushSettled.length - wins}`
+                      if (pushes > 0) s += ` / ${pushes}P`
+                      if (halfWins > 0 || halfLoses > 0) s += ` / ${halfWins}½W ${halfLoses}½L`
+                      return s
+                    })() },
                   ].map(({ l, v, cls }) => (
                     <div key={l} className="card" style={{ padding: 14 }}>
                       <div className="label">{l}</div>

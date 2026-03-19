@@ -84,6 +84,61 @@ export function calcEVOU30(isOver, pOver3, pUnder2, odds, comm = 0.05) {
     : pUnder2 * (odds - 1) * (1 - comm) - pOver3
 }
 
+// Over/Under 2.75 — Asian line (split medzi 2.5 a 3.0)
+// Over 2.75: T<=2 lose, T=3 half lose, T>=4 win
+// Under 2.75: T<=2 win, T=3 half win, T>=4 lose
+export function calcOU275(lambdaH, lambdaA) {
+  const lt = lambdaH + lambdaA
+  const p0 = poissonPMF(0, lt)
+  const p1 = poissonPMF(1, lt)
+  const p2 = poissonPMF(2, lt)
+  const p3 = poissonPMF(3, lt)
+  const p0_2 = p0 + p1 + p2
+  const p4plus = 1 - p0_2 - p3
+  const pOver275  = p4plus + 0.5 * p3
+  const pUnder275 = p0_2   + 0.5 * p3
+  const fairOver  = pOver275  > 0 ? 1 / pOver275  : null
+  const fairUnder = pUnder275 > 0 ? 1 / pUnder275 : null
+  return { pOver275, pUnder275, p0_2, p3, p4plus, fairOver, fairUnder }
+}
+
+// EV pre O/U 2.75 (back bet) s komisiou
+export function calcEVOU275(isOver, p0_2, p3, p4plus, odds, comm = 0.05) {
+  if (!odds || odds <= 1) return null
+  if (isOver) {
+    return p4plus * (odds - 1) * (1 - comm) + p3 * 0.5 * (odds - 1) * (1 - comm) - p0_2
+  } else {
+    return p0_2 * (odds - 1) * (1 - comm) - p3 * 0.5 - p4plus
+  }
+}
+
+// Over/Under 2.25 — Asian line (split medzi 2.0 a 2.5)
+// Over 2.25: T<=1 lose, T=2 half win, T>=3 win
+// Under 2.25: T<=1 win, T=2 half lose, T>=3 lose
+export function calcOU225(lambdaH, lambdaA) {
+  const lt = lambdaH + lambdaA
+  const p0 = poissonPMF(0, lt)
+  const p1 = poissonPMF(1, lt)
+  const p2 = poissonPMF(2, lt)
+  const p0_1   = p0 + p1
+  const p3plus = 1 - p0_1 - p2
+  const pOver225  = p3plus + 0.5 * p2
+  const pUnder225 = p0_1   + 0.5 * p2
+  const fairOver  = pOver225  > 0 ? 1 / pOver225  : null
+  const fairUnder = pUnder225 > 0 ? 1 / pUnder225 : null
+  return { pOver225, pUnder225, p0_1, p2, p3plus, fairOver, fairUnder }
+}
+
+// EV pre O/U 2.25 (back bet) s komisiou
+export function calcEVOU225(isOver, p0_1, p2, p3plus, odds, comm = 0.05) {
+  if (!odds || odds <= 1) return null
+  if (isOver) {
+    return p3plus * (odds - 1) * (1 - comm) + p2 * 0.5 * (odds - 1) * (1 - comm) - p0_1
+  } else {
+    return p0_1 * (odds - 1) * (1 - comm) - p2 * 0.5 - p3plus
+  }
+}
+
 // Blend xG + xGA using geometric mean
 export function blendLambda(xg, xgaOpponent) {
   return Math.sqrt(xg * xgaOpponent)
