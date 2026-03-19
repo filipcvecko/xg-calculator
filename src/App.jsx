@@ -400,6 +400,10 @@ export default function App() {
     const notifTime = kickoff - 5 * 60 * 1000
     const delay = notifTime - Date.now()
     if (delay < 0) return
+    // Deduplication — každý bet naplánujeme max 1x za session
+    const sessionKey = `notif_scheduled_${betId}`
+    if (sessionStorage.getItem(sessionKey)) return
+    sessionStorage.setItem(sessionKey, '1')
     const marketLabels = { 'over2.5': 'Over 2.5', 'under2.5': 'Under 2.5', 'over3.0': 'Over 3.0', 'under3.0': 'Under 3.0' }
     const marketLabel = marketLabels[market] || market || ''
     setTimeout(() => {
