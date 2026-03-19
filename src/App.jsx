@@ -394,7 +394,7 @@ export default function App() {
     setNotifPermission(perm)
   }
 
-  function scheduleClvNotification(betId, betMatchName, kickoffStr, market) {
+  function scheduleClvNotification(betId, betMatchName, kickoffStr, market, league) {
     if (!kickoffStr || typeof Notification === 'undefined' || Notification.permission !== 'granted') return
     const kickoff = new Date(kickoffStr).getTime()
     const notifTime = kickoff - 5 * 60 * 1000
@@ -406,9 +406,10 @@ export default function App() {
     sessionStorage.setItem(sessionKey, '1')
     const marketLabels = { 'over2.5': 'Over 2.5', 'under2.5': 'Under 2.5', 'over3.0': 'Over 3.0', 'under3.0': 'Under 3.0' }
     const marketLabel = marketLabels[market] || market || ''
+    const leagueStr = league ? ` · ${league}` : ''
     setTimeout(() => {
       const n = new Notification('⏰ CLV pripomienka', {
-        body: `${betMatchName || 'Zápas'} [${marketLabel}] začína o 5 min — skontroluj záverečný kurz!`,
+        body: `${betMatchName || 'Zápas'} [${marketLabel}]${leagueStr}\nZačína o 5 min — skontroluj kurz!`,
         icon: '/favicon.ico',
         tag: `clv-${betId}`,
       })
@@ -869,7 +870,7 @@ export default function App() {
       await loadBets()
       setSavedKey(market + '-' + betType)
       if (kickoff && inserted?.[0]?.id) {
-        scheduleClvNotification(inserted[0].id, calc.matchName, kickoff, market)
+        scheduleClvNotification(inserted[0].id, calc.matchName, kickoff, market, league)
       }
     }
     setSaving(false)
