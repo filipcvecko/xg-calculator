@@ -2154,6 +2154,7 @@ export default function App() {
                       <span className={`badge ${b.bet_type === 'lay' ? 'badge-lay' : 'badge-back'}`}>{b.bet_type === 'lay' ? '▼ LAY' : '▲ BACK'}</span>
                       <span style={{ fontSize: 12, fontWeight: 600 }}>{MARKET[b.market]}</span>
                       {b.match_name && <span style={{ fontSize: 11, color: 'var(--text3)' }}>{b.match_name}</span>}
+                      {b.league && <span style={{ fontSize: 10, color: 'var(--accent2)', background: 'rgba(108,92,231,0.08)', padding: '1px 6px', borderRadius: 3 }}>{b.league}</span>}
                       <span style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--text3)' }}>{expandedId === b.id ? '▲' : '▼'}</span>
                     </div>
                     <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', fontSize: 11, color: 'var(--text3)' }}>
