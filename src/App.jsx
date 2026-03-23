@@ -477,16 +477,29 @@ export default function App() {
       setAllLeagues(leagues)
       setLeagueLoading(false)
 
-      // Načítaj len mená tímov (bez štatistík) — oveľa rýchlejšie
       if (leagues.length === 0) return
+
+      // Cache tímov v localStorage — platná 24 hodín
+      const CACHE_KEY = 'xgcalc_teams_cache'
+      const CACHE_TTL = 24 * 60 * 60 * 1000
+      try {
+        const cached = localStorage.getItem(CACHE_KEY)
+        if (cached) {
+          const { teams, ts } = JSON.parse(cached)
+          if (Date.now() - ts < CACHE_TTL && teams.length > 0) {
+            setAllTeams(teams)
+            return
+          }
+        }
+      } catch (e) {}
+
       setTeamsLoading(true)
-      const CHUNK = 5
+      const CHUNK = 10
       let allLoadedTeams = []
       for (let i = 0; i < leagues.length; i += CHUNK) {
         const chunk = leagues.slice(i, i + CHUNK)
         const results = await Promise.all(chunk.map(async l => {
           const seasons = (l.season ?? []).slice().sort((a, b) => b.id - a.id)
-          // Vždy len aktuálna (najnovšia) sezóna — čisté dáta bez miešania sezón
           const top1 = seasons.slice(0, 1)
           if (top1.length === 0) top1.push({ id: l.id })
           const teamArrays = await Promise.all(top1.map(s => fetchTeamNamesForSeason(s.id, l.name, l.country)))
@@ -507,6 +520,7 @@ export default function App() {
       })
       const unique = Array.from(teamMap.values()).sort((a, b) => a.name.localeCompare(b.name))
       setAllTeams(unique)
+      try { localStorage.setItem('xgcalc_teams_cache', JSON.stringify({ teams: unique, ts: Date.now() })) } catch (e) {}
       setTeamsLoading(false)
     })
   }, [])
@@ -760,8 +774,8 @@ export default function App() {
     // O/U 3.0 — total goals Poisson (lambda_total = lH + lA)
     // Push pri presne 3 góloch, win/lose inak
     const ou30  = calcOU30(lH, lA)
-    const ou275 = calcOU275(lH, lA, rhoVal)
-    const ou225 = calcOU225(lH, lA, rhoVal)
+    const ou275 = calcOU275(lH, lA)
+    const ou225 = calcOU225(lH, lA)
 
     const kVal = pf(calibK) || 0.85
     const pOverCalib = calibrateProb(pOverRaw, kVal)
@@ -919,7 +933,12 @@ export default function App() {
       console.error('Supabase insert error:', error)
       alert('Chyba pri ukladaní: ' + (error.message || JSON.stringify(error)))
     } else {
-      await loadBets()
+      // Pridaj bet lokálne — bez reloadu celej kolekcie
+      if (inserted?.[0]) {
+        setBets(prev => [inserted[0], ...prev])
+      } else {
+        await loadBets()
+      }
       setSavedKey(market + '-' + betType)
       if (kickoff && inserted?.[0]?.id) {
         scheduleClvNotification(inserted[0].id, calc.matchName, kickoff, market, league)
