@@ -87,17 +87,21 @@ export function calcEVOU30(isOver, pOver3, pUnder2, odds, comm = 0.05) {
 // Over/Under 2.75 — Asian line (split medzi 2.5 a 3.0)
 // Over 2.75: T<=2 lose, T=3 half lose, T>=4 win
 // Under 2.75: T<=2 win, T=3 half win, T>=4 lose
-export function calcOU275(lambdaH, lambdaA) {
-  const lt = lambdaH + lambdaA
-  const p0 = poissonPMF(0, lt)
-  const p1 = poissonPMF(1, lt)
-  const p2 = poissonPMF(2, lt)
-  const p3 = poissonPMF(3, lt)
-  const p0_2 = p0 + p1 + p2
-  const p4plus = 1 - p0_2 - p3
+// Používa score matrix s Dixon-Coles korekciou (presnejšie ako total goals Poisson)
+export function calcOU275(lambdaH, lambdaA, rho = -0.10) {
+  const matrix = buildScoreMatrix(lambdaH, lambdaA, rho)
+  let p0_2 = 0, p3 = 0, p4plus = 0
+  for (const [key, prob] of matrix.entries()) {
+    const [h, a] = key.split('-').map(Number)
+    const total = h + a
+    if (total <= 2) p0_2 += prob
+    else if (total === 3) p3 += prob
+    else p4plus += prob
+  }
   const pOver275  = p4plus + 0.5 * p3
   const pUnder275 = p0_2   + 0.5 * p3
-  // Fair odds z EV=0 podmienky pre Asian quarter line (half-win/half-loss)
+  // Fair odds z EV=0 s komisiou (používa App.jsx asianFairOdds)
+  // Tu vraciame bez komisie — App.jsx prepočíta s komisiou
   const fairOver  = (p4plus + 0.5 * p3) > 0 ? 1 + p0_2  / (p4plus + 0.5 * p3) : null
   const fairUnder = (p0_2   + 0.5 * p3) > 0 ? 1 + p4plus / (p0_2   + 0.5 * p3) : null
   return { pOver275, pUnder275, p0_2, p3, p4plus, fairOver, fairUnder }
@@ -120,19 +124,21 @@ export function calcEVOU275(isOver, p0_2, p3, p4plus, odds, comm = 0.05) {
 // Over/Under 2.25 — Asian line (split medzi 2.0 a 2.5)
 // Over 2.25: T<=1 lose, T=2 half win, T>=3 win
 // Under 2.25: T<=1 win, T=2 half lose, T>=3 lose
-export function calcOU225(lambdaH, lambdaA) {
-  const lt = lambdaH + lambdaA
-  const p0 = poissonPMF(0, lt)
-  const p1 = poissonPMF(1, lt)
-  const p2 = poissonPMF(2, lt)
-  const p0_1   = p0 + p1
-  const p3plus = 1 - p0_1 - p2
+// Používa score matrix s Dixon-Coles korekciou (presnejšie ako total goals Poisson)
+export function calcOU225(lambdaH, lambdaA, rho = -0.10) {
+  const matrix = buildScoreMatrix(lambdaH, lambdaA, rho)
+  let p0_1 = 0, p2 = 0, p3plus = 0
+  for (const [key, prob] of matrix.entries()) {
+    const [h, a] = key.split('-').map(Number)
+    const total = h + a
+    if (total <= 1) p0_1 += prob
+    else if (total === 2) p2 += prob
+    else p3plus += prob
+  }
   const pOver225  = p3plus + 0.5 * p2
   const pUnder225 = p0_1   + 0.5 * p2
-  // Fair odds z EV=0 podmienky pre Asian quarter line (half-win/half-loss)
-  // EV = p_win*(odds-1) + p_half*0.5*(odds-1) - p_loss = 0 → odds = 1 + p_loss/(p_win + 0.5*p_half)
-  const fairOver  = (p3plus + 0.5 * p2) > 0 ? 1 + p0_1  / (p3plus + 0.5 * p2) : null
-  const fairUnder = (p0_1   + 0.5 * p2) > 0 ? 1 + p3plus / (p0_1   + 0.5 * p2) : null
+  const fairOver  = (p3plus + 0.5 * p2) > 0 ? 1 + p0_1   / (p3plus + 0.5 * p2) : null
+  const fairUnder = (p0_1   + 0.5 * p2) > 0 ? 1 + p3plus  / (p0_1   + 0.5 * p2) : null
   return { pOver225, pUnder225, p0_1, p2, p3plus, fairOver, fairUnder }
 }
 

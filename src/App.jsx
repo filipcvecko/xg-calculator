@@ -760,8 +760,8 @@ export default function App() {
     // O/U 3.0 — total goals Poisson (lambda_total = lH + lA)
     // Push pri presne 3 góloch, win/lose inak
     const ou30  = calcOU30(lH, lA)
-    const ou275 = calcOU275(lH, lA)
-    const ou225 = calcOU225(lH, lA)
+    const ou275 = calcOU275(lH, lA, rhoVal)
+    const ou225 = calcOU225(lH, lA, rhoVal)
 
     const kVal = pf(calibK) || 0.85
     const pOverCalib = calibrateProb(pOverRaw, kVal)
