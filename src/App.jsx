@@ -357,6 +357,16 @@ export default function App() {
   const [layUnder225, setLayUnder225] = useState('')
   const [myOddsOver225, setMyOddsOver225] = useState('')
   const [myOddsUnder225, setMyOddsUnder225] = useState('')
+
+  // Pinnacle kurzy — len pre zobrazenie CLV v čase podania, neukladajú sa
+  const [pinnOver25, setPinnOver25] = useState('')
+  const [pinnUnder25, setPinnUnder25] = useState('')
+  const [pinnOver30, setPinnOver30] = useState('')
+  const [pinnUnder30, setPinnUnder30] = useState('')
+  const [pinnOver275, setPinnOver275] = useState('')
+  const [pinnUnder275, setPinnUnder275] = useState('')
+  const [pinnOver225, setPinnOver225] = useState('')
+  const [pinnUnder225, setPinnUnder225] = useState('')
   const [todaysMatches, setTodaysMatches] = useState([])
   const [todaysMatchesOpen, setTodaysMatchesOpen] = useState(false)
   const [todaysMatchesLoading, setTodaysMatchesLoading] = useState(false)
@@ -477,29 +487,16 @@ export default function App() {
       setAllLeagues(leagues)
       setLeagueLoading(false)
 
+      // Načítaj len mená tímov (bez štatistík) — oveľa rýchlejšie
       if (leagues.length === 0) return
-
-      // Cache tímov v localStorage — platná 24 hodín
-      const CACHE_KEY = 'xgcalc_teams_cache'
-      const CACHE_TTL = 24 * 60 * 60 * 1000
-      try {
-        const cached = localStorage.getItem(CACHE_KEY)
-        if (cached) {
-          const { teams, ts } = JSON.parse(cached)
-          if (Date.now() - ts < CACHE_TTL && teams.length > 0) {
-            setAllTeams(teams)
-            return
-          }
-        }
-      } catch (e) {}
-
       setTeamsLoading(true)
-      const CHUNK = 10
+      const CHUNK = 5
       let allLoadedTeams = []
       for (let i = 0; i < leagues.length; i += CHUNK) {
         const chunk = leagues.slice(i, i + CHUNK)
         const results = await Promise.all(chunk.map(async l => {
           const seasons = (l.season ?? []).slice().sort((a, b) => b.id - a.id)
+          // Vždy len aktuálna (najnovšia) sezóna — čisté dáta bez miešania sezón
           const top1 = seasons.slice(0, 1)
           if (top1.length === 0) top1.push({ id: l.id })
           const teamArrays = await Promise.all(top1.map(s => fetchTeamNamesForSeason(s.id, l.name, l.country)))
@@ -520,7 +517,6 @@ export default function App() {
       })
       const unique = Array.from(teamMap.values()).sort((a, b) => a.name.localeCompare(b.name))
       setAllTeams(unique)
-      try { localStorage.setItem('xgcalc_teams_cache', JSON.stringify({ teams: unique, ts: Date.now() })) } catch (e) {}
       setTeamsLoading(false)
     })
   }, [])
@@ -933,12 +929,7 @@ export default function App() {
       console.error('Supabase insert error:', error)
       alert('Chyba pri ukladaní: ' + (error.message || JSON.stringify(error)))
     } else {
-      // Pridaj bet lokálne — bez reloadu celej kolekcie
-      if (inserted?.[0]) {
-        setBets(prev => [inserted[0], ...prev])
-      } else {
-        await loadBets()
-      }
+      await loadBets()
       setSavedKey(market + '-' + betType)
       if (kickoff && inserted?.[0]?.id) {
         scheduleClvNotification(inserted[0].id, calc.matchName, kickoff, market, league)
@@ -1859,6 +1850,24 @@ export default function App() {
                         value={isOver ? myOddsOver : myOddsUnder}
                         onChange={e => isOver ? setMyOddsOver(e.target.value) : setMyOddsUnder(e.target.value)} />
                     </div>
+                    <div style={{ marginBottom: 8 }}>
+                      <div className="label">Pinnacle kurz <span style={{ color: 'var(--text3)' }}>(opt — CLV check)</span></div>
+                      <input className="inp inp-sm" placeholder="napr. 1.90"
+                        value={isOver ? pinnOver25 : pinnUnder25}
+                        onChange={e => isOver ? setPinnOver25(e.target.value) : setPinnUnder25(e.target.value)} />
+                      {(() => {
+                        const pinnO = pf(isOver ? pinnOver25 : pinnUnder25)
+                        const myO = pf(isOver ? myOddsOver : myOddsUnder)
+                        const refOdds = myO > 1 ? myO : mid
+                        if (!pinnO || pinnO <= 1 || !refOdds) return null
+                        const clvPinn = (refOdds / pinnO - 1) * 100
+                        return (
+                          <div style={{ marginTop: 4, fontSize: 11, fontWeight: 700, color: clvPinn > 0 ? 'var(--green)' : 'var(--red)' }}>
+                            CLV vs Pinnacle: {clvPinn > 0 ? '+' : ''}{clvPinn.toFixed(1)}%
+                          </div>
+                        )
+                      })()}
+                    </div>
 
                     {mid ? <>
                       <div className="mid-row">
@@ -1984,6 +1993,22 @@ export default function App() {
                       <div className="label">Môj kurz <span style={{ color: 'var(--accent2)' }}>(opt — ak líši od mid)</span></div>
                       <input className="inp inp-sm" placeholder="napr. 2.08" value={myOddsVal} onChange={e => setMyOdds(e.target.value)} />
                     </div>
+                    <div style={{ marginBottom: 8 }}>
+                      <div className="label">Pinnacle kurz <span style={{ color: 'var(--text3)' }}>(opt — CLV check)</span></div>
+                      <input className="inp inp-sm" placeholder="napr. 1.90"
+                        value={isOver ? pinnOver30 : pinnUnder30}
+                        onChange={e => isOver ? setPinnOver30(e.target.value) : setPinnUnder30(e.target.value)} />
+                      {(() => {
+                        const pinnO = pf(isOver ? pinnOver30 : pinnUnder30)
+                        if (!pinnO || pinnO <= 1 || !actualOdds) return null
+                        const clvPinn = (actualOdds / pinnO - 1) * 100
+                        return (
+                          <div style={{ marginTop: 4, fontSize: 11, fontWeight: 700, color: clvPinn > 0 ? 'var(--green)' : 'var(--red)' }}>
+                            CLV vs Pinnacle: {clvPinn > 0 ? '+' : ''}{clvPinn.toFixed(1)}%
+                          </div>
+                        )
+                      })()}
+                    </div>
                     {actualOdds ? <>
                       <div className="mid-row">
                         <span style={{ color: 'var(--text3)' }}>{usingMyOdds ? 'Kurz:' : 'Mid:'}</span>
@@ -2086,6 +2111,27 @@ export default function App() {
                       <div style={{ marginBottom: 8 }}>
                         <div className="label">Môj kurz <span style={{ color: 'var(--accent2)' }}>(opt)</span></div>
                         <input className="inp inp-sm" placeholder="napr. 2.08" value={myOddsVal} onChange={e => setMyOdds(e.target.value)} />
+                      </div>
+                      <div style={{ marginBottom: 8 }}>
+                        <div className="label">Pinnacle kurz <span style={{ color: 'var(--text3)' }}>(opt — CLV check)</span></div>
+                        <input className="inp inp-sm" placeholder="napr. 1.90"
+                          value={is275 ? (isOver ? pinnOver275 : pinnUnder275) : (isOver ? pinnOver225 : pinnUnder225)}
+                          onChange={e => {
+                            const val = e.target.value
+                            if (is275) { isOver ? setPinnOver275(val) : setPinnUnder275(val) }
+                            else { isOver ? setPinnOver225(val) : setPinnUnder225(val) }
+                          }} />
+                        {(() => {
+                          const pinnVal = is275 ? (isOver ? pinnOver275 : pinnUnder275) : (isOver ? pinnOver225 : pinnUnder225)
+                          const pinnO = pf(pinnVal)
+                          if (!pinnO || pinnO <= 1 || !actualOdds) return null
+                          const clvPinn = (actualOdds / pinnO - 1) * 100
+                          return (
+                            <div style={{ marginTop: 4, fontSize: 11, fontWeight: 700, color: clvPinn > 0 ? 'var(--green)' : 'var(--red)' }}>
+                              CLV vs Pinnacle: {clvPinn > 0 ? '+' : ''}{clvPinn.toFixed(1)}%
+                            </div>
+                          )
+                        })()}
                       </div>
                       {actualOdds ? <>
                         <div className="mid-row">
