@@ -357,16 +357,6 @@ export default function App() {
   const [layUnder225, setLayUnder225] = useState('')
   const [myOddsOver225, setMyOddsOver225] = useState('')
   const [myOddsUnder225, setMyOddsUnder225] = useState('')
-
-  // Pinnacle kurzy — len pre zobrazenie CLV v čase podania, neukladajú sa
-  const [pinnOver25, setPinnOver25] = useState('')
-  const [pinnUnder25, setPinnUnder25] = useState('')
-  const [pinnOver30, setPinnOver30] = useState('')
-  const [pinnUnder30, setPinnUnder30] = useState('')
-  const [pinnOver275, setPinnOver275] = useState('')
-  const [pinnUnder275, setPinnUnder275] = useState('')
-  const [pinnOver225, setPinnOver225] = useState('')
-  const [pinnUnder225, setPinnUnder225] = useState('')
   const [todaysMatches, setTodaysMatches] = useState([])
   const [todaysMatchesOpen, setTodaysMatchesOpen] = useState(false)
   const [todaysMatchesLoading, setTodaysMatchesLoading] = useState(false)
@@ -426,6 +416,8 @@ export default function App() {
   const [settleMode, setSettleMode] = useState('clv')
   const [settleClose, setSettleClose] = useState('')
   const [settleResult, setSettleResult] = useState('')
+  const [settleXgHome, setSettleXgHome] = useState('')
+  const [settleXgAway, setSettleXgAway] = useState('')
 
   async function requestNotifPermission() {
     if (typeof Notification === 'undefined') return
@@ -957,25 +949,54 @@ export default function App() {
     const comm = (bet.commission || 5) / 100
     let pnl
     if (res === 2) {
-      // Push — stake sa vráti
       pnl = 0
     } else if (res === 3) {
-      // Half win — výhra z polovice stávky
       pnl = (bet.stake / 2) * (odds - 1) * (1 - comm)
     } else if (res === 4) {
-      // Half lose — strata polovice stávky
       pnl = -(bet.stake / 2)
     } else if (bet.bet_type === 'lay') {
       pnl = res === 0 ? bet.stake * (1 - comm) : -bet.stake * (odds - 1)
     } else {
       pnl = res === 1 ? bet.stake * (odds - 1) * (1 - comm) : -bet.stake
     }
+
+    // xG Brier — porovnaj predpoveď s reálnym xG výsledkom
+    const xgH = pf(settleXgHome)
+    const xgA = pf(settleXgAway)
+    let xgBrier = null
+    if (xgH > 0 || xgA > 0) {
+      const xgTotal = xgH + xgA
+      // Určí "xG výsledok" podľa marketu — bol proces Over alebo Under?
+      const mkt = bet.market
+      let xgOutcome = null
+      if (mkt === 'over2.5' || mkt === 'under2.5') {
+        xgOutcome = xgTotal > 2.5 ? 1 : 0
+        if (mkt === 'under2.5') xgOutcome = 1 - xgOutcome
+      } else if (mkt === 'over3.0' || mkt === 'under3.0') {
+        xgOutcome = xgTotal > 3.0 ? 1 : 0
+        if (mkt === 'under3.0') xgOutcome = 1 - xgOutcome
+      } else if (mkt === 'over2.75' || mkt === 'under2.75') {
+        xgOutcome = xgTotal > 2.75 ? 1 : 0
+        if (mkt === 'under2.75') xgOutcome = 1 - xgOutcome
+      } else if (mkt === 'over2.25' || mkt === 'under2.25') {
+        xgOutcome = xgTotal > 2.25 ? 1 : 0
+        if (mkt === 'under2.25') xgOutcome = 1 - xgOutcome
+      }
+      if (xgOutcome !== null && bet.sel_prob != null) {
+        xgBrier = brierScore(bet.sel_prob, xgOutcome)
+      }
+    }
+
     await supabase.from('bets').update({
       result: res, pnl,
       brier: [2, 3, 4].includes(res) ? null : brierScore(bet.sel_prob, res),
       log_loss: [2, 3, 4].includes(res) ? null : logLoss(bet.sel_prob, res),
+      xg_home_real: xgH > 0 ? xgH : null,
+      xg_away_real: xgA > 0 ? xgA : null,
+      xg_brier: xgBrier,
     }).eq('id', id)
     setSettlingId(null); setSettleResult(''); setSettleClose(''); setSettleMode('clv')
+    setSettleXgHome(''); setSettleXgAway('')
     await loadBets()
   }
 
@@ -1850,24 +1871,6 @@ export default function App() {
                         value={isOver ? myOddsOver : myOddsUnder}
                         onChange={e => isOver ? setMyOddsOver(e.target.value) : setMyOddsUnder(e.target.value)} />
                     </div>
-                    <div style={{ marginBottom: 8 }}>
-                      <div className="label">Pinnacle kurz <span style={{ color: 'var(--text3)' }}>(opt — CLV check)</span></div>
-                      <input className="inp inp-sm" placeholder="napr. 1.90"
-                        value={isOver ? pinnOver25 : pinnUnder25}
-                        onChange={e => isOver ? setPinnOver25(e.target.value) : setPinnUnder25(e.target.value)} />
-                      {(() => {
-                        const pinnO = pf(isOver ? pinnOver25 : pinnUnder25)
-                        const myO = pf(isOver ? myOddsOver : myOddsUnder)
-                        const refOdds = myO > 1 ? myO : mid
-                        if (!pinnO || pinnO <= 1 || !refOdds) return null
-                        const clvPinn = (refOdds / pinnO - 1) * 100
-                        return (
-                          <div style={{ marginTop: 4, fontSize: 11, fontWeight: 700, color: clvPinn > 0 ? 'var(--green)' : 'var(--red)' }}>
-                            CLV vs Pinnacle: {clvPinn > 0 ? '+' : ''}{clvPinn.toFixed(1)}%
-                          </div>
-                        )
-                      })()}
-                    </div>
 
                     {mid ? <>
                       <div className="mid-row">
@@ -1993,22 +1996,6 @@ export default function App() {
                       <div className="label">Môj kurz <span style={{ color: 'var(--accent2)' }}>(opt — ak líši od mid)</span></div>
                       <input className="inp inp-sm" placeholder="napr. 2.08" value={myOddsVal} onChange={e => setMyOdds(e.target.value)} />
                     </div>
-                    <div style={{ marginBottom: 8 }}>
-                      <div className="label">Pinnacle kurz <span style={{ color: 'var(--text3)' }}>(opt — CLV check)</span></div>
-                      <input className="inp inp-sm" placeholder="napr. 1.90"
-                        value={isOver ? pinnOver30 : pinnUnder30}
-                        onChange={e => isOver ? setPinnOver30(e.target.value) : setPinnUnder30(e.target.value)} />
-                      {(() => {
-                        const pinnO = pf(isOver ? pinnOver30 : pinnUnder30)
-                        if (!pinnO || pinnO <= 1 || !actualOdds) return null
-                        const clvPinn = (actualOdds / pinnO - 1) * 100
-                        return (
-                          <div style={{ marginTop: 4, fontSize: 11, fontWeight: 700, color: clvPinn > 0 ? 'var(--green)' : 'var(--red)' }}>
-                            CLV vs Pinnacle: {clvPinn > 0 ? '+' : ''}{clvPinn.toFixed(1)}%
-                          </div>
-                        )
-                      })()}
-                    </div>
                     {actualOdds ? <>
                       <div className="mid-row">
                         <span style={{ color: 'var(--text3)' }}>{usingMyOdds ? 'Kurz:' : 'Mid:'}</span>
@@ -2111,27 +2098,6 @@ export default function App() {
                       <div style={{ marginBottom: 8 }}>
                         <div className="label">Môj kurz <span style={{ color: 'var(--accent2)' }}>(opt)</span></div>
                         <input className="inp inp-sm" placeholder="napr. 2.08" value={myOddsVal} onChange={e => setMyOdds(e.target.value)} />
-                      </div>
-                      <div style={{ marginBottom: 8 }}>
-                        <div className="label">Pinnacle kurz <span style={{ color: 'var(--text3)' }}>(opt — CLV check)</span></div>
-                        <input className="inp inp-sm" placeholder="napr. 1.90"
-                          value={is275 ? (isOver ? pinnOver275 : pinnUnder275) : (isOver ? pinnOver225 : pinnUnder225)}
-                          onChange={e => {
-                            const val = e.target.value
-                            if (is275) { isOver ? setPinnOver275(val) : setPinnUnder275(val) }
-                            else { isOver ? setPinnOver225(val) : setPinnUnder225(val) }
-                          }} />
-                        {(() => {
-                          const pinnVal = is275 ? (isOver ? pinnOver275 : pinnUnder275) : (isOver ? pinnOver225 : pinnUnder225)
-                          const pinnO = pf(pinnVal)
-                          if (!pinnO || pinnO <= 1 || !actualOdds) return null
-                          const clvPinn = (actualOdds / pinnO - 1) * 100
-                          return (
-                            <div style={{ marginTop: 4, fontSize: 11, fontWeight: 700, color: clvPinn > 0 ? 'var(--green)' : 'var(--red)' }}>
-                              CLV vs Pinnacle: {clvPinn > 0 ? '+' : ''}{clvPinn.toFixed(1)}%
-                            </div>
-                          )
-                        })()}
                       </div>
                       {actualOdds ? <>
                         <div className="mid-row">
@@ -2287,6 +2253,8 @@ export default function App() {
                       {b.clv != null && <span>CLV: <b className={b.clv > 0 ? 'pos' : 'neg'}>{fmtSignPct(b.clv)}</b></span>}
                       {b.brier != null && <span>Brier: <b style={{ color: 'var(--text2)' }}>{fmt2(b.brier)}</b></span>}
                       {b.log_loss != null && <span>Log loss: <b style={{ color: 'var(--text2)' }}>{fmt2(b.log_loss)}</b></span>}
+                      {b.xg_home_real != null && <span>xG real: <b style={{ color: 'var(--accent2)' }}>{fmt2(b.xg_home_real)} + {fmt2(b.xg_away_real)} = {fmt2(b.xg_home_real + b.xg_away_real)}</b></span>}
+                      {b.xg_brier != null && <span>xG Brier: <b style={{ color: b.xg_brier < (b.brier || 1) ? 'var(--green)' : 'var(--yellow)' }}>{fmt2(b.xg_brier)}</b></span>}
                     </div>
                   </div>
                 )}
@@ -2326,6 +2294,39 @@ export default function App() {
                         <option value="4">½ Lose (2 góly — {b.market === 'under2.25' ? 'Under half lose' : 'Over half win'} — 50% strata)</option>
                       </>)}
                     </select>
+                    {/* xG real — voliteľné, pre xG Brier */}
+                    <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 6, marginTop: 4 }}>
+                      🔬 xG po zápase <span style={{ color: 'var(--text3)', opacity: 0.7 }}>(opt — z Understat/FBref)</span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+                      <div>
+                        <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 3 }}>xG Home</div>
+                        <input className="inp inp-sm" placeholder="napr. 1.82" value={settleXgHome} onChange={e => setSettleXgHome(e.target.value)} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 3 }}>xG Away</div>
+                        <input className="inp inp-sm" placeholder="napr. 1.20" value={settleXgAway} onChange={e => setSettleXgAway(e.target.value)} />
+                      </div>
+                    </div>
+                    {/* Live preview xG Brier */}
+                    {pf(settleXgHome) + pf(settleXgAway) > 0 && settleResult !== '' && (() => {
+                      const xgTotal = pf(settleXgHome) + pf(settleXgAway)
+                      const mkt = b.market
+                      let line = mkt.includes('3.0') ? 3.0 : mkt.includes('2.75') ? 2.75 : mkt.includes('2.25') ? 2.25 : 2.5
+                      let xgOut = xgTotal > line ? 1 : 0
+                      if (mkt.startsWith('under')) xgOut = 1 - xgOut
+                      const xgB = brierScore(b.sel_prob, xgOut)
+                      const classicB = brierScore(b.sel_prob, parseInt(settleResult))
+                      return (
+                        <div style={{ fontSize: 11, padding: '6px 10px', background: 'var(--bg3)', borderRadius: 6, marginBottom: 8, lineHeight: 1.8 }}>
+                          <span style={{ color: 'var(--text3)' }}>xG total: </span><b style={{ color: 'var(--text2)' }}>{xgTotal.toFixed(2)}</b>
+                          <span style={{ color: 'var(--text3)', marginLeft: 12 }}>xG Brier: </span><b style={{ color: 'var(--accent2)' }}>{xgB.toFixed(3)}</b>
+                          <span style={{ color: 'var(--text3)', marginLeft: 12 }}>Klasický: </span><b style={{ color: 'var(--text2)' }}>{classicB.toFixed(3)}</b>
+                          {xgB < classicB && <span style={{ color: 'var(--green)', marginLeft: 8 }}>✓ model čítal hru správne</span>}
+                          {xgB > classicB && <span style={{ color: 'var(--yellow)', marginLeft: 8 }}>△ variancia pomohla</span>}
+                        </div>
+                      )
+                    })()}
                     <button className="btn btn-primary" style={{ padding: '10px' }} onClick={() => handleSettle(b.id)}>Potvrdiť výsledok</button>
                   </div>
                 )}
@@ -2748,6 +2749,44 @@ export default function App() {
                     </div>
                   ))}
                 </div>
+                {/* xG Brier porovnanie */}
+                {(() => {
+                  const xgBets = settled.filter(b => b.xg_brier != null && b.brier != null)
+                  if (xgBets.length < 3) return null
+                  const avgXgBrier = xgBets.reduce((s, b) => s + b.xg_brier, 0) / xgBets.length
+                  const avgClassicBrier = xgBets.reduce((s, b) => s + b.brier, 0) / xgBets.length
+                  const diff = avgClassicBrier - avgXgBrier
+                  const betterProcess = diff > 0.01
+                  return (
+                    <div className="card" style={{ marginTop: 10, padding: 14, borderLeft: `3px solid ${betterProcess ? 'var(--green)' : 'var(--yellow)'}` }}>
+                      <div className="label" style={{ marginBottom: 10 }}>🔬 xG Brier — proces vs výsledok ({xgBets.length} betov)</div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, fontSize: 12 }}>
+                        <div>
+                          <div style={{ color: 'var(--text3)', fontSize: 10, marginBottom: 3 }}>Klasický Brier</div>
+                          <div style={{ fontWeight: 700, color: 'var(--text2)' }}>{fmt2(avgClassicBrier)}</div>
+                          <div style={{ fontSize: 10, color: 'var(--text3)' }}>vs góly</div>
+                        </div>
+                        <div>
+                          <div style={{ color: 'var(--text3)', fontSize: 10, marginBottom: 3 }}>xG Brier</div>
+                          <div style={{ fontWeight: 700, color: 'var(--accent2)' }}>{fmt2(avgXgBrier)}</div>
+                          <div style={{ fontSize: 10, color: 'var(--text3)' }}>vs xG proces</div>
+                        </div>
+                        <div>
+                          <div style={{ color: 'var(--text3)', fontSize: 10, marginBottom: 3 }}>Rozdiel</div>
+                          <div style={{ fontWeight: 700, color: betterProcess ? 'var(--green)' : 'var(--yellow)' }}>{diff > 0 ? '+' : ''}{fmt2(diff)}</div>
+                          <div style={{ fontSize: 10, color: betterProcess ? 'var(--green)' : 'var(--yellow)' }}>
+                            {betterProcess ? '✓ model číta hru' : '≈ žiadny jasný signál'}
+                          </div>
+                        </div>
+                      </div>
+                      {betterProcess && (
+                        <div style={{ marginTop: 8, fontSize: 11, color: 'var(--green)' }}>
+                          Model predpovedá proces správne — výsledky sú horšie ako xG naznačuje. Pokračuj.
+                        </div>
+                      )}
+                    </div>
+                  )
+                })()}
               </div>
 
               {/* ── PNL TIMELINE ── */}
