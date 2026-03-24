@@ -357,6 +357,16 @@ export default function App() {
   const [layUnder225, setLayUnder225] = useState('')
   const [myOddsOver225, setMyOddsOver225] = useState('')
   const [myOddsUnder225, setMyOddsUnder225] = useState('')
+
+  // Pinnacle kurzy — ukladajú sa do Supabase
+  const [pinnOver25, setPinnOver25] = useState('')
+  const [pinnUnder25, setPinnUnder25] = useState('')
+  const [pinnOver30, setPinnOver30] = useState('')
+  const [pinnUnder30, setPinnUnder30] = useState('')
+  const [pinnOver275, setPinnOver275] = useState('')
+  const [pinnUnder275, setPinnUnder275] = useState('')
+  const [pinnOver225, setPinnOver225] = useState('')
+  const [pinnUnder225, setPinnUnder225] = useState('')
   const [todaysMatches, setTodaysMatches] = useState([])
   const [todaysMatchesOpen, setTodaysMatchesOpen] = useState(false)
   const [todaysMatchesLoading, setTodaysMatchesLoading] = useState(false)
@@ -416,6 +426,9 @@ export default function App() {
   const [settleMode, setSettleMode] = useState('clv')
   const [settleClose, setSettleClose] = useState('')
   const [settleResult, setSettleResult] = useState('')
+  const [settlePinnClose, setSettlePinnClose] = useState('')
+  const [settleXgHome, setSettleXgHome] = useState('')
+  const [settleXgAway, setSettleXgAway] = useState('')
 
   async function requestNotifPermission() {
     if (typeof Notification === 'undefined') return
@@ -718,8 +731,8 @@ export default function App() {
       if (homeForm) {
         const formXgH = homeForm.xgH ?? homeForm.gfH ?? null
         const formXgaA = awayForm?.xgaA ?? awayForm?.gaA ?? null
-        if (formXgH != null && formXgH > 0) {
-          const formLH = formXgaA != null && formXgaA > 0 ? Math.sqrt(formXgH * formXgaA) : formXgH
+        if (formXgH != null) {
+          const formLH = formXgaA != null ? Math.sqrt(formXgH * formXgaA) : formXgH
           lH = timeDecayBlend(lH, formLH, fw)
         }
       }
@@ -728,10 +741,9 @@ export default function App() {
       if (awayForm) {
         const formXgA = awayForm.xgA ?? awayForm.gfA ?? null
         const formXgaH = homeForm?.xgaH ?? homeForm?.gaH ?? null
-        if (formXgA != null && formXgA > 0) {
-          const formLA = formXgaH != null && formXgaH > 0 ? Math.sqrt(formXgA * formXgaH) : formXgA
+        if (formXgA != null) {
+          const formLA = formXgaH != null ? Math.sqrt(formXgA * formXgaH) : formXgA
           lA = timeDecayBlend(lA, formLA, fw)
-        }
         }
       }
 
@@ -916,6 +928,12 @@ export default function App() {
     const league = selectedHomeTeam?.leagueName || selectedAwayTeam?.leagueName || null
     const modelProb = (isOU30 || isOU275 || isOU225) ? selProb : (isOver25 ? calc.pOverCalib : calc.pUnderCalib)
     const marketProb = (isOU30 || isOU275 || isOU225) ? null : (isOver25 ? calc.pMarketOver : calc.pMarketUnder)
+    // Pinnacle open kurz
+    const pinnOpen = isOU275 ? pf(isOver275 ? pinnOver275 : pinnUnder275)
+                   : isOU225 ? pf(isOver225 ? pinnOver225 : pinnUnder225)
+                   : isOU30  ? pf(isOver30  ? pinnOver30  : pinnUnder30)
+                   : pf(isOver25 ? pinnOver25 : pinnUnder25)
+
     const { data: inserted, error } = await supabase.from('bets').insert({
       match_name: matchName.trim() || calc.matchName || null, market, bet_type: betType,
       lambda_h: calc.lH, lambda_a: calc.lA,
@@ -932,6 +950,9 @@ export default function App() {
       league,
       model_prob: modelProb,
       market_prob: marketProb,
+      pinnacle_open: pinnOpen > 1 ? pinnOpen : null,
+      pinnacle_close: null,
+      pinnacle_clv: null,
     }).select()
     if (error) {
       console.error('Supabase insert error:', error)
@@ -965,25 +986,50 @@ export default function App() {
     const comm = (bet.commission || 5) / 100
     let pnl
     if (res === 2) {
-      // Push — stake sa vráti
       pnl = 0
     } else if (res === 3) {
-      // Half win — výhra z polovice stávky
       pnl = (bet.stake / 2) * (odds - 1) * (1 - comm)
     } else if (res === 4) {
-      // Half lose — strata polovice stávky
       pnl = -(bet.stake / 2)
     } else if (bet.bet_type === 'lay') {
       pnl = res === 0 ? bet.stake * (1 - comm) : -bet.stake * (odds - 1)
     } else {
       pnl = res === 1 ? bet.stake * (odds - 1) * (1 - comm) : -bet.stake
     }
+
+    // Pinnacle CLV
+    const pinnClose = pf(settlePinnClose)
+    const pinnCLV = (pinnClose > 1 && bet.pinnacle_open > 1)
+      ? calcCLV(bet.pinnacle_open, pinnClose)
+      : null
+
+    // xG Brier
+    const xgH = pf(settleXgHome)
+    const xgA = pf(settleXgAway)
+    let xgBrier = null
+    if (xgH > 0 || xgA > 0) {
+      const xgTotal = xgH + xgA
+      const mkt = bet.market
+      let xgOutcome = null
+      if (mkt === 'over2.5' || mkt === 'under2.5') { xgOutcome = xgTotal > 2.5 ? 1 : 0; if (mkt === 'under2.5') xgOutcome = 1 - xgOutcome }
+      else if (mkt === 'over3.0' || mkt === 'under3.0') { xgOutcome = xgTotal > 3.0 ? 1 : 0; if (mkt === 'under3.0') xgOutcome = 1 - xgOutcome }
+      else if (mkt === 'over2.75' || mkt === 'under2.75') { xgOutcome = xgTotal > 2.75 ? 1 : 0; if (mkt === 'under2.75') xgOutcome = 1 - xgOutcome }
+      else if (mkt === 'over2.25' || mkt === 'under2.25') { xgOutcome = xgTotal > 2.25 ? 1 : 0; if (mkt === 'under2.25') xgOutcome = 1 - xgOutcome }
+      if (xgOutcome !== null && bet.sel_prob != null) xgBrier = brierScore(bet.sel_prob, xgOutcome)
+    }
+
     await supabase.from('bets').update({
       result: res, pnl,
       brier: [2, 3, 4].includes(res) ? null : brierScore(bet.sel_prob, res),
       log_loss: [2, 3, 4].includes(res) ? null : logLoss(bet.sel_prob, res),
+      pinnacle_close: pinnClose > 1 ? pinnClose : null,
+      pinnacle_clv: pinnCLV,
+      xg_home_real: xgH > 0 ? xgH : null,
+      xg_away_real: xgA > 0 ? xgA : null,
+      xg_brier: xgBrier,
     }).eq('id', id)
     setSettlingId(null); setSettleResult(''); setSettleClose(''); setSettleMode('clv')
+    setSettlePinnClose(''); setSettleXgHome(''); setSettleXgAway('')
     await loadBets()
   }
 
@@ -1025,6 +1071,10 @@ export default function App() {
   const avgEV = evBets.length > 0 ? evBets.reduce((s, b) => s + b.ev_pct, 0) / evBets.length : null
   const maxDD = calcMaxDrawdown(settled)
   const calib = hitRate != null && avgProb != null ? (hitRate - avgProb) * 100 : null
+  // Pinnacle CLV
+  const pinnBets = settled.filter(b => b.pinnacle_clv != null)
+  const avgPinnCLV = pinnBets.length > 0 ? pinnBets.reduce((s, b) => s + b.pinnacle_clv, 0) / pinnBets.length : null
+  const posPinnCLV = pinnBets.length > 0 ? (pinnBets.filter(b => b.pinnacle_clv > 0).length / pinnBets.length) * 100 : null
   const MARKET = { 'over2.5': 'Over 2.5', 'under2.5': 'Under 2.5', 'over3.0': 'Over 3.0', 'under3.0': 'Under 3.0', 'over2.75': 'Over 2.75', 'under2.75': 'Under 2.75', 'over2.25': 'Over 2.25', 'under2.25': 'Under 2.25' }
 
   // CLV podľa času betu (hodiny do KO)
@@ -1858,6 +1908,20 @@ export default function App() {
                         value={isOver ? myOddsOver : myOddsUnder}
                         onChange={e => isOver ? setMyOddsOver(e.target.value) : setMyOddsUnder(e.target.value)} />
                     </div>
+                    <div style={{ marginBottom: 8 }}>
+                      <div className="label">Pinnacle kurz <span style={{ color: 'var(--text3)' }}>(opt — uloží sa s betom)</span></div>
+                      <input className="inp inp-sm" placeholder="napr. 1.90"
+                        value={isOver ? pinnOver25 : pinnUnder25}
+                        onChange={e => isOver ? setPinnOver25(e.target.value) : setPinnUnder25(e.target.value)} />
+                      {(() => {
+                        const pinnO = pf(isOver ? pinnOver25 : pinnUnder25)
+                        const myO = pf(isOver ? myOddsOver : myOddsUnder)
+                        const refOdds = myO > 1 ? myO : mid
+                        if (!pinnO || pinnO <= 1 || !refOdds) return null
+                        const clvPinn = (refOdds / pinnO - 1) * 100
+                        return <div style={{ marginTop: 4, fontSize: 11, fontWeight: 700, color: clvPinn > 0 ? 'var(--green)' : 'var(--red)' }}>CLV vs Pinnacle: {clvPinn > 0 ? '+' : ''}{clvPinn.toFixed(1)}%</div>
+                      })()}
+                    </div>
 
                     {mid ? <>
                       <div className="mid-row">
@@ -1983,6 +2047,18 @@ export default function App() {
                       <div className="label">Môj kurz <span style={{ color: 'var(--accent2)' }}>(opt — ak líši od mid)</span></div>
                       <input className="inp inp-sm" placeholder="napr. 2.08" value={myOddsVal} onChange={e => setMyOdds(e.target.value)} />
                     </div>
+                    <div style={{ marginBottom: 8 }}>
+                      <div className="label">Pinnacle kurz <span style={{ color: 'var(--text3)' }}>(opt — uloží sa s betom)</span></div>
+                      <input className="inp inp-sm" placeholder="napr. 1.90"
+                        value={isOver ? pinnOver30 : pinnUnder30}
+                        onChange={e => isOver ? setPinnOver30(e.target.value) : setPinnUnder30(e.target.value)} />
+                      {(() => {
+                        const pinnO = pf(isOver ? pinnOver30 : pinnUnder30)
+                        if (!pinnO || pinnO <= 1 || !actualOdds) return null
+                        const clvPinn = (actualOdds / pinnO - 1) * 100
+                        return <div style={{ marginTop: 4, fontSize: 11, fontWeight: 700, color: clvPinn > 0 ? 'var(--green)' : 'var(--red)' }}>CLV vs Pinnacle: {clvPinn > 0 ? '+' : ''}{clvPinn.toFixed(1)}%</div>
+                      })()}
+                    </div>
                     {actualOdds ? <>
                       <div className="mid-row">
                         <span style={{ color: 'var(--text3)' }}>{usingMyOdds ? 'Kurz:' : 'Mid:'}</span>
@@ -2085,6 +2161,23 @@ export default function App() {
                       <div style={{ marginBottom: 8 }}>
                         <div className="label">Môj kurz <span style={{ color: 'var(--accent2)' }}>(opt)</span></div>
                         <input className="inp inp-sm" placeholder="napr. 2.08" value={myOddsVal} onChange={e => setMyOdds(e.target.value)} />
+                      </div>
+                      <div style={{ marginBottom: 8 }}>
+                        <div className="label">Pinnacle kurz <span style={{ color: 'var(--text3)' }}>(opt — uloží sa s betom)</span></div>
+                        <input className="inp inp-sm" placeholder="napr. 1.90"
+                          value={is275 ? (isOver ? pinnOver275 : pinnUnder275) : (isOver ? pinnOver225 : pinnUnder225)}
+                          onChange={e => {
+                            const val = e.target.value
+                            if (is275) { isOver ? setPinnOver275(val) : setPinnUnder275(val) }
+                            else { isOver ? setPinnOver225(val) : setPinnUnder225(val) }
+                          }} />
+                        {(() => {
+                          const pinnVal = is275 ? (isOver ? pinnOver275 : pinnUnder275) : (isOver ? pinnOver225 : pinnUnder225)
+                          const pinnO = pf(pinnVal)
+                          if (!pinnO || pinnO <= 1 || !actualOdds) return null
+                          const clvPinn = (actualOdds / pinnO - 1) * 100
+                          return <div style={{ marginTop: 4, fontSize: 11, fontWeight: 700, color: clvPinn > 0 ? 'var(--green)' : 'var(--red)' }}>CLV vs Pinnacle: {clvPinn > 0 ? '+' : ''}{clvPinn.toFixed(1)}%</div>
+                        })()}
                       </div>
                       {actualOdds ? <>
                         <div className="mid-row">
@@ -2238,6 +2331,9 @@ export default function App() {
                       {b.commission && <span>Komisia: <b style={{ color: 'var(--text2)' }}>{b.commission}%</b></span>}
                       {b.ev_pct != null && <span>EV: <b className={b.ev_pct > 0 ? 'pos' : 'neg'}>{fmtSignPct(b.ev_pct)}</b></span>}
                       {b.clv != null && <span>CLV: <b className={b.clv > 0 ? 'pos' : 'neg'}>{fmtSignPct(b.clv)}</b></span>}
+                      {b.pinnacle_open != null && <span>Pinn. open: <b style={{ color: 'var(--accent2)' }}>{fmt3(b.pinnacle_open)}</b></span>}
+                      {b.pinnacle_close != null && <span>Pinn. close: <b style={{ color: 'var(--text2)' }}>{fmt3(b.pinnacle_close)}</b></span>}
+                      {b.pinnacle_clv != null && <span>Pinn. CLV: <b className={b.pinnacle_clv > 0 ? 'pos' : 'neg'}>{fmtSignPct(b.pinnacle_clv)}</b></span>}
                       {b.brier != null && <span>Brier: <b style={{ color: 'var(--text2)' }}>{fmt2(b.brier)}</b></span>}
                       {b.log_loss != null && <span>Log loss: <b style={{ color: 'var(--text2)' }}>{fmt2(b.log_loss)}</b></span>}
                     </div>
@@ -2247,10 +2343,26 @@ export default function App() {
                 {settlingId === b.id && settleMode === 'clv' && (
                   <div className="clv-box">
                     <div style={{ fontSize: 11, color: 'var(--accent2)', marginBottom: 8 }}>📌 Closing kurz (5 min pred zápasom)</div>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <input className="inp" placeholder="napr. 1.82" value={settleClose} onChange={e => setSettleClose(e.target.value)} style={{ flex: 1 }} />
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                      <input className="inp" placeholder="Exchange closing (napr. 1.82)" value={settleClose} onChange={e => setSettleClose(e.target.value)} style={{ flex: 1 }} />
                       <button className="btn btn-primary" style={{ width: 'auto', padding: '10px 16px' }} onClick={() => handleSaveCLV(b.id)}>Uložiť CLV</button>
                     </div>
+                    {b.pinnacle_open != null && (
+                      <div style={{ marginBottom: 8 }}>
+                        <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 4 }}>
+                          Pinnacle open bol {fmt3(b.pinnacle_open)} — zadaj Pinnacle closing:
+                        </div>
+                        <input className="inp" placeholder="Pinnacle closing (napr. 1.78)" value={settlePinnClose} onChange={e => setSettlePinnClose(e.target.value)} />
+                        {pf(settlePinnClose) > 1 && (
+                          <div style={{ fontSize: 11, marginTop: 4, fontWeight: 700, color: (b.pinnacle_open / pf(settlePinnClose) - 1) > 0 ? 'var(--green)' : 'var(--red)' }}>
+                            Pinnacle CLV: {((b.pinnacle_open / pf(settlePinnClose) - 1) * 100) > 0 ? '+' : ''}{((b.pinnacle_open / pf(settlePinnClose) - 1) * 100).toFixed(1)}%
+                            {(b.pinnacle_open / pf(settlePinnClose) - 1) > 0
+                              ? ' ↑ kurz išiel hore (bol si pred trhom)'
+                              : ' ↓ kurz išiel dole (trh vedel viac)'}
+                          </div>
+                        )}
+                      </div>
+                    )}
                     <div style={{ marginTop: 8 }}>
                       <button style={{ background: 'none', border: 'none', color: 'var(--text3)', fontSize: 11, cursor: 'pointer', padding: 0 }} onClick={() => setSettleMode('result')}>
                         Preskočiť → zadať len výsledok
@@ -2262,7 +2374,8 @@ export default function App() {
                 {settlingId === b.id && settleMode === 'result' && (
                   <div className="settle-box">
                     <div style={{ fontSize: 11, color: 'var(--yellow)', marginBottom: 8 }}>🏁 Výsledok zápasu</div>
-                    {b.clv != null && <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 8 }}>CLV: <b className={b.clv > 0 ? 'pos' : 'neg'}>{fmtSignPct(b.clv)}</b></div>}
+                    {b.clv != null && <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 4 }}>Exchange CLV: <b className={b.clv > 0 ? 'pos' : 'neg'}>{fmtSignPct(b.clv)}</b></div>}
+                    {b.pinnacle_clv != null && <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 8 }}>Pinnacle CLV: <b className={b.pinnacle_clv > 0 ? 'pos' : 'neg'}>{fmtSignPct(b.pinnacle_clv)}</b></div>}
                     <select className="inp" value={settleResult} onChange={e => setSettleResult(e.target.value)} style={{ marginBottom: 8 }}>
                       <option value="">— vyber výsledok —</option>
                       <option value="1">{b.bet_type === 'lay' ? '✅ Lay Won (event NOT happened)' : '✅ Back Won'}</option>
@@ -2351,6 +2464,35 @@ export default function App() {
                     </div>
                   ))}
                 </div>
+                {/* Pinnacle CLV porovnanie */}
+                {pinnBets.length >= 3 && (
+                  <div className="card" style={{ marginTop: 10, padding: 14, borderLeft: '3px solid var(--accent)' }}>
+                    <div className="label" style={{ marginBottom: 10 }}>📌 Pinnacle CLV ({pinnBets.length} betov)</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, fontSize: 12 }}>
+                      <div>
+                        <div style={{ color: 'var(--text3)', fontSize: 10, marginBottom: 3 }}>Avg Pinnacle CLV</div>
+                        <div style={{ fontWeight: 700, fontSize: 16, color: avgPinnCLV > 0 ? 'var(--green)' : 'var(--red)' }}>{fmtSignPct(avgPinnCLV)}</div>
+                        <div style={{ fontSize: 10, color: 'var(--text3)' }}>cieľ: {'>'} +2%</div>
+                      </div>
+                      <div>
+                        <div style={{ color: 'var(--text3)', fontSize: 10, marginBottom: 3 }}>Positive Pinnacle CLV</div>
+                        <div style={{ fontWeight: 700, fontSize: 16, color: posPinnCLV > 50 ? 'var(--green)' : 'var(--red)' }}>{fmtPct(posPinnCLV)}</div>
+                        <div style={{ fontSize: 10, color: 'var(--text3)' }}>{'>'} 50% = dobré</div>
+                      </div>
+                      <div>
+                        <div style={{ color: 'var(--text3)', fontSize: 10, marginBottom: 3 }}>vs Exchange CLV</div>
+                        {avgCLV != null && avgPinnCLV != null ? (
+                          <>
+                            <div style={{ fontWeight: 700, fontSize: 16, color: avgPinnCLV > avgCLV ? 'var(--green)' : 'var(--yellow)' }}>
+                              {avgPinnCLV > avgCLV ? '↑' : '↓'} {fmtSignPct(avgPinnCLV - avgCLV)}
+                            </div>
+                            <div style={{ fontSize: 10, color: 'var(--text3)' }}>Pinn {avgPinnCLV > avgCLV ? 'lepší' : 'horší'} ako Exchange</div>
+                          </>
+                        ) : <div style={{ color: 'var(--text3)' }}>—</div>}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* ── EV PÁSMA ── */}
