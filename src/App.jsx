@@ -493,17 +493,14 @@ export default function App() {
 
       if (leagues.length === 0) return
 
-      // Cache tímov — invaliduje sa keď sa zmení počet líg
+      // Cache tímov — platná 24 hodín
       const CACHE_KEY = 'xgcalc_teams_cache'
       const CACHE_TTL = 24 * 60 * 60 * 1000
       try {
         const cached = localStorage.getItem(CACHE_KEY)
         if (cached) {
-          const { teams, ts, leagueCount } = JSON.parse(cached)
-          const cacheValid = Date.now() - ts < CACHE_TTL
-            && teams.length > 0
-            && leagueCount === leagues.length  // invaliduj ak sa zmenil počet líg
-          if (cacheValid) {
+          const { teams, ts } = JSON.parse(cached)
+          if (Date.now() - ts < CACHE_TTL && teams.length > 0) {
             setAllTeams(teams)
             return
           }
@@ -536,8 +533,7 @@ export default function App() {
       })
       const unique = Array.from(teamMap.values()).sort((a, b) => a.name.localeCompare(b.name))
       setAllTeams(unique)
-      // Ulož do cache aj počet líg
-      try { localStorage.setItem(CACHE_KEY, JSON.stringify({ teams: unique, ts: Date.now(), leagueCount: leagues.length })) } catch (e) {}
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify({ teams: unique, ts: Date.now() })) } catch (e) {}
       setTeamsLoading(false)
     })
   }, [])
@@ -600,10 +596,10 @@ export default function App() {
     setSelectedHomeTeam(finalTeam)
     setHomeLastX(lastx)
     if (s) {
-      if (s.xgH != null && s.xgH > 0) setXgH(String(s.xgH))
-      if (s.xgaH != null && s.xgaH > 0) setXgaH(String(s.xgaH))
-      if (s.gfH != null && s.gfH > 0) setGfH(String(s.gfH))
-      if (s.gaH != null && s.gaH > 0) setGaH(String(s.gaH))
+      if (s.xgH != null) setXgH(String(s.xgH))
+      if (s.xgaH != null) setXgaH(String(s.xgaH))
+      if (s.gfH != null) setGfH(String(s.gfH))
+      if (s.gaH != null) setGaH(String(s.gaH))
     }
     const awayName = selectedAwayTeam?.name || ''
     if (team.name) setMatchName(awayName ? `${team.name} vs ${awayName}` : team.name)
@@ -630,10 +626,10 @@ export default function App() {
     setSelectedAwayTeam(finalTeam)
     setAwayLastX(lastx)
     if (s) {
-      if (s.xgA != null && s.xgA > 0) setXgA(String(s.xgA))
-      if (s.xgaA != null && s.xgaA > 0) setXgaA(String(s.xgaA))
-      if (s.gfA != null && s.gfA > 0) setGfA(String(s.gfA))
-      if (s.gaA != null && s.gaA > 0) setGaA(String(s.gaA))
+      if (s.xgA != null) setXgA(String(s.xgA))
+      if (s.xgaA != null) setXgaA(String(s.xgaA))
+      if (s.gfA != null) setGfA(String(s.gfA))
+      if (s.gaA != null) setGaA(String(s.gaA))
     }
     const homeName = selectedHomeTeam?.name || ''
     if (team.name) setMatchName(homeName ? `${homeName} vs ${team.name}` : team.name)
