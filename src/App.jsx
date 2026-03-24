@@ -718,8 +718,8 @@ export default function App() {
       if (homeForm) {
         const formXgH = homeForm.xgH ?? homeForm.gfH ?? null
         const formXgaA = awayForm?.xgaA ?? awayForm?.gaA ?? null
-        if (formXgH != null) {
-          const formLH = formXgaA != null ? Math.sqrt(formXgH * formXgaA) : formXgH
+        if (formXgH != null && formXgH > 0) {
+          const formLH = formXgaA != null && formXgaA > 0 ? Math.sqrt(formXgH * formXgaA) : formXgH
           lH = timeDecayBlend(lH, formLH, fw)
         }
       }
@@ -728,9 +728,10 @@ export default function App() {
       if (awayForm) {
         const formXgA = awayForm.xgA ?? awayForm.gfA ?? null
         const formXgaH = homeForm?.xgaH ?? homeForm?.gaH ?? null
-        if (formXgA != null) {
-          const formLA = formXgaH != null ? Math.sqrt(formXgA * formXgaH) : formXgA
+        if (formXgA != null && formXgA > 0) {
+          const formLA = formXgaH != null && formXgaH > 0 ? Math.sqrt(formXgA * formXgaH) : formXgA
           lA = timeDecayBlend(lA, formLA, fw)
+        }
         }
       }
 
