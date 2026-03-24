@@ -493,14 +493,17 @@ export default function App() {
 
       if (leagues.length === 0) return
 
-      // Cache tímov — platná 24 hodín
+      // Cache tímov — invaliduje sa keď sa zmení počet líg
       const CACHE_KEY = 'xgcalc_teams_cache'
       const CACHE_TTL = 24 * 60 * 60 * 1000
       try {
         const cached = localStorage.getItem(CACHE_KEY)
         if (cached) {
-          const { teams, ts } = JSON.parse(cached)
-          if (Date.now() - ts < CACHE_TTL && teams.length > 0) {
+          const { teams, ts, leagueCount } = JSON.parse(cached)
+          const cacheValid = Date.now() - ts < CACHE_TTL
+            && teams.length > 0
+            && leagueCount === leagues.length  // invaliduj ak sa zmenil počet líg
+          if (cacheValid) {
             setAllTeams(teams)
             return
           }
@@ -533,7 +536,8 @@ export default function App() {
       })
       const unique = Array.from(teamMap.values()).sort((a, b) => a.name.localeCompare(b.name))
       setAllTeams(unique)
-      try { localStorage.setItem(CACHE_KEY, JSON.stringify({ teams: unique, ts: Date.now() })) } catch (e) {}
+      // Ulož do cache aj počet líg
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify({ teams: unique, ts: Date.now(), leagueCount: leagues.length })) } catch (e) {}
       setTeamsLoading(false)
     })
   }, [])
@@ -581,8 +585,14 @@ export default function App() {
     setHomeTeamOpen(false)
     setHomeTeamSearch('')
     setHomeLastX(null)
+    // Použi _statsRaw z league-teams ak dostupné, inak fetchTeamStats ako fallback
     const lastxPromise = fetchTeamLastX(team.id)
-    const rawData = await fetchTeamStats(team.id, team.seasonId)
+    let rawData = null
+    if (team._statsRaw && Object.keys(team._statsRaw).length > 5) {
+      rawData = team._statsRaw
+    } else {
+      rawData = await fetchTeamStats(team.id, team.seasonId)
+    }
     const lastx = await lastxPromise
     const raw = rawData
     const s = raw ? extractTeamStats(raw) : null
@@ -590,10 +600,10 @@ export default function App() {
     setSelectedHomeTeam(finalTeam)
     setHomeLastX(lastx)
     if (s) {
-      if (s.xgH != null) setXgH(String(s.xgH))
-      if (s.xgaH != null) setXgaH(String(s.xgaH))
-      if (s.gfH != null) setGfH(String(s.gfH))
-      if (s.gaH != null) setGaH(String(s.gaH))
+      if (s.xgH != null && s.xgH > 0) setXgH(String(s.xgH))
+      if (s.xgaH != null && s.xgaH > 0) setXgaH(String(s.xgaH))
+      if (s.gfH != null && s.gfH > 0) setGfH(String(s.gfH))
+      if (s.gaH != null && s.gaH > 0) setGaH(String(s.gaH))
     }
     const awayName = selectedAwayTeam?.name || ''
     if (team.name) setMatchName(awayName ? `${team.name} vs ${awayName}` : team.name)
@@ -605,8 +615,14 @@ export default function App() {
     setAwayTeamOpen(false)
     setAwayTeamSearch('')
     setAwayLastX(null)
+    // Použi _statsRaw z league-teams ak dostupné, inak fetchTeamStats ako fallback
     const lastxPromise = fetchTeamLastX(team.id)
-    const rawData = await fetchTeamStats(team.id, team.seasonId)
+    let rawData = null
+    if (team._statsRaw && Object.keys(team._statsRaw).length > 5) {
+      rawData = team._statsRaw
+    } else {
+      rawData = await fetchTeamStats(team.id, team.seasonId)
+    }
     const lastx = await lastxPromise
     const raw = rawData
     const s = raw ? extractTeamStats(raw) : null
@@ -614,10 +630,10 @@ export default function App() {
     setSelectedAwayTeam(finalTeam)
     setAwayLastX(lastx)
     if (s) {
-      if (s.xgA != null) setXgA(String(s.xgA))
-      if (s.xgaA != null) setXgaA(String(s.xgaA))
-      if (s.gfA != null) setGfA(String(s.gfA))
-      if (s.gaA != null) setGaA(String(s.gaA))
+      if (s.xgA != null && s.xgA > 0) setXgA(String(s.xgA))
+      if (s.xgaA != null && s.xgaA > 0) setXgaA(String(s.xgaA))
+      if (s.gfA != null && s.gfA > 0) setGfA(String(s.gfA))
+      if (s.gaA != null && s.gaA > 0) setGaA(String(s.gaA))
     }
     const homeName = selectedHomeTeam?.name || ''
     if (team.name) setMatchName(homeName ? `${homeName} vs ${team.name}` : team.name)
@@ -1027,8 +1043,11 @@ export default function App() {
   const OU225_MARKETS = ['over2.25', 'under2.25']
   const OU275_MARKETS = ['over2.75', 'under2.75']
   const OU30_MARKETS  = ['over3.0', 'under3.0']
+  const EXCLUDED_MARKETS = [...OU225_MARKETS, ...OU275_MARKETS]
   const settled_all = bets.filter(b => b.result != null)
   const settled = settled_all.filter(b => {
+    // Vylúč 2.25 a 2.75 zo štatistík — nekvalitné dáta
+    if (EXCLUDED_MARKETS.includes(b.market) && statsMarket === 'all') return false
     if (statsMarket === 'ou25'  && !OU25_MARKETS.includes(b.market))  return false
     if (statsMarket === 'ou225' && !OU225_MARKETS.includes(b.market)) return false
     if (statsMarket === 'ou275' && !OU275_MARKETS.includes(b.market)) return false
@@ -1783,7 +1802,7 @@ export default function App() {
             {calc && (
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
                 <span style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 600, letterSpacing: 1 }}>MARKET:</span>
-                {[['ou25', 'O/U 2.5'], ['ou225', 'O/U 2.25'], ['ou275', 'O/U 2.75'], ['ou30', 'O/U 3.0']].map(([id, lbl]) => (
+                {[['ou25', 'O/U 2.5'], ['ou30', 'O/U 3.0']].map(([id, lbl]) => (
                   <button key={id} onClick={() => setMarketMode(id)} style={{
                     fontSize: 11, padding: '3px 12px', borderRadius: 6, border: '1px solid',
                     borderColor: marketMode === id ? 'var(--accent)' : 'var(--border)',
@@ -2390,7 +2409,7 @@ export default function App() {
           <div style={{ padding: '8px 16px 0' }}>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 600, letterSpacing: 1 }}>MARKET:</span>
-              {[['all', 'Všetky'], ['ou25', 'O/U 2.5'], ['ou225', 'O/U 2.25'], ['ou275', 'O/U 2.75'], ['ou30', 'O/U 3.0']].map(([id, lbl]) => (
+              {[['all', 'Všetky'], ['ou25', 'O/U 2.5'], ['ou30', 'O/U 3.0']].map(([id, lbl]) => (
                 <button key={id} onClick={() => setStatsMarket(id)} style={{
                   fontSize: 11, padding: '3px 10px', borderRadius: 6, border: '1px solid',
                   borderColor: statsMarket === id ? 'var(--green)' : 'var(--border)',
