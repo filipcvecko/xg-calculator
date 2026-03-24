@@ -357,16 +357,6 @@ export default function App() {
   const [layUnder225, setLayUnder225] = useState('')
   const [myOddsOver225, setMyOddsOver225] = useState('')
   const [myOddsUnder225, setMyOddsUnder225] = useState('')
-
-  // Pinnacle kurzy — len pre zobrazenie CLV v čase podania, neukladajú sa
-  const [pinnOver25, setPinnOver25] = useState('')
-  const [pinnUnder25, setPinnUnder25] = useState('')
-  const [pinnOver30, setPinnOver30] = useState('')
-  const [pinnUnder30, setPinnUnder30] = useState('')
-  const [pinnOver275, setPinnOver275] = useState('')
-  const [pinnUnder275, setPinnUnder275] = useState('')
-  const [pinnOver225, setPinnOver225] = useState('')
-  const [pinnUnder225, setPinnUnder225] = useState('')
   const [todaysMatches, setTodaysMatches] = useState([])
   const [todaysMatchesOpen, setTodaysMatchesOpen] = useState(false)
   const [todaysMatchesLoading, setTodaysMatchesLoading] = useState(false)
@@ -487,16 +477,32 @@ export default function App() {
       setAllLeagues(leagues)
       setLeagueLoading(false)
 
-      // Načítaj len mená tímov (bez štatistík) — oveľa rýchlejšie
       if (leagues.length === 0) return
+
+      // Cache tímov — invaliduje sa keď sa zmení počet líg
+      const CACHE_KEY = 'xgcalc_teams_cache'
+      const CACHE_TTL = 24 * 60 * 60 * 1000
+      try {
+        const cached = localStorage.getItem(CACHE_KEY)
+        if (cached) {
+          const { teams, ts, leagueCount } = JSON.parse(cached)
+          const cacheValid = Date.now() - ts < CACHE_TTL
+            && teams.length > 0
+            && leagueCount === leagues.length  // invaliduj ak sa zmenil počet líg
+          if (cacheValid) {
+            setAllTeams(teams)
+            return
+          }
+        }
+      } catch (e) {}
+
       setTeamsLoading(true)
-      const CHUNK = 5
+      const CHUNK = 10
       let allLoadedTeams = []
       for (let i = 0; i < leagues.length; i += CHUNK) {
         const chunk = leagues.slice(i, i + CHUNK)
         const results = await Promise.all(chunk.map(async l => {
           const seasons = (l.season ?? []).slice().sort((a, b) => b.id - a.id)
-          // Vždy len aktuálna (najnovšia) sezóna — čisté dáta bez miešania sezón
           const top1 = seasons.slice(0, 1)
           if (top1.length === 0) top1.push({ id: l.id })
           const teamArrays = await Promise.all(top1.map(s => fetchTeamNamesForSeason(s.id, l.name, l.country)))
@@ -508,15 +514,16 @@ export default function App() {
       const isCup = (name) => /\bfa cup\b|\bleague cup\b|\bcopa\b|\blibertadores\b|\bsudamericana\b|\bchampions league\b|\bafc\b|\buafa\b|\bcaf\b|\bconcacaf\b|\befl trophy\b|\bcommunity shield\b/i.test(name)
       const teamMap = new Map()
       allLoadedTeams.forEach(t => {
-        if (isCup(t.leagueName || '')) return // preskočí pohárové tímy
+        if (isCup(t.leagueName || '')) return
         const key = String(t.id)
         const existing = teamMap.get(key)
         if (!existing) { teamMap.set(key, t); return }
-        // Zachovaj novšiu sezónu
         if ((t.seasonId ?? 0) > (existing.seasonId ?? 0)) teamMap.set(key, t)
       })
       const unique = Array.from(teamMap.values()).sort((a, b) => a.name.localeCompare(b.name))
       setAllTeams(unique)
+      // Ulož do cache aj počet líg
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify({ teams: unique, ts: Date.now(), leagueCount: leagues.length })) } catch (e) {}
       setTeamsLoading(false)
     })
   }, [])
@@ -1089,88 +1096,6 @@ export default function App() {
   const probComparison = settled.filter(b => b.model_prob != null && b.market_prob != null)
   const avgModelProb = probComparison.length > 0 ? probComparison.reduce((s, b) => s + b.model_prob, 0) / probComparison.length : null
   const avgMarketProb = probComparison.length > 0 ? probComparison.reduce((s, b) => s + b.market_prob, 0) / probComparison.length : null
-
-  // ── CONFIDENCE SCORE ──────────────────────────────────────────
-  function calcConfidenceScore(betsArr) {
-    if (!betsArr || betsArr.length === 0) return null
-    const n = betsArr.length
-    const clvB = betsArr.filter(b => b.clv != null)
-    const avgC = clvB.length > 0 ? clvB.reduce((s, b) => s + b.clv, 0) / clvB.length : null
-    const posC = clvB.length > 0 ? (clvB.filter(b => b.clv > 0).length / clvB.length) * 100 : null
-    const nonPush = betsArr.filter(b => b.result === 0 || b.result === 1)
-    const wins_ = nonPush.filter(b => b.result === 1).length
-    const hr = nonPush.length > 0 ? wins_ / nonPush.length : null
-    const ap = nonPush.length > 0 ? nonPush.reduce((s, b) => s + b.sel_prob, 0) / nonPush.length : null
-    const cal = hr != null && ap != null ? Math.abs((hr - ap) * 100) : null
-    const brierB = betsArr.filter(b => b.brier != null)
-    const avgBr = brierB.length > 0 ? brierB.reduce((s, b) => s + b.brier, 0) / brierB.length : null
-    const xgB = betsArr.filter(b => b.xg_brier != null && b.brier != null)
-    const avgXgBr = xgB.length > 0 ? xgB.reduce((s, b) => s + b.xg_brier, 0) / xgB.length : null
-    const avgClBr = xgB.length > 0 ? xgB.reduce((s, b) => s + b.brier, 0) / xgB.length : null
-    const totalS = betsArr.reduce((s, b) => s + b.stake, 0)
-    const totalP = betsArr.reduce((s, b) => s + (b.pnl || 0), 0)
-    const roi_ = totalS > 0 ? (totalP / totalS) * 100 : null
-
-    // 1. Sample score (max 40)
-    const sampleScore = n >= 200 ? 40 : n >= 100 ? 35 : n >= 50 ? 25 : n >= 25 ? 15 : 5
-
-    // 2. CLV score (max 45)
-    const clvScore = avgC == null ? 0 : avgC < 0 ? 0 : avgC < 1 ? 10 : avgC < 2 ? 20 : avgC < 3 ? 30 : avgC < 5 ? 40 : 45
-
-    // 3. Positive CLV bonus (max 15)
-    const posCLVScore = posC == null ? 0 : posC < 50 ? 0 : posC < 55 ? 5 : posC < 65 ? 10 : 15
-
-    // 4. Calibration score (max 20)
-    const calibScore = cal == null ? 0 : cal > 8 ? 0 : cal > 5 ? 5 : cal > 3 ? 10 : cal > 1 ? 15 : 20
-
-    // 5. Brier score (max 20) — FIX: vyššie body pre 0.22-0.24
-    const brierScore_ = avgBr == null ? 0 : avgBr > 0.26 ? 0 : avgBr > 0.24 ? 5 : avgBr > 0.22 ? 13 : avgBr > 0.20 ? 17 : 20
-
-    // 6. xG Brier process bonus (max 8) — FIX: len ak 20+ betov s xG
-    let processBonus = 0
-    if (xgB.length >= 20 && avgXgBr != null && avgClBr != null) {
-      const diff = avgClBr - avgXgBr
-      processBonus = diff < 0 ? 0 : diff < 0.01 ? 2 : diff < 0.03 ? 5 : 8
-    }
-    // Pod 20 betov — žiadny bonus (FIX: vypnutý pri malej vzorke)
-
-    // 7. ROI score (max 15)
-    const roiScore = roi_ == null ? 0 : roi_ < 0 ? 0 : roi_ < 2 ? 3 : roi_ < 5 ? 7 : roi_ < 10 ? 12 : 15
-
-    const total = sampleScore + clvScore + posCLVScore + calibScore + brierScore_ + processBonus + roiScore
-    const MAX = 40 + 45 + 15 + 20 + 20 + 8 + 15 // 163
-    const score = Math.round((total / MAX) * 100)
-    const label = score >= 85 ? 'Veľmi silný' : score >= 70 ? 'Silný' : score >= 50 ? 'Sľubný' : score >= 30 ? 'Neistý' : 'Nedôveruj'
-    const color = score >= 85 ? 'var(--green)' : score >= 70 ? 'var(--green)' : score >= 50 ? 'var(--yellow)' : 'var(--red)'
-
-    return {
-      score, label, color,
-      breakdown: {
-        sample: { score: sampleScore, max: 40, label: 'Vzorka', detail: `${n} betov` },
-        clv: { score: clvScore + posCLVScore, max: 60, label: 'CLV', detail: avgC != null ? `${avgC > 0 ? '+' : ''}${avgC.toFixed(1)}% · ${posC?.toFixed(0)}% poz.` : '—' },
-        calib: { score: calibScore, max: 20, label: 'Kalibrácia', detail: cal != null ? `${cal.toFixed(1)}pp odchýlka` : '—' },
-        brier: { score: brierScore_ + processBonus, max: 28, label: 'Brier / Process', detail: avgBr != null ? `${avgBr.toFixed(3)}${processBonus > 0 ? ` · xG +${processBonus}` : ''}` : '—' },
-        roi: { score: roiScore, max: 15, label: 'ROI', detail: roi_ != null ? `${roi_ > 0 ? '+' : ''}${roi_.toFixed(1)}%` : '—' },
-      }
-    }
-  }
-
-  const confidenceOverall = calcConfidenceScore(settled)
-  const confidenceByMarket = {
-    'O/U 2.5':  calcConfidenceScore(settled.filter(b => ['over2.5','under2.5'].includes(b.market))),
-    'O/U 2.25': calcConfidenceScore(settled.filter(b => ['over2.25','under2.25'].includes(b.market))),
-    'O/U 2.75': calcConfidenceScore(settled.filter(b => ['over2.75','under2.75'].includes(b.market))),
-    'O/U 3.0':  calcConfidenceScore(settled.filter(b => ['over3.0','under3.0'].includes(b.market))),
-  }
-  const confidenceRecent = calcConfidenceScore([...settled].slice(0, 30))
-
-  // FIX 3: Stability factor — recent vs overall
-  const stabilityRatio = (confidenceOverall && confidenceRecent && confidenceOverall.score > 0)
-    ? confidenceRecent.score / confidenceOverall.score
-    : null
-  const stabilityWarning = stabilityRatio != null && stabilityRatio < 0.8
-  const stabilityDowngrade = stabilityRatio != null && stabilityRatio < 0.7
-  // ──────────────────────────────────────────────────────────────
 
   // ── RECOMMENDATION ENGINE ──────────────────────────────────────
   function getRecommendedBet(candidates, filters) {
@@ -1932,20 +1857,6 @@ export default function App() {
                         value={isOver ? myOddsOver : myOddsUnder}
                         onChange={e => isOver ? setMyOddsOver(e.target.value) : setMyOddsUnder(e.target.value)} />
                     </div>
-                    <div style={{ marginBottom: 8 }}>
-                      <div className="label">Pinnacle kurz <span style={{ color: 'var(--text3)' }}>(opt — CLV check)</span></div>
-                      <input className="inp inp-sm" placeholder="napr. 1.90"
-                        value={isOver ? pinnOver25 : pinnUnder25}
-                        onChange={e => isOver ? setPinnOver25(e.target.value) : setPinnUnder25(e.target.value)} />
-                      {(() => {
-                        const pinnO = pf(isOver ? pinnOver25 : pinnUnder25)
-                        const myO = pf(isOver ? myOddsOver : myOddsUnder)
-                        const refOdds = myO > 1 ? myO : mid
-                        if (!pinnO || pinnO <= 1 || !refOdds) return null
-                        const clvPinn = (refOdds / pinnO - 1) * 100
-                        return <div style={{ marginTop: 4, fontSize: 11, fontWeight: 700, color: clvPinn > 0 ? 'var(--green)' : 'var(--red)' }}>CLV vs Pinnacle: {clvPinn > 0 ? '+' : ''}{clvPinn.toFixed(1)}%</div>
-                      })()}
-                    </div>
 
                     {mid ? <>
                       <div className="mid-row">
@@ -2071,18 +1982,6 @@ export default function App() {
                       <div className="label">Môj kurz <span style={{ color: 'var(--accent2)' }}>(opt — ak líši od mid)</span></div>
                       <input className="inp inp-sm" placeholder="napr. 2.08" value={myOddsVal} onChange={e => setMyOdds(e.target.value)} />
                     </div>
-                    <div style={{ marginBottom: 8 }}>
-                      <div className="label">Pinnacle kurz <span style={{ color: 'var(--text3)' }}>(opt — CLV check)</span></div>
-                      <input className="inp inp-sm" placeholder="napr. 1.90"
-                        value={isOver ? pinnOver30 : pinnUnder30}
-                        onChange={e => isOver ? setPinnOver30(e.target.value) : setPinnUnder30(e.target.value)} />
-                      {(() => {
-                        const pinnO = pf(isOver ? pinnOver30 : pinnUnder30)
-                        if (!pinnO || pinnO <= 1 || !actualOdds) return null
-                        const clvPinn = (actualOdds / pinnO - 1) * 100
-                        return <div style={{ marginTop: 4, fontSize: 11, fontWeight: 700, color: clvPinn > 0 ? 'var(--green)' : 'var(--red)' }}>CLV vs Pinnacle: {clvPinn > 0 ? '+' : ''}{clvPinn.toFixed(1)}%</div>
-                      })()}
-                    </div>
                     {actualOdds ? <>
                       <div className="mid-row">
                         <span style={{ color: 'var(--text3)' }}>{usingMyOdds ? 'Kurz:' : 'Mid:'}</span>
@@ -2185,23 +2084,6 @@ export default function App() {
                       <div style={{ marginBottom: 8 }}>
                         <div className="label">Môj kurz <span style={{ color: 'var(--accent2)' }}>(opt)</span></div>
                         <input className="inp inp-sm" placeholder="napr. 2.08" value={myOddsVal} onChange={e => setMyOdds(e.target.value)} />
-                      </div>
-                      <div style={{ marginBottom: 8 }}>
-                        <div className="label">Pinnacle kurz <span style={{ color: 'var(--text3)' }}>(opt — CLV check)</span></div>
-                        <input className="inp inp-sm" placeholder="napr. 1.90"
-                          value={is275 ? (isOver ? pinnOver275 : pinnUnder275) : (isOver ? pinnOver225 : pinnUnder225)}
-                          onChange={e => {
-                            const val = e.target.value
-                            if (is275) { isOver ? setPinnOver275(val) : setPinnUnder275(val) }
-                            else { isOver ? setPinnOver225(val) : setPinnUnder225(val) }
-                          }} />
-                        {(() => {
-                          const pinnVal = is275 ? (isOver ? pinnOver275 : pinnUnder275) : (isOver ? pinnOver225 : pinnUnder225)
-                          const pinnO = pf(pinnVal)
-                          if (!pinnO || pinnO <= 1 || !actualOdds) return null
-                          const clvPinn = (actualOdds / pinnO - 1) * 100
-                          return <div style={{ marginTop: 4, fontSize: 11, fontWeight: 700, color: clvPinn > 0 ? 'var(--green)' : 'var(--red)' }}>CLV vs Pinnacle: {clvPinn > 0 ? '+' : ''}{clvPinn.toFixed(1)}%</div>
-                        })()}
                       </div>
                       {actualOdds ? <>
                         <div className="mid-row">
@@ -2423,74 +2305,6 @@ export default function App() {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             {settled.length === 0 ? <div className="empty">Žiadne uzavreté bety.<br />Settle aspoň jeden bet.</div> : (<>
-
-              {/* ── CONFIDENCE SCORE ── */}
-              {confidenceOverall && (
-                <div className="card" style={{ padding: 16, borderLeft: `3px solid ${stabilityDowngrade ? 'var(--red)' : stabilityWarning ? 'var(--yellow)' : confidenceOverall.color}` }}>
-                  <div className="section-title" style={{ marginBottom: 12 }}>🎯 Confidence Score</div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 16, flexWrap: 'wrap' }}>
-                    {/* Hlavné číslo */}
-                    <div style={{ textAlign: 'center', minWidth: 80 }}>
-                      <div style={{ fontSize: 42, fontWeight: 800, color: confidenceOverall.color, lineHeight: 1 }}>{confidenceOverall.score}</div>
-                      <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2 }}>/100</div>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: confidenceOverall.color, marginTop: 4 }}>{confidenceOverall.label}</div>
-                    </div>
-
-                    {/* Breakdown bary */}
-                    <div style={{ flex: 1, minWidth: 200 }}>
-                      {Object.values(confidenceOverall.breakdown).map(item => (
-                        <div key={item.label} style={{ marginBottom: 6 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text3)', marginBottom: 2 }}>
-                            <span>{item.label}</span>
-                            <span style={{ color: 'var(--text2)' }}>{item.score}/{item.max} · {item.detail}</span>
-                          </div>
-                          <div style={{ height: 4, background: 'var(--bg3)', borderRadius: 2, overflow: 'hidden' }}>
-                            <div style={{ height: '100%', width: `${Math.min(100, (item.score / item.max) * 100)}%`, background: confidenceOverall.color, borderRadius: 2 }} />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Stability warning */}
-                  {stabilityWarning && confidenceRecent && (
-                    <div style={{ marginBottom: 12, padding: '8px 12px', borderRadius: 6, background: stabilityDowngrade ? 'rgba(214,48,49,0.08)' : 'rgba(253,203,110,0.08)', border: `1px solid ${stabilityDowngrade ? 'rgba(214,48,49,0.3)' : 'rgba(253,203,110,0.3)'}`, fontSize: 11 }}>
-                      <span style={{ color: stabilityDowngrade ? 'var(--red)' : 'var(--yellow)', fontWeight: 700 }}>
-                        {stabilityDowngrade ? '🔴 DOWNGRADE' : '⚠️ WARNING'}
-                      </span>
-                      <span style={{ color: 'var(--text3)', marginLeft: 8 }}>
-                        Posledných 30 betov ({confidenceRecent.score}/100) vs celkovo ({confidenceOverall.score}/100) — ratio {(stabilityRatio * 100).toFixed(0)}%
-                        {stabilityDowngrade ? ' — model môže mať aktuálny problém' : ' — sleduj trend'}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Per market + Recent */}
-                  <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
-                    <div style={{ fontSize: 10, color: 'var(--text3)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Per market · Recent 30</div>
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      {Object.entries(confidenceByMarket).map(([mkt, cs]) => {
-                        if (!cs) return null
-                        return (
-                          <div key={mkt} style={{ background: 'var(--bg3)', borderRadius: 6, padding: '6px 12px', textAlign: 'center', minWidth: 70 }}>
-                            <div style={{ fontSize: 9, color: 'var(--text3)', marginBottom: 2 }}>{mkt}</div>
-                            <div style={{ fontSize: 18, fontWeight: 800, color: cs.color }}>{cs.score}</div>
-                            <div style={{ fontSize: 9, color: cs.color }}>{cs.label}</div>
-                          </div>
-                        )
-                      })}
-                      {confidenceRecent && (
-                        <div style={{ background: 'var(--bg3)', borderRadius: 6, padding: '6px 12px', textAlign: 'center', minWidth: 70, borderLeft: `2px solid var(--accent)` }}>
-                          <div style={{ fontSize: 9, color: 'var(--text3)', marginBottom: 2 }}>Posledných 30</div>
-                          <div style={{ fontSize: 18, fontWeight: 800, color: confidenceRecent.color }}>{confidenceRecent.score}</div>
-                          <div style={{ fontSize: 9, color: confidenceRecent.color }}>{confidenceRecent.label}</div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {/* ── FINANCE ── */}
               <div>
