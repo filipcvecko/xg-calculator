@@ -1152,6 +1152,65 @@ export default function App() {
   const avgModelProb = probComparison.length > 0 ? probComparison.reduce((s, b) => s + b.model_prob, 0) / probComparison.length : null
   const avgMarketProb = probComparison.length > 0 ? probComparison.reduce((s, b) => s + b.market_prob, 0) / probComparison.length : null
 
+  // ── CONFIDENCE SCORE ──────────────────────────────────────────
+  function calcConfidenceScore(betsArr) {
+    if (!betsArr || betsArr.length === 0) return null
+    const n = betsArr.length
+    const clvB = betsArr.filter(b => b.clv != null)
+    const avgC = clvB.length > 0 ? clvB.reduce((s, b) => s + b.clv, 0) / clvB.length : null
+    const posC = clvB.length > 0 ? (clvB.filter(b => b.clv > 0).length / clvB.length) * 100 : null
+    const nonPush = betsArr.filter(b => b.result === 0 || b.result === 1)
+    const wins_ = nonPush.filter(b => b.result === 1).length
+    const hr = nonPush.length > 0 ? wins_ / nonPush.length : null
+    const ap = nonPush.length > 0 ? nonPush.reduce((s, b) => s + b.sel_prob, 0) / nonPush.length : null
+    const cal = hr != null && ap != null ? Math.abs((hr - ap) * 100) : null
+    const brierB = betsArr.filter(b => b.brier != null)
+    const avgBr = brierB.length > 0 ? brierB.reduce((s, b) => s + b.brier, 0) / brierB.length : null
+    const xgB = betsArr.filter(b => b.xg_brier != null && b.brier != null)
+    const avgXgBr = xgB.length > 0 ? xgB.reduce((s, b) => s + b.xg_brier, 0) / xgB.length : null
+    const avgClBr = xgB.length > 0 ? xgB.reduce((s, b) => s + b.brier, 0) / xgB.length : null
+    const totalS = betsArr.reduce((s, b) => s + b.stake, 0)
+    const totalP = betsArr.reduce((s, b) => s + (b.pnl || 0), 0)
+    const roi_ = totalS > 0 ? (totalP / totalS) * 100 : null
+    const sampleScore = n >= 200 ? 40 : n >= 100 ? 35 : n >= 50 ? 25 : n >= 25 ? 15 : 5
+    const clvScore = avgC == null ? 0 : avgC < 0 ? 0 : avgC < 1 ? 10 : avgC < 2 ? 20 : avgC < 3 ? 30 : avgC < 5 ? 40 : 45
+    const posCLVScore = posC == null ? 0 : posC < 50 ? 0 : posC < 55 ? 5 : posC < 65 ? 10 : 15
+    const calibScore = cal == null ? 0 : cal > 8 ? 0 : cal > 5 ? 5 : cal > 3 ? 10 : cal > 1 ? 15 : 20
+    const brierScore_ = avgBr == null ? 0 : avgBr > 0.26 ? 0 : avgBr > 0.24 ? 5 : avgBr > 0.22 ? 13 : avgBr > 0.20 ? 17 : 20
+    let processBonus = 0
+    if (xgB.length >= 20 && avgXgBr != null && avgClBr != null) {
+      const diff = avgClBr - avgXgBr
+      processBonus = diff < 0 ? 0 : diff < 0.01 ? 2 : diff < 0.03 ? 5 : 8
+    }
+    const roiScore = roi_ == null ? 0 : roi_ < 0 ? 0 : roi_ < 2 ? 3 : roi_ < 5 ? 7 : roi_ < 10 ? 12 : 15
+    const total = sampleScore + clvScore + posCLVScore + calibScore + brierScore_ + processBonus + roiScore
+    const MAX = 163
+    const score = Math.round((total / MAX) * 100)
+    const label = score >= 85 ? 'Veľmi silný' : score >= 70 ? 'Silný' : score >= 50 ? 'Sľubný' : score >= 30 ? 'Neistý' : 'Nedôveruj'
+    const color = score >= 70 ? 'var(--green)' : score >= 50 ? 'var(--yellow)' : 'var(--red)'
+    return {
+      score, label, color,
+      breakdown: {
+        sample: { score: sampleScore, max: 40, label: 'Vzorka', detail: `${n} betov` },
+        clv: { score: clvScore + posCLVScore, max: 60, label: 'CLV', detail: avgC != null ? `${avgC > 0 ? '+' : ''}${avgC.toFixed(1)}% · ${posC?.toFixed(0)}% poz.` : '—' },
+        calib: { score: calibScore, max: 20, label: 'Kalibrácia', detail: cal != null ? `${cal.toFixed(1)}pp` : '—' },
+        brier: { score: brierScore_ + processBonus, max: 28, label: 'Brier / Process', detail: avgBr != null ? `${avgBr.toFixed(3)}` : '—' },
+        roi: { score: roiScore, max: 15, label: 'ROI', detail: roi_ != null ? `${roi_ > 0 ? '+' : ''}${roi_.toFixed(1)}%` : '—' },
+      }
+    }
+  }
+  const confidenceOverall = calcConfidenceScore(settled)
+  const confidenceByMarket = {
+    'O/U 2.5': calcConfidenceScore(settled.filter(b => ['over2.5','under2.5'].includes(b.market))),
+    'O/U 3.0': calcConfidenceScore(settled.filter(b => ['over3.0','under3.0'].includes(b.market))),
+  }
+  const confidenceRecent = calcConfidenceScore([...settled].slice(0, 30))
+  const stabilityRatio = (confidenceOverall && confidenceRecent && confidenceOverall.score > 0)
+    ? confidenceRecent.score / confidenceOverall.score : null
+  const stabilityWarning = stabilityRatio != null && stabilityRatio < 0.8
+  const stabilityDowngrade = stabilityRatio != null && stabilityRatio < 0.7
+  // ──────────────────────────────────────────────────────────────
+
   // ── RECOMMENDATION ENGINE ──────────────────────────────────────
   function getRecommendedBet(candidates, filters) {
     const { evMin, oddsLow, oddsHigh } = filters
@@ -2423,6 +2482,61 @@ export default function App() {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             {settled.length === 0 ? <div className="empty">Žiadne uzavreté bety.<br />Settle aspoň jeden bet.</div> : (<>
+
+              {/* ── CONFIDENCE SCORE ── */}
+              {confidenceOverall && (
+                <div className="card" style={{ padding: 16, borderLeft: `3px solid ${stabilityDowngrade ? 'var(--red)' : stabilityWarning ? 'var(--yellow)' : confidenceOverall.color}` }}>
+                  <div className="section-title" style={{ marginBottom: 12 }}>🎯 Confidence Score</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 16, flexWrap: 'wrap' }}>
+                    <div style={{ textAlign: 'center', minWidth: 80 }}>
+                      <div style={{ fontSize: 42, fontWeight: 800, color: confidenceOverall.color, lineHeight: 1 }}>{confidenceOverall.score}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2 }}>/100</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: confidenceOverall.color, marginTop: 4 }}>{confidenceOverall.label}</div>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 200 }}>
+                      {Object.values(confidenceOverall.breakdown).map(item => (
+                        <div key={item.label} style={{ marginBottom: 6 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text3)', marginBottom: 2 }}>
+                            <span>{item.label}</span>
+                            <span style={{ color: 'var(--text2)' }}>{item.score}/{item.max} · {item.detail}</span>
+                          </div>
+                          <div style={{ height: 4, background: 'var(--bg3)', borderRadius: 2, overflow: 'hidden' }}>
+                            <div style={{ height: '100%', width: `${Math.min(100, (item.score / item.max) * 100)}%`, background: confidenceOverall.color, borderRadius: 2 }} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {stabilityWarning && confidenceRecent && (
+                    <div style={{ marginBottom: 12, padding: '8px 12px', borderRadius: 6, background: stabilityDowngrade ? 'rgba(214,48,49,0.08)' : 'rgba(253,203,110,0.08)', border: `1px solid ${stabilityDowngrade ? 'rgba(214,48,49,0.3)' : 'rgba(253,203,110,0.3)'}`, fontSize: 11 }}>
+                      <span style={{ color: stabilityDowngrade ? 'var(--red)' : 'var(--yellow)', fontWeight: 700 }}>{stabilityDowngrade ? '🔴 DOWNGRADE' : '⚠️ WARNING'}</span>
+                      <span style={{ color: 'var(--text3)', marginLeft: 8 }}>Posledných 30 ({confidenceRecent.score}/100) vs celkovo ({confidenceOverall.score}/100) — ratio {(stabilityRatio * 100).toFixed(0)}%{stabilityDowngrade ? ' — model môže mať aktuálny problém' : ' — sleduj trend'}</span>
+                    </div>
+                  )}
+                  <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+                    <div style={{ fontSize: 10, color: 'var(--text3)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Per market · Recent 30</div>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      {Object.entries(confidenceByMarket).map(([mkt, cs]) => {
+                        if (!cs) return null
+                        return (
+                          <div key={mkt} style={{ background: 'var(--bg3)', borderRadius: 6, padding: '6px 12px', textAlign: 'center', minWidth: 70 }}>
+                            <div style={{ fontSize: 9, color: 'var(--text3)', marginBottom: 2 }}>{mkt}</div>
+                            <div style={{ fontSize: 18, fontWeight: 800, color: cs.color }}>{cs.score}</div>
+                            <div style={{ fontSize: 9, color: cs.color }}>{cs.label}</div>
+                          </div>
+                        )
+                      })}
+                      {confidenceRecent && (
+                        <div style={{ background: 'var(--bg3)', borderRadius: 6, padding: '6px 12px', textAlign: 'center', minWidth: 70, borderLeft: `2px solid var(--accent)` }}>
+                          <div style={{ fontSize: 9, color: 'var(--text3)', marginBottom: 2 }}>Posledných 30</div>
+                          <div style={{ fontSize: 18, fontWeight: 800, color: confidenceRecent.color }}>{confidenceRecent.score}</div>
+                          <div style={{ fontSize: 9, color: confidenceRecent.color }}>{confidenceRecent.label}</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* ── FINANCE ── */}
               <div>
