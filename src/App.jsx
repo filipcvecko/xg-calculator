@@ -581,14 +581,8 @@ export default function App() {
     setHomeTeamOpen(false)
     setHomeTeamSearch('')
     setHomeLastX(null)
-    // Použi _statsRaw z league-teams ak dostupné, inak fetchTeamStats ako fallback
     const lastxPromise = fetchTeamLastX(team.id)
-    let rawData = null
-    if (team._statsRaw && Object.keys(team._statsRaw).length > 5) {
-      rawData = team._statsRaw
-    } else {
-      rawData = await fetchTeamStats(team.id, team.seasonId)
-    }
+    const rawData = await fetchTeamStats(team.id, team.seasonId)
     const lastx = await lastxPromise
     const raw = rawData
     const s = raw ? extractTeamStats(raw) : null
@@ -611,14 +605,8 @@ export default function App() {
     setAwayTeamOpen(false)
     setAwayTeamSearch('')
     setAwayLastX(null)
-    // Použi _statsRaw z league-teams ak dostupné, inak fetchTeamStats ako fallback
     const lastxPromise = fetchTeamLastX(team.id)
-    let rawData = null
-    if (team._statsRaw && Object.keys(team._statsRaw).length > 5) {
-      rawData = team._statsRaw
-    } else {
-      rawData = await fetchTeamStats(team.id, team.seasonId)
-    }
+    const rawData = await fetchTeamStats(team.id, team.seasonId)
     const lastx = await lastxPromise
     const raw = rawData
     const s = raw ? extractTeamStats(raw) : null
