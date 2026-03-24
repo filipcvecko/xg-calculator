@@ -1113,18 +1113,16 @@ export default function App() {
     // 4. Calibration score (max 20)
     const calibScore = cal == null ? 0 : cal > 8 ? 0 : cal > 5 ? 5 : cal > 3 ? 10 : cal > 1 ? 15 : 20
 
-    // 5. Brier score (max 20)
-    const brierScore_ = avgBr == null ? 0 : avgBr > 0.26 ? 0 : avgBr > 0.24 ? 5 : avgBr > 0.22 ? 10 : avgBr > 0.20 ? 15 : 20
+    // 5. Brier score (max 20) — FIX: vyššie body pre 0.22-0.24
+    const brierScore_ = avgBr == null ? 0 : avgBr > 0.26 ? 0 : avgBr > 0.24 ? 5 : avgBr > 0.22 ? 13 : avgBr > 0.20 ? 17 : 20
 
-    // 6. xG Brier process bonus (max 8, len ak 20+ betov s xG)
+    // 6. xG Brier process bonus (max 8) — FIX: len ak 20+ betov s xG
     let processBonus = 0
     if (xgB.length >= 20 && avgXgBr != null && avgClBr != null) {
       const diff = avgClBr - avgXgBr
       processBonus = diff < 0 ? 0 : diff < 0.01 ? 2 : diff < 0.03 ? 5 : 8
-    } else if (xgB.length >= 5 && avgXgBr != null && avgClBr != null) {
-      const diff = avgClBr - avgXgBr
-      processBonus = diff > 0 ? 1 : 0
     }
+    // Pod 20 betov — žiadny bonus (FIX: vypnutý pri malej vzorke)
 
     // 7. ROI score (max 15)
     const roiScore = roi_ == null ? 0 : roi_ < 0 ? 0 : roi_ < 2 ? 3 : roi_ < 5 ? 7 : roi_ < 10 ? 12 : 15
@@ -1132,32 +1130,36 @@ export default function App() {
     const total = sampleScore + clvScore + posCLVScore + calibScore + brierScore_ + processBonus + roiScore
     const MAX = 40 + 45 + 15 + 20 + 20 + 8 + 15 // 163
     const score = Math.round((total / MAX) * 100)
+    const label = score >= 85 ? 'Veľmi silný' : score >= 70 ? 'Silný' : score >= 50 ? 'Sľubný' : score >= 30 ? 'Neistý' : 'Nedôveruj'
+    const color = score >= 85 ? 'var(--green)' : score >= 70 ? 'var(--green)' : score >= 50 ? 'var(--yellow)' : 'var(--red)'
 
     return {
-      score,
-      label: score >= 85 ? 'Veľmi silný' : score >= 70 ? 'Silný' : score >= 50 ? 'Sľubný' : score >= 30 ? 'Neistý' : 'Nedôveruj',
-      color: score >= 85 ? 'var(--green)' : score >= 70 ? 'var(--green)' : score >= 50 ? 'var(--yellow)' : 'var(--red)',
+      score, label, color,
       breakdown: {
         sample: { score: sampleScore, max: 40, label: 'Vzorka', detail: `${n} betov` },
-        clv: { score: clvScore + posCLVScore, max: 60, label: 'CLV', detail: avgC != null ? `${avgC > 0 ? '+' : ''}${avgC?.toFixed(1)}% · ${posC?.toFixed(0)}% pozitívnych` : '—' },
+        clv: { score: clvScore + posCLVScore, max: 60, label: 'CLV', detail: avgC != null ? `${avgC > 0 ? '+' : ''}${avgC.toFixed(1)}% · ${posC?.toFixed(0)}% poz.` : '—' },
         calib: { score: calibScore, max: 20, label: 'Kalibrácia', detail: cal != null ? `${cal.toFixed(1)}pp odchýlka` : '—' },
-        brier: { score: brierScore_ + processBonus, max: 28, label: 'Brier / Process', detail: avgBr != null ? `${avgBr.toFixed(3)}${processBonus > 0 ? ` · xG bonus +${processBonus}` : ''}` : '—' },
-        roi: { score: roiScore, max: 15, label: 'ROI', detail: roi_ != null ? `${roi_ > 0 ? '+' : ''}${roi_?.toFixed(1)}%` : '—' },
+        brier: { score: brierScore_ + processBonus, max: 28, label: 'Brier / Process', detail: avgBr != null ? `${avgBr.toFixed(3)}${processBonus > 0 ? ` · xG +${processBonus}` : ''}` : '—' },
+        roi: { score: roiScore, max: 15, label: 'ROI', detail: roi_ != null ? `${roi_ > 0 ? '+' : ''}${roi_.toFixed(1)}%` : '—' },
       }
     }
   }
 
-  // Overall confidence
   const confidenceOverall = calcConfidenceScore(settled)
-  // Per market
   const confidenceByMarket = {
     'O/U 2.5':  calcConfidenceScore(settled.filter(b => ['over2.5','under2.5'].includes(b.market))),
     'O/U 2.25': calcConfidenceScore(settled.filter(b => ['over2.25','under2.25'].includes(b.market))),
     'O/U 2.75': calcConfidenceScore(settled.filter(b => ['over2.75','under2.75'].includes(b.market))),
     'O/U 3.0':  calcConfidenceScore(settled.filter(b => ['over3.0','under3.0'].includes(b.market))),
   }
-  // Recent (posledných 30)
   const confidenceRecent = calcConfidenceScore([...settled].slice(0, 30))
+
+  // FIX 3: Stability factor — recent vs overall
+  const stabilityRatio = (confidenceOverall && confidenceRecent && confidenceOverall.score > 0)
+    ? confidenceRecent.score / confidenceOverall.score
+    : null
+  const stabilityWarning = stabilityRatio != null && stabilityRatio < 0.8
+  const stabilityDowngrade = stabilityRatio != null && stabilityRatio < 0.7
   // ──────────────────────────────────────────────────────────────
 
   // ── RECOMMENDATION ENGINE ──────────────────────────────────────
@@ -2371,16 +2373,18 @@ export default function App() {
 
               {/* ── CONFIDENCE SCORE ── */}
               {confidenceOverall && (
-                <div className="card" style={{ padding: 16, borderLeft: `3px solid ${confidenceOverall.color}` }}>
+                <div className="card" style={{ padding: 16, borderLeft: `3px solid ${stabilityDowngrade ? 'var(--red)' : stabilityWarning ? 'var(--yellow)' : confidenceOverall.color}` }}>
                   <div className="section-title" style={{ marginBottom: 12 }}>🎯 Confidence Score</div>
+
                   <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 16, flexWrap: 'wrap' }}>
-                    {/* Overall */}
+                    {/* Hlavné číslo */}
                     <div style={{ textAlign: 'center', minWidth: 80 }}>
                       <div style={{ fontSize: 42, fontWeight: 800, color: confidenceOverall.color, lineHeight: 1 }}>{confidenceOverall.score}</div>
                       <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2 }}>/100</div>
                       <div style={{ fontSize: 12, fontWeight: 700, color: confidenceOverall.color, marginTop: 4 }}>{confidenceOverall.label}</div>
                     </div>
-                    {/* Breakdown bars */}
+
+                    {/* Breakdown bary */}
                     <div style={{ flex: 1, minWidth: 200 }}>
                       {Object.values(confidenceOverall.breakdown).map(item => (
                         <div key={item.label} style={{ marginBottom: 6 }}>
@@ -2389,12 +2393,25 @@ export default function App() {
                             <span style={{ color: 'var(--text2)' }}>{item.score}/{item.max} · {item.detail}</span>
                           </div>
                           <div style={{ height: 4, background: 'var(--bg3)', borderRadius: 2, overflow: 'hidden' }}>
-                            <div style={{ height: '100%', width: `${(item.score / item.max) * 100}%`, background: confidenceOverall.color, borderRadius: 2, transition: 'width 0.3s' }} />
+                            <div style={{ height: '100%', width: `${Math.min(100, (item.score / item.max) * 100)}%`, background: confidenceOverall.color, borderRadius: 2 }} />
                           </div>
                         </div>
                       ))}
                     </div>
                   </div>
+
+                  {/* Stability warning */}
+                  {stabilityWarning && confidenceRecent && (
+                    <div style={{ marginBottom: 12, padding: '8px 12px', borderRadius: 6, background: stabilityDowngrade ? 'rgba(214,48,49,0.08)' : 'rgba(253,203,110,0.08)', border: `1px solid ${stabilityDowngrade ? 'rgba(214,48,49,0.3)' : 'rgba(253,203,110,0.3)'}`, fontSize: 11 }}>
+                      <span style={{ color: stabilityDowngrade ? 'var(--red)' : 'var(--yellow)', fontWeight: 700 }}>
+                        {stabilityDowngrade ? '🔴 DOWNGRADE' : '⚠️ WARNING'}
+                      </span>
+                      <span style={{ color: 'var(--text3)', marginLeft: 8 }}>
+                        Posledných 30 betov ({confidenceRecent.score}/100) vs celkovo ({confidenceOverall.score}/100) — ratio {(stabilityRatio * 100).toFixed(0)}%
+                        {stabilityDowngrade ? ' — model môže mať aktuálny problém' : ' — sleduj trend'}
+                      </span>
+                    </div>
+                  )}
 
                   {/* Per market + Recent */}
                   <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
