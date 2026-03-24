@@ -2961,6 +2961,37 @@ export default function App() {
                     </div>
                   ))}
                 </div>
+                {/* xG Brier karta */}
+                {(() => {
+                  const xgBets = settled.filter(b => b.xg_brier != null && b.brier != null)
+                  if (xgBets.length < 3) return null
+                  const avgXgBrier = xgBets.reduce((s, b) => s + b.xg_brier, 0) / xgBets.length
+                  const avgClassicBrier = xgBets.reduce((s, b) => s + b.brier, 0) / xgBets.length
+                  const diff = avgClassicBrier - avgXgBrier
+                  const processGood = diff > 0
+                  return (
+                    <div className="card" style={{ marginTop: 10, padding: 14, borderLeft: `3px solid ${processGood ? 'var(--green)' : 'var(--yellow)'}` }}>
+                      <div className="label" style={{ marginBottom: 10 }}>🔬 xG Brier — proces vs výsledok ({xgBets.length} betov)</div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                        <div>
+                          <div style={{ color: 'var(--text3)', fontSize: 10, marginBottom: 3 }}>Klasický Brier</div>
+                          <div style={{ fontWeight: 700, fontSize: 16 }}>{avgClassicBrier.toFixed(3)}</div>
+                          <div style={{ fontSize: 10, color: 'var(--text3)' }}>výsledok</div>
+                        </div>
+                        <div>
+                          <div style={{ color: 'var(--text3)', fontSize: 10, marginBottom: 3 }}>xG Brier</div>
+                          <div style={{ fontWeight: 700, fontSize: 16 }}>{avgXgBrier.toFixed(3)}</div>
+                          <div style={{ fontSize: 10, color: 'var(--text3)' }}>proces</div>
+                        </div>
+                        <div>
+                          <div style={{ color: 'var(--text3)', fontSize: 10, marginBottom: 3 }}>Rozdiel</div>
+                          <div style={{ fontWeight: 700, fontSize: 16, color: processGood ? 'var(--green)' : 'var(--yellow)' }}>{diff > 0 ? '+' : ''}{diff.toFixed(3)}</div>
+                          <div style={{ fontSize: 10, color: processGood ? 'var(--green)' : 'var(--yellow)' }}>{processGood ? 'proces lepší ako luck' : 'luck lepší ako proces'}</div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })()}
               </div>
 
               {/* ── PNL TIMELINE ── */}
