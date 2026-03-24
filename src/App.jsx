@@ -189,10 +189,11 @@ function extractTeamStats(team) {
 
   // xG per zápas — FootyStats používa tieto názvy polí
   // xg_for_avg_home / xg_for_avg_away sú štandardné názvy z /team endpointu
-  const xgH = get('xg_for_avg_home', 'xg_for_avg', 'seasonXG_home', 'xGFor_home')
-  const xgA = get('xg_for_avg_away', 'seasonXG_away', 'xGFor_away')
-  const xgaH = get('xg_against_avg_home', 'xg_against_avg', 'seasonXGC_home', 'xGAgainst_home')
-  const xgaA = get('xg_against_avg_away', 'seasonXGC_away', 'xGAgainst_away')
+  // xg_for_avg_overall = fallback pre ligy bez home/away rozdelenia
+  const xgH = get('xg_for_avg_home', 'xg_for_avg', 'seasonXG_home', 'xGFor_home', 'xg_for_avg_overall')
+  const xgA = get('xg_for_avg_away', 'seasonXG_away', 'xGFor_away', 'xg_for_avg_overall')
+  const xgaH = get('xg_against_avg_home', 'xg_against_avg', 'seasonXGC_home', 'xGAgainst_home', 'xg_against_avg_overall')
+  const xgaA = get('xg_against_avg_away', 'seasonXGC_away', 'xGAgainst_away', 'xg_against_avg_overall')
 
   // GF/GA priemer per zápas
   const gfH = get('seasonScoredAVG_home', 'scored_home', 'seasonGoals_home')
@@ -599,10 +600,10 @@ export default function App() {
     setSelectedHomeTeam(finalTeam)
     setHomeLastX(lastx)
     if (s) {
-      if (s.xgH != null) setXgH(String(s.xgH))
-      if (s.xgaH != null) setXgaH(String(s.xgaH))
-      if (s.gfH != null) setGfH(String(s.gfH))
-      if (s.gaH != null) setGaH(String(s.gaH))
+      if (s.xgH != null && s.xgH > 0) setXgH(String(s.xgH))
+      if (s.xgaH != null && s.xgaH > 0) setXgaH(String(s.xgaH))
+      if (s.gfH != null && s.gfH > 0) setGfH(String(s.gfH))
+      if (s.gaH != null && s.gaH > 0) setGaH(String(s.gaH))
     }
     const awayName = selectedAwayTeam?.name || ''
     if (team.name) setMatchName(awayName ? `${team.name} vs ${awayName}` : team.name)
@@ -629,10 +630,10 @@ export default function App() {
     setSelectedAwayTeam(finalTeam)
     setAwayLastX(lastx)
     if (s) {
-      if (s.xgA != null) setXgA(String(s.xgA))
-      if (s.xgaA != null) setXgaA(String(s.xgaA))
-      if (s.gfA != null) setGfA(String(s.gfA))
-      if (s.gaA != null) setGaA(String(s.gaA))
+      if (s.xgA != null && s.xgA > 0) setXgA(String(s.xgA))
+      if (s.xgaA != null && s.xgaA > 0) setXgaA(String(s.xgaA))
+      if (s.gfA != null && s.gfA > 0) setGfA(String(s.gfA))
+      if (s.gaA != null && s.gaA > 0) setGaA(String(s.gaA))
     }
     const homeName = selectedHomeTeam?.name || ''
     if (team.name) setMatchName(homeName ? `${homeName} vs ${team.name}` : team.name)
