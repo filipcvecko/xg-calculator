@@ -907,7 +907,16 @@ export default function App() {
     if (!oc || oc <= 1) return
     const bet = bets.find(b => b.id === id)
     const clv = calcCLV(bet.odds_open, oc)
-    await supabase.from('bets').update({ odds_close: oc, clv }).eq('id', id)
+    const pinnClose = pf(settlePinnClose)
+    const pinnCLV = (pinnClose > 1 && bet.pinnacle_open > 1)
+      ? calcCLV(bet.pinnacle_open, pinnClose)
+      : null
+    await supabase.from('bets').update({
+      odds_close: oc,
+      clv,
+      pinnacle_close: pinnClose > 1 ? pinnClose : null,
+      pinnacle_clv: pinnCLV,
+    }).eq('id', id)
     setSettleMode('result')
     await loadBets()
   }
