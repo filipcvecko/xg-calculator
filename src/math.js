@@ -65,18 +65,12 @@ export function calcOU30(lambdaH, lambdaA) {
   const pUnder2 = p0 + p1 + p2          // T <= 2
   const pExact3 = p3                     // T = 3 (push)
   const pOver3  = 1 - pUnder2 - pExact3 // T >= 4
-  // Fair odds: rátame cez win/lose s pushom
-  // fair_over  = 1 + pUnder2 / pOver3
-  // fair_under = 1 + pOver3  / pUnder2
   const fairOver  = pOver3  > 0 ? 1 + pUnder2 / pOver3  : null
   const fairUnder = pUnder2 > 0 ? 1 + pOver3  / pUnder2 : null
   return { pOver3, pExact3, pUnder2, fairOver, fairUnder }
 }
 
 // EV pre O/U 3.0 (back bet) s komisiou
-// Over:  EV = pOver3 * (odds-1) * (1-comm) - pUnder2
-// Under: EV = pUnder2 * (odds-1) * (1-comm) - pOver3
-// Push sa ignoruje v EV (stake sa vráti)
 export function calcEVOU30(isOver, pOver3, pUnder2, odds, comm = 0.05) {
   if (!odds || odds <= 1) return null
   return isOver
@@ -85,9 +79,6 @@ export function calcEVOU30(isOver, pOver3, pUnder2, odds, comm = 0.05) {
 }
 
 // Over/Under 2.75 — Asian line (split medzi 2.5 a 3.0)
-// Over 2.75: T<=2 lose, T=3 half lose, T>=4 win
-// Under 2.75: T<=2 win, T=3 half win, T>=4 lose
-// Používa score matrix s Dixon-Coles korekciou (presnejšie ako total goals Poisson)
 export function calcOU275(lambdaH, lambdaA, rho = -0.10) {
   const matrix = buildScoreMatrix(lambdaH, lambdaA, rho)
   let p0_2 = 0, p3 = 0, p4plus = 0
@@ -100,8 +91,6 @@ export function calcOU275(lambdaH, lambdaA, rho = -0.10) {
   }
   const pOver275  = p4plus + 0.5 * p3
   const pUnder275 = p0_2   + 0.5 * p3
-  // Fair odds z EV=0 s komisiou (používa App.jsx asianFairOdds)
-  // Tu vraciame bez komisie — App.jsx prepočíta s komisiou
   const fairOver  = (p4plus + 0.5 * p3) > 0 ? 1 + p0_2  / (p4plus + 0.5 * p3) : null
   const fairUnder = (p0_2   + 0.5 * p3) > 0 ? 1 + p4plus / (p0_2   + 0.5 * p3) : null
   return { pOver275, pUnder275, p0_2, p3, p4plus, fairOver, fairUnder }
@@ -111,20 +100,13 @@ export function calcOU275(lambdaH, lambdaA, rho = -0.10) {
 export function calcEVOU275(isOver, p0_2, p3, p4plus, odds, comm = 0.05) {
   if (!odds || odds <= 1) return null
   if (isOver) {
-    // Over 2.75: win=4+, half-lose=3, lose=0-2
-    // Half-lose: -stake/2
     return p4plus * (odds - 1) * (1 - comm) - p3 * 0.5 - p0_2
   } else {
-    // Under 2.75: win=0-2, half-win=3, lose=4+
-    // Half-win: +stake/2*(odds-1)*(1-comm) - stake/2
     return p0_2 * (odds - 1) * (1 - comm) + p3 * ((odds - 1) * (1 - comm) / 2 - 0.5) - p4plus
   }
 }
 
 // Over/Under 2.25 — Asian line (split medzi 2.0 a 2.5)
-// Over 2.25: T<=1 lose, T=2 half win, T>=3 win
-// Under 2.25: T<=1 win, T=2 half lose, T>=3 lose
-// Používa score matrix s Dixon-Coles korekciou (presnejšie ako total goals Poisson)
 export function calcOU225(lambdaH, lambdaA, rho = -0.10) {
   const matrix = buildScoreMatrix(lambdaH, lambdaA, rho)
   let p0_1 = 0, p2 = 0, p3plus = 0
@@ -146,12 +128,8 @@ export function calcOU225(lambdaH, lambdaA, rho = -0.10) {
 export function calcEVOU225(isOver, p0_1, p2, p3plus, odds, comm = 0.05) {
   if (!odds || odds <= 1) return null
   if (isOver) {
-    // Over 2.25: win=3+, half-win=2, lose=0-1
-    // Half-win: +stake/2*(odds-1)*(1-comm) - stake/2
     return p3plus * (odds - 1) * (1 - comm) + p2 * ((odds - 1) * (1 - comm) / 2 - 0.5) - p0_1
   } else {
-    // Under 2.25: win=0-1, half-lose=2, lose=3+
-    // Half-lose: -stake/2
     return p0_1 * (odds - 1) * (1 - comm) - p2 * 0.5 - p3plus
   }
 }
@@ -180,7 +158,6 @@ export function calcCLV(oddsOpen, oddsClose) {
 }
 
 // Market calibration: blend modelu a trhových kurzov
-// w = váha modelu (0.6 = 60% model, 40% market)
 export function marketCalibration(pModel, marketOdds, w = 0.6) {
   if (!marketOdds || marketOdds <= 1) return pModel
   const pMarket = 1 / marketOdds
@@ -188,21 +165,18 @@ export function marketCalibration(pModel, marketOdds, w = 0.6) {
 }
 
 // Probability calibration: logistic shrinkage toward 50%
-// k < 1 = stiahni k 50% (znížiš istotu) | k = 1 = žiadna zmena | k > 1 = polarizuj
-// Vzorec: p_adj = 1 / (1 + ((1-p)/p)^(1/k))
-// Príklad k=0.85: p=0.53 → 0.508 (nie 0.60 ako starý P^k)
 export function calibrateProb(p, k = 0.95) {
   if (!p || p <= 0 || p >= 1) return p
   if (k === 1) return p
   return 1 / (1 + Math.pow((1 - p) / p, 1 / k))
 }
 
-// EV threshold filter — true ak bet spĺňa minimálny EV
+// EV threshold filter
 export function evFilter(ev, evMin = 0.04) {
   return ev != null && ev >= evMin
 }
 
-// Odds band filter — true ak kurz je v rozumnom pásme
+// Odds band filter
 export function oddsBandFilter(odds, low = 1.4, high = 3.5) {
   return odds != null && odds > low && odds < high
 }
@@ -231,8 +205,7 @@ export function calcMaxDrawdown(bets) {
   return maxDD
 }
 
-// Time decay blend — mixuje sezónny priemer s last-X formou
-// w = váha formy (0.0–1.0), napr. 0.4 = 40% forma, 60% sezóna
+// Time decay blend
 export function timeDecayBlend(seasonVal, formVal, w = 0.40) {
   if (formVal == null || isNaN(formVal)) return seasonVal
   if (seasonVal == null || isNaN(seasonVal)) return formVal
@@ -240,7 +213,7 @@ export function timeDecayBlend(seasonVal, formVal, w = 0.40) {
 }
 
 // Extrahuj xG/GF/GA z lastx objektu (last5/last6/last10)
-// typ = 'last_5' | 'last_6' | 'last_10'
+// Opravená verzia — fallback na seasonScoredAVG keď xG chýba (napr. Saudi Arabia, nižšie ligy)
 export function extractLastXStats(lastxData, matchNum = 5) {
   if (!lastxData) return null
 
@@ -261,14 +234,15 @@ export function extractLastXStats(lastxData, matchNum = 5) {
   }
 
   return {
-    xgH: get('xg_for_avg_home', 'xg_for_avg_overall'),
-    xgA: get('xg_for_avg_away', 'xg_for_avg_overall'),
-    xgaH: get('xg_against_avg_home', 'xg_against_avg_overall'),
-    xgaA: get('xg_against_avg_away', 'xg_against_avg_overall'),
-    gfH: get('seasonScoredAVG_home'),
-    gfA: get('seasonScoredAVG_away'),
-    gaH: get('seasonConcededAVG_home'),
-    gaA: get('seasonConcededAVG_away'),
+    // xG s fallback na reálne góly (seasonScoredAVG) keď liga nemá xG dáta
+    xgH: get('xg_for_avg_home', 'xg_for_avg_overall', 'seasonScoredAVG_home', 'seasonScoredAVG_overall'),
+    xgA: get('xg_for_avg_away', 'xg_for_avg_overall', 'seasonScoredAVG_away', 'seasonScoredAVG_overall'),
+    xgaH: get('xg_against_avg_home', 'xg_against_avg_overall', 'seasonConcededAVG_home', 'seasonConcededAVG_overall'),
+    xgaA: get('xg_against_avg_away', 'xg_against_avg_overall', 'seasonConcededAVG_away', 'seasonConcededAVG_overall'),
+    gfH: get('seasonScoredAVG_home', 'seasonScoredAVG_overall'),
+    gfA: get('seasonScoredAVG_away', 'seasonScoredAVG_overall'),
+    gaH: get('seasonConcededAVG_home', 'seasonConcededAVG_overall'),
+    gaA: get('seasonConcededAVG_away', 'seasonConcededAVG_overall'),
     mp: get('seasonMatchesPlayed_overall') || null,
   }
 }
