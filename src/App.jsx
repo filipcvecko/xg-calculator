@@ -416,8 +416,6 @@ export default function App() {
   const [settleMode, setSettleMode] = useState('clv')
   const [settleClose, setSettleClose] = useState('')
   const [settleResult, setSettleResult] = useState('')
-  const [settleXgHome, setSettleXgHome] = useState('')
-  const [settleXgAway, setSettleXgAway] = useState('')
 
   async function requestNotifPermission() {
     if (typeof Notification === 'undefined') return
@@ -949,54 +947,25 @@ export default function App() {
     const comm = (bet.commission || 5) / 100
     let pnl
     if (res === 2) {
+      // Push — stake sa vráti
       pnl = 0
     } else if (res === 3) {
+      // Half win — výhra z polovice stávky
       pnl = (bet.stake / 2) * (odds - 1) * (1 - comm)
     } else if (res === 4) {
+      // Half lose — strata polovice stávky
       pnl = -(bet.stake / 2)
     } else if (bet.bet_type === 'lay') {
       pnl = res === 0 ? bet.stake * (1 - comm) : -bet.stake * (odds - 1)
     } else {
       pnl = res === 1 ? bet.stake * (odds - 1) * (1 - comm) : -bet.stake
     }
-
-    // xG Brier — porovnaj predpoveď s reálnym xG výsledkom
-    const xgH = pf(settleXgHome)
-    const xgA = pf(settleXgAway)
-    let xgBrier = null
-    if (xgH > 0 || xgA > 0) {
-      const xgTotal = xgH + xgA
-      // Určí "xG výsledok" podľa marketu — bol proces Over alebo Under?
-      const mkt = bet.market
-      let xgOutcome = null
-      if (mkt === 'over2.5' || mkt === 'under2.5') {
-        xgOutcome = xgTotal > 2.5 ? 1 : 0
-        if (mkt === 'under2.5') xgOutcome = 1 - xgOutcome
-      } else if (mkt === 'over3.0' || mkt === 'under3.0') {
-        xgOutcome = xgTotal > 3.0 ? 1 : 0
-        if (mkt === 'under3.0') xgOutcome = 1 - xgOutcome
-      } else if (mkt === 'over2.75' || mkt === 'under2.75') {
-        xgOutcome = xgTotal > 2.75 ? 1 : 0
-        if (mkt === 'under2.75') xgOutcome = 1 - xgOutcome
-      } else if (mkt === 'over2.25' || mkt === 'under2.25') {
-        xgOutcome = xgTotal > 2.25 ? 1 : 0
-        if (mkt === 'under2.25') xgOutcome = 1 - xgOutcome
-      }
-      if (xgOutcome !== null && bet.sel_prob != null) {
-        xgBrier = brierScore(bet.sel_prob, xgOutcome)
-      }
-    }
-
     await supabase.from('bets').update({
       result: res, pnl,
       brier: [2, 3, 4].includes(res) ? null : brierScore(bet.sel_prob, res),
       log_loss: [2, 3, 4].includes(res) ? null : logLoss(bet.sel_prob, res),
-      xg_home_real: xgH > 0 ? xgH : null,
-      xg_away_real: xgA > 0 ? xgA : null,
-      xg_brier: xgBrier,
     }).eq('id', id)
     setSettlingId(null); setSettleResult(''); setSettleClose(''); setSettleMode('clv')
-    setSettleXgHome(''); setSettleXgAway('')
     await loadBets()
   }
 
@@ -1110,6 +1079,86 @@ export default function App() {
   const probComparison = settled.filter(b => b.model_prob != null && b.market_prob != null)
   const avgModelProb = probComparison.length > 0 ? probComparison.reduce((s, b) => s + b.model_prob, 0) / probComparison.length : null
   const avgMarketProb = probComparison.length > 0 ? probComparison.reduce((s, b) => s + b.market_prob, 0) / probComparison.length : null
+
+  // ── CONFIDENCE SCORE ──────────────────────────────────────────
+  function calcConfidenceScore(betsArr) {
+    if (!betsArr || betsArr.length === 0) return null
+    const n = betsArr.length
+    const clvB = betsArr.filter(b => b.clv != null)
+    const avgC = clvB.length > 0 ? clvB.reduce((s, b) => s + b.clv, 0) / clvB.length : null
+    const posC = clvB.length > 0 ? (clvB.filter(b => b.clv > 0).length / clvB.length) * 100 : null
+    const nonPush = betsArr.filter(b => b.result === 0 || b.result === 1)
+    const wins_ = nonPush.filter(b => b.result === 1).length
+    const hr = nonPush.length > 0 ? wins_ / nonPush.length : null
+    const ap = nonPush.length > 0 ? nonPush.reduce((s, b) => s + b.sel_prob, 0) / nonPush.length : null
+    const cal = hr != null && ap != null ? Math.abs((hr - ap) * 100) : null
+    const brierB = betsArr.filter(b => b.brier != null)
+    const avgBr = brierB.length > 0 ? brierB.reduce((s, b) => s + b.brier, 0) / brierB.length : null
+    const xgB = betsArr.filter(b => b.xg_brier != null && b.brier != null)
+    const avgXgBr = xgB.length > 0 ? xgB.reduce((s, b) => s + b.xg_brier, 0) / xgB.length : null
+    const avgClBr = xgB.length > 0 ? xgB.reduce((s, b) => s + b.brier, 0) / xgB.length : null
+    const totalS = betsArr.reduce((s, b) => s + b.stake, 0)
+    const totalP = betsArr.reduce((s, b) => s + (b.pnl || 0), 0)
+    const roi_ = totalS > 0 ? (totalP / totalS) * 100 : null
+
+    // 1. Sample score (max 40)
+    const sampleScore = n >= 200 ? 40 : n >= 100 ? 35 : n >= 50 ? 25 : n >= 25 ? 15 : 5
+
+    // 2. CLV score (max 45)
+    const clvScore = avgC == null ? 0 : avgC < 0 ? 0 : avgC < 1 ? 10 : avgC < 2 ? 20 : avgC < 3 ? 30 : avgC < 5 ? 40 : 45
+
+    // 3. Positive CLV bonus (max 15)
+    const posCLVScore = posC == null ? 0 : posC < 50 ? 0 : posC < 55 ? 5 : posC < 65 ? 10 : 15
+
+    // 4. Calibration score (max 20)
+    const calibScore = cal == null ? 0 : cal > 8 ? 0 : cal > 5 ? 5 : cal > 3 ? 10 : cal > 1 ? 15 : 20
+
+    // 5. Brier score (max 20)
+    const brierScore_ = avgBr == null ? 0 : avgBr > 0.26 ? 0 : avgBr > 0.24 ? 5 : avgBr > 0.22 ? 10 : avgBr > 0.20 ? 15 : 20
+
+    // 6. xG Brier process bonus (max 8, len ak 20+ betov s xG)
+    let processBonus = 0
+    if (xgB.length >= 20 && avgXgBr != null && avgClBr != null) {
+      const diff = avgClBr - avgXgBr
+      processBonus = diff < 0 ? 0 : diff < 0.01 ? 2 : diff < 0.03 ? 5 : 8
+    } else if (xgB.length >= 5 && avgXgBr != null && avgClBr != null) {
+      const diff = avgClBr - avgXgBr
+      processBonus = diff > 0 ? 1 : 0
+    }
+
+    // 7. ROI score (max 15)
+    const roiScore = roi_ == null ? 0 : roi_ < 0 ? 0 : roi_ < 2 ? 3 : roi_ < 5 ? 7 : roi_ < 10 ? 12 : 15
+
+    const total = sampleScore + clvScore + posCLVScore + calibScore + brierScore_ + processBonus + roiScore
+    const MAX = 40 + 45 + 15 + 20 + 20 + 8 + 15 // 163
+    const score = Math.round((total / MAX) * 100)
+
+    return {
+      score,
+      label: score >= 85 ? 'Veľmi silný' : score >= 70 ? 'Silný' : score >= 50 ? 'Sľubný' : score >= 30 ? 'Neistý' : 'Nedôveruj',
+      color: score >= 85 ? 'var(--green)' : score >= 70 ? 'var(--green)' : score >= 50 ? 'var(--yellow)' : 'var(--red)',
+      breakdown: {
+        sample: { score: sampleScore, max: 40, label: 'Vzorka', detail: `${n} betov` },
+        clv: { score: clvScore + posCLVScore, max: 60, label: 'CLV', detail: avgC != null ? `${avgC > 0 ? '+' : ''}${avgC?.toFixed(1)}% · ${posC?.toFixed(0)}% pozitívnych` : '—' },
+        calib: { score: calibScore, max: 20, label: 'Kalibrácia', detail: cal != null ? `${cal.toFixed(1)}pp odchýlka` : '—' },
+        brier: { score: brierScore_ + processBonus, max: 28, label: 'Brier / Process', detail: avgBr != null ? `${avgBr.toFixed(3)}${processBonus > 0 ? ` · xG bonus +${processBonus}` : ''}` : '—' },
+        roi: { score: roiScore, max: 15, label: 'ROI', detail: roi_ != null ? `${roi_ > 0 ? '+' : ''}${roi_?.toFixed(1)}%` : '—' },
+      }
+    }
+  }
+
+  // Overall confidence
+  const confidenceOverall = calcConfidenceScore(settled)
+  // Per market
+  const confidenceByMarket = {
+    'O/U 2.5':  calcConfidenceScore(settled.filter(b => ['over2.5','under2.5'].includes(b.market))),
+    'O/U 2.25': calcConfidenceScore(settled.filter(b => ['over2.25','under2.25'].includes(b.market))),
+    'O/U 2.75': calcConfidenceScore(settled.filter(b => ['over2.75','under2.75'].includes(b.market))),
+    'O/U 3.0':  calcConfidenceScore(settled.filter(b => ['over3.0','under3.0'].includes(b.market))),
+  }
+  // Recent (posledných 30)
+  const confidenceRecent = calcConfidenceScore([...settled].slice(0, 30))
+  // ──────────────────────────────────────────────────────────────
 
   // ── RECOMMENDATION ENGINE ──────────────────────────────────────
   function getRecommendedBet(candidates, filters) {
@@ -2253,8 +2302,6 @@ export default function App() {
                       {b.clv != null && <span>CLV: <b className={b.clv > 0 ? 'pos' : 'neg'}>{fmtSignPct(b.clv)}</b></span>}
                       {b.brier != null && <span>Brier: <b style={{ color: 'var(--text2)' }}>{fmt2(b.brier)}</b></span>}
                       {b.log_loss != null && <span>Log loss: <b style={{ color: 'var(--text2)' }}>{fmt2(b.log_loss)}</b></span>}
-                      {b.xg_home_real != null && <span>xG real: <b style={{ color: 'var(--accent2)' }}>{fmt2(b.xg_home_real)} + {fmt2(b.xg_away_real)} = {fmt2(b.xg_home_real + b.xg_away_real)}</b></span>}
-                      {b.xg_brier != null && <span>xG Brier: <b style={{ color: b.xg_brier < (b.brier || 1) ? 'var(--green)' : 'var(--yellow)' }}>{fmt2(b.xg_brier)}</b></span>}
                     </div>
                   </div>
                 )}
@@ -2294,39 +2341,6 @@ export default function App() {
                         <option value="4">½ Lose (2 góly — {b.market === 'under2.25' ? 'Under half lose' : 'Over half win'} — 50% strata)</option>
                       </>)}
                     </select>
-                    {/* xG real — voliteľné, pre xG Brier */}
-                    <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 6, marginTop: 4 }}>
-                      🔬 xG po zápase <span style={{ color: 'var(--text3)', opacity: 0.7 }}>(opt — z Understat/FBref)</span>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
-                      <div>
-                        <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 3 }}>xG Home</div>
-                        <input className="inp inp-sm" placeholder="napr. 1.82" value={settleXgHome} onChange={e => setSettleXgHome(e.target.value)} />
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 3 }}>xG Away</div>
-                        <input className="inp inp-sm" placeholder="napr. 1.20" value={settleXgAway} onChange={e => setSettleXgAway(e.target.value)} />
-                      </div>
-                    </div>
-                    {/* Live preview xG Brier */}
-                    {pf(settleXgHome) + pf(settleXgAway) > 0 && settleResult !== '' && (() => {
-                      const xgTotal = pf(settleXgHome) + pf(settleXgAway)
-                      const mkt = b.market
-                      let line = mkt.includes('3.0') ? 3.0 : mkt.includes('2.75') ? 2.75 : mkt.includes('2.25') ? 2.25 : 2.5
-                      let xgOut = xgTotal > line ? 1 : 0
-                      if (mkt.startsWith('under')) xgOut = 1 - xgOut
-                      const xgB = brierScore(b.sel_prob, xgOut)
-                      const classicB = brierScore(b.sel_prob, parseInt(settleResult))
-                      return (
-                        <div style={{ fontSize: 11, padding: '6px 10px', background: 'var(--bg3)', borderRadius: 6, marginBottom: 8, lineHeight: 1.8 }}>
-                          <span style={{ color: 'var(--text3)' }}>xG total: </span><b style={{ color: 'var(--text2)' }}>{xgTotal.toFixed(2)}</b>
-                          <span style={{ color: 'var(--text3)', marginLeft: 12 }}>xG Brier: </span><b style={{ color: 'var(--accent2)' }}>{xgB.toFixed(3)}</b>
-                          <span style={{ color: 'var(--text3)', marginLeft: 12 }}>Klasický: </span><b style={{ color: 'var(--text2)' }}>{classicB.toFixed(3)}</b>
-                          {xgB < classicB && <span style={{ color: 'var(--green)', marginLeft: 8 }}>✓ model čítal hru správne</span>}
-                          {xgB > classicB && <span style={{ color: 'var(--yellow)', marginLeft: 8 }}>△ variancia pomohla</span>}
-                        </div>
-                      )
-                    })()}
                     <button className="btn btn-primary" style={{ padding: '10px' }} onClick={() => handleSettle(b.id)}>Potvrdiť výsledok</button>
                   </div>
                 )}
@@ -2354,6 +2368,59 @@ export default function App() {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             {settled.length === 0 ? <div className="empty">Žiadne uzavreté bety.<br />Settle aspoň jeden bet.</div> : (<>
+
+              {/* ── CONFIDENCE SCORE ── */}
+              {confidenceOverall && (
+                <div className="card" style={{ padding: 16, borderLeft: `3px solid ${confidenceOverall.color}` }}>
+                  <div className="section-title" style={{ marginBottom: 12 }}>🎯 Confidence Score</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 16, flexWrap: 'wrap' }}>
+                    {/* Overall */}
+                    <div style={{ textAlign: 'center', minWidth: 80 }}>
+                      <div style={{ fontSize: 42, fontWeight: 800, color: confidenceOverall.color, lineHeight: 1 }}>{confidenceOverall.score}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2 }}>/100</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: confidenceOverall.color, marginTop: 4 }}>{confidenceOverall.label}</div>
+                    </div>
+                    {/* Breakdown bars */}
+                    <div style={{ flex: 1, minWidth: 200 }}>
+                      {Object.values(confidenceOverall.breakdown).map(item => (
+                        <div key={item.label} style={{ marginBottom: 6 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text3)', marginBottom: 2 }}>
+                            <span>{item.label}</span>
+                            <span style={{ color: 'var(--text2)' }}>{item.score}/{item.max} · {item.detail}</span>
+                          </div>
+                          <div style={{ height: 4, background: 'var(--bg3)', borderRadius: 2, overflow: 'hidden' }}>
+                            <div style={{ height: '100%', width: `${(item.score / item.max) * 100}%`, background: confidenceOverall.color, borderRadius: 2, transition: 'width 0.3s' }} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Per market + Recent */}
+                  <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+                    <div style={{ fontSize: 10, color: 'var(--text3)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Per market · Recent 30</div>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      {Object.entries(confidenceByMarket).map(([mkt, cs]) => {
+                        if (!cs) return null
+                        return (
+                          <div key={mkt} style={{ background: 'var(--bg3)', borderRadius: 6, padding: '6px 12px', textAlign: 'center', minWidth: 70 }}>
+                            <div style={{ fontSize: 9, color: 'var(--text3)', marginBottom: 2 }}>{mkt}</div>
+                            <div style={{ fontSize: 18, fontWeight: 800, color: cs.color }}>{cs.score}</div>
+                            <div style={{ fontSize: 9, color: cs.color }}>{cs.label}</div>
+                          </div>
+                        )
+                      })}
+                      {confidenceRecent && (
+                        <div style={{ background: 'var(--bg3)', borderRadius: 6, padding: '6px 12px', textAlign: 'center', minWidth: 70, borderLeft: `2px solid var(--accent)` }}>
+                          <div style={{ fontSize: 9, color: 'var(--text3)', marginBottom: 2 }}>Posledných 30</div>
+                          <div style={{ fontSize: 18, fontWeight: 800, color: confidenceRecent.color }}>{confidenceRecent.score}</div>
+                          <div style={{ fontSize: 9, color: confidenceRecent.color }}>{confidenceRecent.label}</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* ── FINANCE ── */}
               <div>
@@ -2749,44 +2816,6 @@ export default function App() {
                     </div>
                   ))}
                 </div>
-                {/* xG Brier porovnanie */}
-                {(() => {
-                  const xgBets = settled.filter(b => b.xg_brier != null && b.brier != null)
-                  if (xgBets.length < 3) return null
-                  const avgXgBrier = xgBets.reduce((s, b) => s + b.xg_brier, 0) / xgBets.length
-                  const avgClassicBrier = xgBets.reduce((s, b) => s + b.brier, 0) / xgBets.length
-                  const diff = avgClassicBrier - avgXgBrier
-                  const betterProcess = diff > 0.01
-                  return (
-                    <div className="card" style={{ marginTop: 10, padding: 14, borderLeft: `3px solid ${betterProcess ? 'var(--green)' : 'var(--yellow)'}` }}>
-                      <div className="label" style={{ marginBottom: 10 }}>🔬 xG Brier — proces vs výsledok ({xgBets.length} betov)</div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, fontSize: 12 }}>
-                        <div>
-                          <div style={{ color: 'var(--text3)', fontSize: 10, marginBottom: 3 }}>Klasický Brier</div>
-                          <div style={{ fontWeight: 700, color: 'var(--text2)' }}>{fmt2(avgClassicBrier)}</div>
-                          <div style={{ fontSize: 10, color: 'var(--text3)' }}>vs góly</div>
-                        </div>
-                        <div>
-                          <div style={{ color: 'var(--text3)', fontSize: 10, marginBottom: 3 }}>xG Brier</div>
-                          <div style={{ fontWeight: 700, color: 'var(--accent2)' }}>{fmt2(avgXgBrier)}</div>
-                          <div style={{ fontSize: 10, color: 'var(--text3)' }}>vs xG proces</div>
-                        </div>
-                        <div>
-                          <div style={{ color: 'var(--text3)', fontSize: 10, marginBottom: 3 }}>Rozdiel</div>
-                          <div style={{ fontWeight: 700, color: betterProcess ? 'var(--green)' : 'var(--yellow)' }}>{diff > 0 ? '+' : ''}{fmt2(diff)}</div>
-                          <div style={{ fontSize: 10, color: betterProcess ? 'var(--green)' : 'var(--yellow)' }}>
-                            {betterProcess ? '✓ model číta hru' : '≈ žiadny jasný signál'}
-                          </div>
-                        </div>
-                      </div>
-                      {betterProcess && (
-                        <div style={{ marginTop: 8, fontSize: 11, color: 'var(--green)' }}>
-                          Model predpovedá proces správne — výsledky sú horšie ako xG naznačuje. Pokračuj.
-                        </div>
-                      )}
-                    </div>
-                  )
-                })()}
               </div>
 
               {/* ── PNL TIMELINE ── */}
