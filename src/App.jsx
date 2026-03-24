@@ -357,6 +357,16 @@ export default function App() {
   const [layUnder225, setLayUnder225] = useState('')
   const [myOddsOver225, setMyOddsOver225] = useState('')
   const [myOddsUnder225, setMyOddsUnder225] = useState('')
+
+  // Pinnacle kurzy — len pre zobrazenie CLV v čase podania, neukladajú sa
+  const [pinnOver25, setPinnOver25] = useState('')
+  const [pinnUnder25, setPinnUnder25] = useState('')
+  const [pinnOver30, setPinnOver30] = useState('')
+  const [pinnUnder30, setPinnUnder30] = useState('')
+  const [pinnOver275, setPinnOver275] = useState('')
+  const [pinnUnder275, setPinnUnder275] = useState('')
+  const [pinnOver225, setPinnOver225] = useState('')
+  const [pinnUnder225, setPinnUnder225] = useState('')
   const [todaysMatches, setTodaysMatches] = useState([])
   const [todaysMatchesOpen, setTodaysMatchesOpen] = useState(false)
   const [todaysMatchesLoading, setTodaysMatchesLoading] = useState(false)
@@ -1922,6 +1932,20 @@ export default function App() {
                         value={isOver ? myOddsOver : myOddsUnder}
                         onChange={e => isOver ? setMyOddsOver(e.target.value) : setMyOddsUnder(e.target.value)} />
                     </div>
+                    <div style={{ marginBottom: 8 }}>
+                      <div className="label">Pinnacle kurz <span style={{ color: 'var(--text3)' }}>(opt — CLV check)</span></div>
+                      <input className="inp inp-sm" placeholder="napr. 1.90"
+                        value={isOver ? pinnOver25 : pinnUnder25}
+                        onChange={e => isOver ? setPinnOver25(e.target.value) : setPinnUnder25(e.target.value)} />
+                      {(() => {
+                        const pinnO = pf(isOver ? pinnOver25 : pinnUnder25)
+                        const myO = pf(isOver ? myOddsOver : myOddsUnder)
+                        const refOdds = myO > 1 ? myO : mid
+                        if (!pinnO || pinnO <= 1 || !refOdds) return null
+                        const clvPinn = (refOdds / pinnO - 1) * 100
+                        return <div style={{ marginTop: 4, fontSize: 11, fontWeight: 700, color: clvPinn > 0 ? 'var(--green)' : 'var(--red)' }}>CLV vs Pinnacle: {clvPinn > 0 ? '+' : ''}{clvPinn.toFixed(1)}%</div>
+                      })()}
+                    </div>
 
                     {mid ? <>
                       <div className="mid-row">
@@ -2047,6 +2071,18 @@ export default function App() {
                       <div className="label">Môj kurz <span style={{ color: 'var(--accent2)' }}>(opt — ak líši od mid)</span></div>
                       <input className="inp inp-sm" placeholder="napr. 2.08" value={myOddsVal} onChange={e => setMyOdds(e.target.value)} />
                     </div>
+                    <div style={{ marginBottom: 8 }}>
+                      <div className="label">Pinnacle kurz <span style={{ color: 'var(--text3)' }}>(opt — CLV check)</span></div>
+                      <input className="inp inp-sm" placeholder="napr. 1.90"
+                        value={isOver ? pinnOver30 : pinnUnder30}
+                        onChange={e => isOver ? setPinnOver30(e.target.value) : setPinnUnder30(e.target.value)} />
+                      {(() => {
+                        const pinnO = pf(isOver ? pinnOver30 : pinnUnder30)
+                        if (!pinnO || pinnO <= 1 || !actualOdds) return null
+                        const clvPinn = (actualOdds / pinnO - 1) * 100
+                        return <div style={{ marginTop: 4, fontSize: 11, fontWeight: 700, color: clvPinn > 0 ? 'var(--green)' : 'var(--red)' }}>CLV vs Pinnacle: {clvPinn > 0 ? '+' : ''}{clvPinn.toFixed(1)}%</div>
+                      })()}
+                    </div>
                     {actualOdds ? <>
                       <div className="mid-row">
                         <span style={{ color: 'var(--text3)' }}>{usingMyOdds ? 'Kurz:' : 'Mid:'}</span>
@@ -2149,6 +2185,23 @@ export default function App() {
                       <div style={{ marginBottom: 8 }}>
                         <div className="label">Môj kurz <span style={{ color: 'var(--accent2)' }}>(opt)</span></div>
                         <input className="inp inp-sm" placeholder="napr. 2.08" value={myOddsVal} onChange={e => setMyOdds(e.target.value)} />
+                      </div>
+                      <div style={{ marginBottom: 8 }}>
+                        <div className="label">Pinnacle kurz <span style={{ color: 'var(--text3)' }}>(opt — CLV check)</span></div>
+                        <input className="inp inp-sm" placeholder="napr. 1.90"
+                          value={is275 ? (isOver ? pinnOver275 : pinnUnder275) : (isOver ? pinnOver225 : pinnUnder225)}
+                          onChange={e => {
+                            const val = e.target.value
+                            if (is275) { isOver ? setPinnOver275(val) : setPinnUnder275(val) }
+                            else { isOver ? setPinnOver225(val) : setPinnUnder225(val) }
+                          }} />
+                        {(() => {
+                          const pinnVal = is275 ? (isOver ? pinnOver275 : pinnUnder275) : (isOver ? pinnOver225 : pinnUnder225)
+                          const pinnO = pf(pinnVal)
+                          if (!pinnO || pinnO <= 1 || !actualOdds) return null
+                          const clvPinn = (actualOdds / pinnO - 1) * 100
+                          return <div style={{ marginTop: 4, fontSize: 11, fontWeight: 700, color: clvPinn > 0 ? 'var(--green)' : 'var(--red)' }}>CLV vs Pinnacle: {clvPinn > 0 ? '+' : ''}{clvPinn.toFixed(1)}%</div>
+                        })()}
                       </div>
                       {actualOdds ? <>
                         <div className="mid-row">
