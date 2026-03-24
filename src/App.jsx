@@ -14,13 +14,6 @@ function midPrice(back, lay) {
   return (back + lay) / 2
 }
 
-// FER kurz pre Asian quarter lines s komisiou
-// isHalfWin=true:  win + half-win + lose (napr. Under 2.75, Over 2.25)
-//   EV=0: (odds-1)*(1-comm)*(pWin+pHalf*0.5) = pLose+pHalf*0.5
-//   → odds = 1 + (pLose+pHalf*0.5) / ((pWin+pHalf*0.5)*(1-comm))
-// isHalfWin=false: win + half-lose + lose (napr. Over 2.75, Under 2.25)
-//   EV=0: pWin*(odds-1)*(1-comm) - pHalf*0.5 - pLose = 0
-//   → odds = 1 + (pHalf*0.5+pLose) / (pWin*(1-comm))
 function asianFairOdds(pWin, pHalf, pLose, comm = 0.05, isHalfWin = true) {
   if (isHalfWin) {
     const denom = (pWin + pHalf * 0.5) * (1 - comm)
@@ -81,7 +74,6 @@ async function fetchLeagueAvg(leagueId) {
     const json = await res.json()
     const data = json?.data
     if (!data) return null
-    // FootyStats používa rôzne názvy polí podľa verzie API / ligy
     const avgHome = data.seasonAVG_home ?? data.avg_goals_home ?? data.avgGoalsPerMatch_home ?? data.avgGoals_home ?? null
     const avgAway = data.seasonAVG_away ?? data.avg_goals_away ?? data.avgGoalsPerMatch_away ?? data.avgGoals_away ?? null
     if (avgHome && avgAway) {
@@ -95,7 +87,6 @@ async function fetchLeagueAvg(leagueId) {
 
 async function fetchTodaysMatches(dateStr) {
   try {
-    // dateStr = 'YYYY-MM-DD', ak nie je zadané = dnes
     let url = '/api/footystats?endpoint=todays-matches&chosen_leagues_only=true'
     if (dateStr) url += `&date=${dateStr}`
     const res = await fetch(url)
@@ -122,7 +113,6 @@ async function loadMyLeagues() {
   }
 }
 
-// Načítaj len mená tímov z danej sezóny (bez štatistík — rýchle)
 async function fetchTeamNamesForSeason(seasonId, leagueName, leagueCountry) {
   try {
     const url = `/api/footystats?endpoint=league-teams&season_id=${seasonId}&include=stats`
@@ -144,7 +134,6 @@ async function fetchTeamNamesForSeason(seasonId, leagueName, leagueCountry) {
   }
 }
 
-// Načítaj štatistiky konkrétneho tímu (pri výbere)
 async function fetchTeamStats(teamId, seasonId) {
   try {
     const url = `/api/footystats?endpoint=team&team_id=${teamId}&season_id=${seasonId}`
@@ -158,15 +147,12 @@ async function fetchTeamStats(teamId, seasonId) {
   }
 }
 
-// Načítaj last 5/6/10 zápasov tímu
 async function fetchTeamLastX(teamId) {
   try {
     const url = `/api/footystats?endpoint=lastx&team_id=${teamId}`
     const res = await fetch(url)
     if (!res.ok) return null
     const json = await res.json()
-    // FootyStats vracia { success: true, data: [{last_x_match_num: 5, stats: {...}}, ...] }
-    // Vraciame cely json, extractLastXStats cita json.data
     return json || null
   } catch {
     return null
@@ -176,7 +162,6 @@ async function fetchTeamLastX(teamId) {
 function extractTeamStats(team) {
   const s = team?.stats || team || {}
 
-  // Opravená get() — nekontroluje !== 0, lebo 0 môže byť validná hodnota
   const get = (...keys) => {
     for (const k of keys) {
       if (s[k] != null && s[k] !== '') return s[k]
@@ -187,21 +172,16 @@ function extractTeamStats(team) {
   const mp_h = +(get('seasonMatchesPlayed_home') || 0)
   const mp_a = +(get('seasonMatchesPlayed_away') || 0)
 
-  // xG per zápas — FootyStats používa tieto názvy polí
-  // xg_for_avg_home / xg_for_avg_away sú štandardné názvy z /team endpointu
-  // xg_for_avg_overall = fallback pre ligy bez home/away rozdelenia
   const xgH = get('xg_for_avg_home', 'xg_for_avg', 'seasonXG_home', 'xGFor_home', 'xg_for_avg_overall')
   const xgA = get('xg_for_avg_away', 'seasonXG_away', 'xGFor_away', 'xg_for_avg_overall')
   const xgaH = get('xg_against_avg_home', 'xg_against_avg', 'seasonXGC_home', 'xGAgainst_home', 'xg_against_avg_overall')
   const xgaA = get('xg_against_avg_away', 'seasonXGC_away', 'xGAgainst_away', 'xg_against_avg_overall')
 
-  // GF/GA priemer per zápas
   const gfH = get('seasonScoredAVG_home', 'scored_home', 'seasonGoals_home')
   const gfA = get('seasonScoredAVG_away', 'scored_away', 'seasonGoals_away')
   const gaH = get('seasonConcededAVG_home', 'conceded_home', 'seasonConceded_home')
   const gaA = get('seasonConcededAVG_away', 'conceded_away', 'seasonConceded_away')
 
-  // Ulož všetky raw polia pre debug (filtruj len číselné/xG-relevantné)
   const _raw = Object.fromEntries(
     Object.entries(s).filter(([k]) =>
       /xg|goal|scored|conceded|matches|played|avg/i.test(k)
@@ -315,7 +295,7 @@ const css = `
 
 export default function App() {
   const [tab, setTab] = useState('calc')
-  const [statsMarket, setStatsMarket] = useState('all') // 'all' | 'ou25' | 'ou225' | 'ou275' | 'ou30'
+  const [statsMarket, setStatsMarket] = useState('all')
   const [bets, setBets] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -338,8 +318,7 @@ export default function App() {
   const [stake, setStake] = useState('10')
   const [commission, setCommission] = useState('5')
   const [matchName, setMatchName] = useState('')
-  // Market mode: 'ou' = Over/Under 2.5, 'ah' = Asian Handicap ±0.5
-  const [marketMode, setMarketMode] = useState('ou25') // 'ou25' | 'ou30'
+  const [marketMode, setMarketMode] = useState('ou25')
   const [backOver30, setBackOver30] = useState('')
   const [layOver30, setLayOver30] = useState('')
   const [backUnder30, setBackUnder30] = useState('')
@@ -359,7 +338,6 @@ export default function App() {
   const [myOddsOver225, setMyOddsOver225] = useState('')
   const [myOddsUnder225, setMyOddsUnder225] = useState('')
 
-  // Pinnacle kurzy — ukladajú sa do Supabase
   const [pinnOver25, setPinnOver25] = useState('')
   const [pinnUnder25, setPinnUnder25] = useState('')
   const [pinnOver30, setPinnOver30] = useState('')
@@ -376,7 +354,6 @@ export default function App() {
   const [savedKey, setSavedKey] = useState(null)
   const [expandedId, setExpandedId] = useState(null)
 
-  // Team autofill
   const [allTeams, setAllTeams] = useState([])
   const [teamsLoading, setTeamsLoading] = useState(false)
   const [homeTeamSearch, setHomeTeamSearch] = useState('')
@@ -387,13 +364,11 @@ export default function App() {
   const [selectedAwayTeam, setSelectedAwayTeam] = useState(null)
   const [autofillInfo, setAutofillInfo] = useState(null)
 
-  // Time decay / forma
-  const [homeLastX, setHomeLastX] = useState(null)   // raw lastx data pre home tím
-  const [awayLastX, setAwayLastX] = useState(null)   // raw lastx data pre away tím
-  const [formWindow, setFormWindow] = useState(5)  // 5 | 6 | 10
-  const [formWeight, setFormWeight] = useState('0.40')    // váha formy vs sezóna
+  const [homeLastX, setHomeLastX] = useState(null)
+  const [awayLastX, setAwayLastX] = useState(null)
+  const [formWindow, setFormWindow] = useState(5)
+  const [formWeight, setFormWeight] = useState('0.40')
 
-  // Pokročilé nastavenia
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [rho, setRho] = useState('-0.10')
   const [marketOddsOver, setMarketOddsOver] = useState('')
@@ -404,7 +379,6 @@ export default function App() {
   const [oddsLow, setOddsLow] = useState('1.4')
   const [oddsHigh, setOddsHigh] = useState('3.5')
 
-  // Liga priemer
   const [allLeagues, setAllLeagues] = useState([])
   const [leagueLoading, setLeagueLoading] = useState(false)
   const [leagueSearch, setLeagueSearch] = useState('')
@@ -416,13 +390,11 @@ export default function App() {
   const [shrinkage, setShrinkage] = useState('0.15')
   const [xgScaler, setXgScaler] = useState('0.90')
 
-  // Čas zápasu pre CLV notifikáciu
   const [matchTime, setMatchTime] = useState('')
   const [notifPermission, setNotifPermission] = useState(
     typeof Notification !== 'undefined' ? Notification.permission : 'denied'
   )
 
-  // Settle
   const [settlingId, setSettlingId] = useState(null)
   const [settleMode, setSettleMode] = useState('clv')
   const [settleClose, setSettleClose] = useState('')
@@ -443,7 +415,6 @@ export default function App() {
     const notifTime = kickoff - 5 * 60 * 1000
     const delay = notifTime - Date.now()
     if (delay < 0) return
-    // Deduplication — každý bet naplánujeme max 1x za session
     const sessionKey = `notif_scheduled_${betId}`
     if (sessionStorage.getItem(sessionKey)) return
     sessionStorage.setItem(sessionKey, '1')
@@ -463,12 +434,10 @@ export default function App() {
   useEffect(() => {
     loadBets()
 
-    // Autofill z Tampermonkey scriptu (SharpExchange → xG Calc)
     try {
       const raw = localStorage.getItem('xgcalc_autofill')
       if (raw) {
         const data = JSON.parse(raw)
-        // Použi len ak je mladšie ako 60 sekúnd
         if (data.timestamp && Date.now() - data.timestamp < 60000) {
           if (data.backOver25)  setBackOver(String(data.backOver25))
           if (data.layOver25)   setLayOver(String(data.layOver25))
@@ -478,7 +447,6 @@ export default function App() {
           if (data.layOver30)   setLayOver30(String(data.layOver30))
           if (data.backUnder30) setBackUnder30(String(data.backUnder30))
           if (data.layUnder30)  setLayUnder30(String(data.layUnder30))
-          // Market calibration auto-fill
           if (data.backOver25)  setMarketOddsOver(String(data.backOver25))
           if (data.backUnder25) setMarketOddsUnder(String(data.backUnder25))
         }
@@ -493,7 +461,6 @@ export default function App() {
 
       if (leagues.length === 0) return
 
-      // Cache tímov — invaliduje sa keď sa zmení počet líg
       const CACHE_KEY = 'xgcalc_teams_cache'
       const CACHE_TTL = 24 * 60 * 60 * 1000
       try {
@@ -502,7 +469,7 @@ export default function App() {
           const { teams, ts, leagueCount } = JSON.parse(cached)
           const cacheValid = Date.now() - ts < CACHE_TTL
             && teams.length > 0
-            && leagueCount === leagues.length  // invaliduj ak sa zmenil počet líg
+            && leagueCount === leagues.length
           if (cacheValid) {
             setAllTeams(teams)
             return
@@ -524,7 +491,6 @@ export default function App() {
         }))
         allLoadedTeams = allLoadedTeams.concat(results.flat())
       }
-      // Deduplikácia — len ligové tímy (poháre ignorujeme)
       const isCup = (name) => /\bfa cup\b|\bleague cup\b|\bcopa\b|\blibertadores\b|\bsudamericana\b|\bchampions league\b|\bafc\b|\buafa\b|\bcaf\b|\bconcacaf\b|\befl trophy\b|\bcommunity shield\b/i.test(name)
       const teamMap = new Map()
       allLoadedTeams.forEach(t => {
@@ -536,7 +502,6 @@ export default function App() {
       })
       const unique = Array.from(teamMap.values()).sort((a, b) => a.name.localeCompare(b.name))
       setAllTeams(unique)
-      // Ulož do cache aj počet líg
       try { localStorage.setItem(CACHE_KEY, JSON.stringify({ teams: unique, ts: Date.now(), leagueCount: leagues.length })) } catch (e) {}
       setTeamsLoading(false)
     })
@@ -585,7 +550,6 @@ export default function App() {
     setHomeTeamOpen(false)
     setHomeTeamSearch('')
     setHomeLastX(null)
-    // Použi _statsRaw z league-teams ak dostupné, inak fetchTeamStats ako fallback
     const lastxPromise = fetchTeamLastX(team.id)
     let rawData = null
     if (team._statsRaw && Object.keys(team._statsRaw).length > 5) {
@@ -615,7 +579,6 @@ export default function App() {
     setAwayTeamOpen(false)
     setAwayTeamSearch('')
     setAwayLastX(null)
-    // Použi _statsRaw z league-teams ak dostupné, inak fetchTeamStats ako fallback
     const lastxPromise = fetchTeamLastX(team.id)
     let rawData = null
     if (team._statsRaw && Object.keys(team._statsRaw).length > 5) {
@@ -676,12 +639,8 @@ export default function App() {
         const name = t.name?.toLowerCase() || ''
         const clean = t.cleanName?.toLowerCase() || ''
         const haystack = name + ' ' + clean
-
-        // VŠETKY slová musia byť v názve tímu
         const allMatch = words.every(w => haystack.includes(w))
         if (!allMatch) return null
-
-        // Skóre: presná zhoda > začína > obsahuje
         let score = 1
         if (name.startsWith(words[0]) || clean.startsWith(words[0])) score = 2
         if (name === query.toLowerCase() || clean === query.toLowerCase()) score = 3
@@ -718,7 +677,6 @@ export default function App() {
       lH = h; lA = a
     }
 
-    // ── TIME DECAY / FORMA ──
     const fw = pf(formWeight) || 0.40
     const homeForm = homeLastX ? extractLastXStats(homeLastX, formWindow) : null
     const awayForm = awayLastX ? extractLastXStats(awayLastX, formWindow) : null
@@ -728,7 +686,6 @@ export default function App() {
       const lHbefore = lH
       const lAbefore = lA
 
-      // Home λ — blend sezóna vs forma
       if (homeForm) {
         const formXgH = homeForm.xgH ?? homeForm.gfH ?? null
         const formXgaA = awayForm?.xgaA ?? awayForm?.gaA ?? null
@@ -738,7 +695,6 @@ export default function App() {
         }
       }
 
-      // Away λ — blend sezóna vs forma
       if (awayForm) {
         const formXgA = awayForm.xgA ?? awayForm.gfA ?? null
         const formXgaH = homeForm?.xgaH ?? homeForm?.gaH ?? null
@@ -764,7 +720,6 @@ export default function App() {
       }
     }
 
-    // Shrinkage
     const lgH = pf(leagueAvgH)
     const lgA = pf(leagueAvgA)
     const shr = pf(shrinkage) || 0.15
@@ -782,14 +737,8 @@ export default function App() {
       lA = result.lA
     }
 
-    // Dixon-Coles rho
     const rhoVal = pf(rho) || -0.10
-
-    // Poisson + Dixon-Coles
     const { pOver: pOverRaw, pUnder: pUnderRaw } = calcOverUnder(lH, lA, rhoVal)
-
-    // O/U 3.0 — total goals Poisson (lambda_total = lH + lA)
-    // Push pri presne 3 góloch, win/lose inak
     const ou30  = calcOU30(lH, lA)
     const ou275 = calcOU275(lH, lA)
     const ou225 = calcOU225(lH, lA)
@@ -798,31 +747,19 @@ export default function App() {
     const pOverCalib = calibrateProb(pOverRaw, kVal)
     const pUnderCalib = calibrateProb(pUnderRaw, kVal)
 
-    // Market calibration
     const mw = pf(marketWeight) || 0.50
     const moOver = pf(marketOddsOver)
     const moUnder = pf(marketOddsUnder)
     const pOverFinal = moOver > 1 ? marketCalibration(pOverCalib, moOver, mw) : pOverCalib
     const pUnderFinal = moUnder > 1 ? marketCalibration(pUnderCalib, moUnder, mw) : pUnderCalib
 
-    // Market probability z mid odds (bez margin)
-    // Priorita: mid z back/lay, fallback: market odds input
     const midOEarly = midPrice(pf(backOver) || null, pf(layOver) || null)
     const midUEarly = midPrice(pf(backUnder) || null, pf(layUnder) || null)
     const pMarketOver = midOEarly ? 1 / midOEarly : (moOver > 1 ? 1 / moOver : null)
     const pMarketUnder = midUEarly ? 1 / midUEarly : (moUnder > 1 ? 1 / moUnder : null)
 
-    // ΔP vs market — modelProb (po kalibrácii, pred market blendom) mínus market implied prob
     const deltaPOver = (pOverCalib != null && pMarketOver != null) ? (pOverCalib - pMarketOver) * 100 : null
     const deltaPUnder = (pUnderCalib != null && pMarketUnder != null) ? (pUnderCalib - pMarketUnder) * 100 : null
-
-    function deltaPLabel(dp) {
-      const abs = Math.abs(dp)
-      if (abs < 3) return 'blízko trhu'
-      if (abs < 6) return 'mierna odchýlka'
-      if (abs < 10) return 'veľká odchýlka'
-      return 'extrémna odchýlka'
-    }
 
     const ferOver = fairOdds(pOverFinal)
     const ferUnder = fairOdds(pUnderFinal)
@@ -835,7 +772,6 @@ export default function App() {
     const midO = midPrice(bo, lo)
     const midU = midPrice(bu, lu)
 
-    // EV + filters
     const evMinVal = pf(evMin) / 100 || 0.12
     const oLow = pf(oddsLow) || 1.4
     const oHigh = pf(oddsHigh) || 3.5
@@ -881,7 +817,6 @@ export default function App() {
     const isOver275 = market === 'over2.75'
     const isOver225 = market === 'over2.25'
 
-    // Pravdepodobnosť a FER podľa marketu
     let selProb, ferO, midOdds
     if (isOU30) {
       selProb = isOver30 ? calc.ou30.pOver3 : calc.ou30.pUnder2
@@ -929,7 +864,6 @@ export default function App() {
     const league = selectedHomeTeam?.leagueName || selectedAwayTeam?.leagueName || null
     const modelProb = (isOU30 || isOU275 || isOU225) ? selProb : (isOver25 ? calc.pOverCalib : calc.pUnderCalib)
     const marketProb = (isOU30 || isOU275 || isOU225) ? null : (isOver25 ? calc.pMarketOver : calc.pMarketUnder)
-    // Pinnacle open kurz
     const pinnOpen = isOU275 ? pf(isOver275 ? pinnOver275 : pinnUnder275)
                    : isOU225 ? pf(isOver225 ? pinnOver225 : pinnUnder225)
                    : isOU30  ? pf(isOver30  ? pinnOver30  : pinnUnder30)
@@ -998,13 +932,11 @@ export default function App() {
       pnl = res === 1 ? bet.stake * (odds - 1) * (1 - comm) : -bet.stake
     }
 
-    // Pinnacle CLV
     const pinnClose = pf(settlePinnClose)
     const pinnCLV = (pinnClose > 1 && bet.pinnacle_open > 1)
       ? calcCLV(bet.pinnacle_open, pinnClose)
       : null
 
-    // xG Brier
     const xgH = pf(settleXgHome)
     const xgA = pf(settleXgAway)
     let xgBrier = null
@@ -1046,7 +978,6 @@ export default function App() {
   const EXCLUDED_MARKETS = [...OU225_MARKETS, ...OU275_MARKETS]
   const settled_all = bets.filter(b => b.result != null)
   const settled = settled_all.filter(b => {
-    // Vylúč 2.25 a 2.75 zo štatistík — nekvalitné dáta
     if (EXCLUDED_MARKETS.includes(b.market) && statsMarket === 'all') return false
     if (statsMarket === 'ou25'  && !OU25_MARKETS.includes(b.market))  return false
     if (statsMarket === 'ou225' && !OU225_MARKETS.includes(b.market)) return false
@@ -1062,7 +993,6 @@ export default function App() {
   const halfWins = settled.filter(b => b.result === 3).length
   const halfLoses = settled.filter(b => b.result === 4).length
   const wins = settled.filter(b => b.result === 1).length
-  // Hit rate a kalibrácia — len z čistých win/lose (nie push, nie half)
   const nonPushSettled = settled.filter(b => b.result === 0 || b.result === 1)
   const hitRate = nonPushSettled.length > 0 ? wins / nonPushSettled.length : null
   const avgProb = nonPushSettled.length > 0 ? nonPushSettled.reduce((s, b) => s + b.sel_prob, 0) / nonPushSettled.length : null
@@ -1075,13 +1005,11 @@ export default function App() {
   const avgEV = evBets.length > 0 ? evBets.reduce((s, b) => s + b.ev_pct, 0) / evBets.length : null
   const maxDD = calcMaxDrawdown(settled)
   const calib = hitRate != null && avgProb != null ? (hitRate - avgProb) * 100 : null
-  // Pinnacle CLV
   const pinnBets = settled.filter(b => b.pinnacle_clv != null)
   const avgPinnCLV = pinnBets.length > 0 ? pinnBets.reduce((s, b) => s + b.pinnacle_clv, 0) / pinnBets.length : null
   const posPinnCLV = pinnBets.length > 0 ? (pinnBets.filter(b => b.pinnacle_clv > 0).length / pinnBets.length) * 100 : null
   const MARKET = { 'over2.5': 'Over 2.5', 'under2.5': 'Under 2.5', 'over3.0': 'Over 3.0', 'under3.0': 'Under 3.0', 'over2.75': 'Over 2.75', 'under2.75': 'Under 2.75', 'over2.25': 'Over 2.25', 'under2.25': 'Under 2.25' }
 
-  // CLV podľa času betu (hodiny do KO)
   const clvByTime = (() => {
     const buckets = [
       { label: '24h+', min: 24, max: Infinity },
@@ -1097,7 +1025,6 @@ export default function App() {
     }).filter(b => b.count > 0)
   })()
 
-  // CLV podľa ligy
   const clvByLeague = (() => {
     const map = {}
     clvBets.forEach(b => {
@@ -1110,7 +1037,6 @@ export default function App() {
       .sort((a, b) => b.avg - a.avg)
   })()
 
-  // CLV podľa marketu
   const clvByMarket = (() => {
     const map = {}
     clvBets.forEach(b => {
@@ -1123,7 +1049,6 @@ export default function App() {
       .sort((a, b) => b.avg - a.avg)
   })()
 
-  // Odds bucket analysis
   const ODDS_BUCKETS = [
     { label: '1.40–1.79', min: 1.40, max: 1.80 },
     { label: '1.80–2.19', min: 1.80, max: 2.20 },
@@ -1147,12 +1072,10 @@ export default function App() {
     }
   })
 
-  // Model prob vs Market prob
   const probComparison = settled.filter(b => b.model_prob != null && b.market_prob != null)
   const avgModelProb = probComparison.length > 0 ? probComparison.reduce((s, b) => s + b.model_prob, 0) / probComparison.length : null
   const avgMarketProb = probComparison.length > 0 ? probComparison.reduce((s, b) => s + b.market_prob, 0) / probComparison.length : null
 
-  // ── CONFIDENCE SCORE ──────────────────────────────────────────
   function calcConfidenceScore(betsArr) {
     if (!betsArr || betsArr.length === 0) return null
     const n = betsArr.length
@@ -1209,13 +1132,9 @@ export default function App() {
     ? confidenceRecent.score / confidenceOverall.score : null
   const stabilityWarning = stabilityRatio != null && stabilityRatio < 0.8
   const stabilityDowngrade = stabilityRatio != null && stabilityRatio < 0.7
-  // ──────────────────────────────────────────────────────────────
 
-  // ── RECOMMENDATION ENGINE ──────────────────────────────────────
   function getRecommendedBet(candidates, filters) {
     const { evMin, oddsLow, oddsHigh } = filters
-
-    // Ofiltruj hrateľné
     const playable = candidates.filter(c =>
       c.odds != null &&
       c.ev_pct != null &&
@@ -1223,21 +1142,14 @@ export default function App() {
       c.odds >= oddsLow &&
       c.odds <= oddsHigh
     )
-
     if (playable.length === 0) return { bet: null, reason: 'Žiadny trh nesplnil filtre' }
-
-    // Zoraď podľa EV zostupne
     const sorted = [...playable].sort((a, b) => b.ev_pct - a.ev_pct)
     let best = sorted[0]
-
-    // Výnimka C — vysoké kurzy len pri silnom EV+edge
     if (best.odds > 3.5 && (best.ev_pct < 12 || best.edge_pct < 10)) {
       const fallback = sorted.find(c => c.odds <= 3.5)
       if (fallback) { best = fallback }
       else return { bet: null, reason: 'Kurz mimo komfortnej zóny bez dostatočného EV' }
     }
-
-    // Výnimka B — ak je druhý kandidát rovnakého smeru a EV blízko, preferuj push ochranu
     const sameDir = sorted.find(c =>
       c !== best &&
       c.direction === best.direction &&
@@ -1248,21 +1160,16 @@ export default function App() {
     if (sameDir) {
       return { bet: sameDir, reason: 'EV podobné ako alternatíva, ale tento trh má push ochranu' }
     }
-
     return { bet: best, reason: 'Najvyššie EV po filtroch' }
   }
 
-  // Zostav kandidátov z existujúcich výpočtov
   const recommendation = (() => {
     if (!calc) return null
     const evMin = (calc.evMinVal || 0.12) * 100
     const oddsLow = calc.oLow || 1.4
     const oddsHigh = calc.oHigh || 3.5
     const comm = calc.comm || 0.05
-
     const candidates = []
-
-    // O/U 2.5
     if (calc.midO) {
       const ev = calcBackEV(calc.pOver, calc.midO, comm)
       const edge = calc.ferOver ? (calc.midO / calc.ferOver - 1) * 100 : null
@@ -1273,8 +1180,6 @@ export default function App() {
       const edge = calc.ferUnder ? (calc.midU / calc.ferUnder - 1) * 100 : null
       candidates.push({ market_key: 'under2.5', label: 'Under 2.5', direction: 'under', odds: calc.midU, fair_odds: calc.ferUnder, ev_pct: ev != null ? ev * 100 : null, edge_pct: edge, win_prob: calc.pUnder, push_prob: 0, market_type: 'ou25' })
     }
-
-    // O/U 3.0
     if (calc.ou30) {
       const mid30O = midPrice(pf(backOver30) || null, pf(layOver30) || null)
       const mid30U = midPrice(pf(backUnder30) || null, pf(layUnder30) || null)
@@ -1289,11 +1194,9 @@ export default function App() {
         candidates.push({ market_key: 'under3.0', label: 'Under 3.0', direction: 'under', odds: mid30U, fair_odds: calc.ou30.fairUnder, ev_pct: ev != null ? ev * 100 : null, edge_pct: edge, win_prob: calc.ou30.pUnder2, push_prob: calc.ou30.pExact3, market_type: 'ou30' })
       }
     }
-
     if (candidates.length === 0) return null
     return getRecommendedBet(candidates, { evMin, oddsLow, oddsHigh })
   })()
-  // ──────────────────────────────────────────────────────────────
 
   return (
     <>
@@ -1380,14 +1283,11 @@ export default function App() {
                           onMouseDown={async () => {
                             setMatchName(`${homeName} vs ${awayName}`)
                             setTodaysMatchesOpen(false)
-                            // Nastav čas výkopu
                             if (kickoff) {
                               const pad = n => String(n).padStart(2, '0')
                               const localDT = `${kickoff.getFullYear()}-${pad(kickoff.getMonth()+1)}-${pad(kickoff.getDate())}T${pad(kickoff.getHours())}:${pad(kickoff.getMinutes())}`
                               setMatchTime(localDT)
                             }
-                            // Ak tím nájdeme v allTeams — použij ho
-                            // Ak nie — vytvor syntetický objekt s season_id zo zápasu a fetchni štatistiky priamo
                             const mSeasonId = m.season_id ?? m.seasonID ?? null
                             const resolvedHome = homeTeam || (hId && mSeasonId ? { id: hId, name: homeName, cleanName: homeName, seasonId: mSeasonId, leagueName: league } : null)
                             const resolvedAway = awayTeam || (aId && mSeasonId ? { id: aId, name: awayName, cleanName: awayName, seasonId: mSeasonId, leagueName: league } : null)
@@ -1435,7 +1335,7 @@ export default function App() {
               </div>
             </div>
 
-            {/* ── VÝBER TÍMOV (autocomplete) ── */}
+            {/* ── VÝBER TÍMOV ── */}
             <div className="card">
               <div className="label" style={{ marginBottom: 8 }}>
                 Vyber tímy — automatické doplnenie štatistík
@@ -1444,7 +1344,6 @@ export default function App() {
               </div>
 
               <div className="grid2">
-                {/* HOME tím */}
                 <div>
                   <div className="label">Home tím</div>
                   {!selectedHomeTeam ? (
@@ -1481,7 +1380,6 @@ export default function App() {
                   )}
                 </div>
 
-                {/* AWAY tím */}
                 <div>
                   <div className="label">Away tím</div>
                   {!selectedAwayTeam ? (
@@ -1519,7 +1417,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Autofill info */}
               {autofillInfo && (
                 <div className="autofill-info">
                   {autofillInfo.home && <span>🏠 <b>{autofillInfo.home.name}</b> ({autofillInfo.home.league}, {autofillInfo.home.mp_h} dom. zápasov, seasonId: {autofillInfo.home.seasonId}) </span>}
@@ -1528,7 +1425,6 @@ export default function App() {
                     ? <span style={{ color: 'var(--green)' }}>· ✓ xG + GF/GA natiahnuté</span>
                     : <span style={{ color: 'var(--yellow)' }}>· ⚠ xG sa nenašlo — skontroluj raw polia nižšie</span>
                   }
-                  {/* Debug: ukáž raw polia z API keď xG chýba */}
                   {!autofillInfo.hasXG && autofillInfo.debugRaw && Object.keys(autofillInfo.debugRaw).length > 0 && (
                     <details style={{ marginTop: 6, fontSize: 10 }}>
                       <summary style={{ cursor: 'pointer', color: 'var(--accent2)' }}>🔍 Raw API polia (klikni pre debug)</summary>
@@ -1547,7 +1443,6 @@ export default function App() {
                 </div>
               )}
 
-              {/* Forma (lastx) info + nastavenia */}
               {(homeLastX || awayLastX) && (
                 <div style={{ marginTop: 10, background: 'rgba(108,92,231,0.07)', border: '1px solid rgba(108,92,231,0.2)', borderRadius: 6, padding: '10px 12px' }}>
                   <div style={{ fontSize: 10, color: 'var(--accent2)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>
@@ -1596,7 +1491,6 @@ export default function App() {
                 Tímy mimo tvojich líg → vyplň xG / GF / GA ručne nižšie
               </div>
             </div>
-            {/* ── KONIEC VÝBER TÍMOV ── */}
 
             {/* xG hodnoty */}
             <div className="card">
@@ -1612,9 +1506,7 @@ export default function App() {
             {/* GF / GA */}
             <div className="card">
               <div className="label" style={{ marginBottom: 10 }}>GF / GA — reálne góly (opt)</div>
-              <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 10 }}>
-                Priemer gólov na zápas doma / vonku za sezónu
-              </div>
+              <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 10 }}>Priemer gólov na zápas doma / vonku za sezónu</div>
               <div className="grid2">
                 <div><div className="label">GF Home (doma)</div><input className="inp" placeholder="1.60" value={gfH} onChange={e => setGfH(e.target.value)} /></div>
                 <div><div className="label">GA Home (doma)</div><input className="inp" placeholder="1.10" value={gaH} onChange={e => setGaH(e.target.value)} /></div>
@@ -1631,9 +1523,7 @@ export default function App() {
             <div className="card" style={{ position: 'relative' }}>
               <div className="label" style={{ marginBottom: 8 }}>
                 Liga priemer gólov
-                <span style={{ color: 'var(--text3)', marginLeft: 6, textTransform: 'none', letterSpacing: 0 }}>
-                  — voliteľné, spresnenie λ cez shrinkage
-                </span>
+                <span style={{ color: 'var(--text3)', marginLeft: 6, textTransform: 'none', letterSpacing: 0 }}>— voliteľné, spresnenie λ cez shrinkage</span>
               </div>
               {!selectedLeague ? (
                 <div style={{ position: 'relative' }}>
@@ -1677,9 +1567,7 @@ export default function App() {
                     </div>
                   )}
                   {leagueAvgSource === 'manual' && (
-                    <div style={{ fontSize: 10, color: 'var(--yellow)', marginTop: 6 }}>
-                      ⚠ Dáta pre túto ligu neboli nájdené — zadaj manuálne:
-                    </div>
+                    <div style={{ fontSize: 10, color: 'var(--yellow)', marginTop: 6 }}>⚠ Dáta pre túto ligu neboli nájdené — zadaj manuálne:</div>
                   )}
                   {(leagueAvgSource === 'manual' || !pf(leagueAvgH)) && (
                     <div className="grid2" style={{ marginTop: 8 }}>
@@ -1714,59 +1602,39 @@ export default function App() {
               )}
               {(pf(leagueAvgH) > 0 || pf(leagueAvgA) > 0) && (
                 <div style={{ marginTop: 10 }}>
-                  <div className="label">
-                    Shrinkage faktor
-                    <span style={{ color: 'var(--accent2)', marginLeft: 6, textTransform: 'none', letterSpacing: 0 }}>
-                      (0.15 = 15% ťah λ k priemeru ligy)
-                    </span>
-                  </div>
+                  <div className="label">Shrinkage faktor <span style={{ color: 'var(--accent2)', textTransform: 'none', letterSpacing: 0 }}>(0.15 = 15% ťah λ k priemeru ligy)</span></div>
                   <input className="inp" placeholder="0.15" value={shrinkage} onChange={e => setShrinkage(e.target.value)} />
                 </div>
               )}
               <div style={{ marginTop: 10 }}>
-                <div className="label">
-                  xG scaler
-                  <span style={{ color: 'var(--accent2)', marginLeft: 6, textTransform: 'none', letterSpacing: 0 }}>
-                    (0.90 = FootyStats xG × 0.90, kompenzuje nafúknuté hodnoty)
-                  </span>
-                </div>
+                <div className="label">xG scaler <span style={{ color: 'var(--accent2)', textTransform: 'none', letterSpacing: 0 }}>(0.90 = FootyStats xG × 0.90)</span></div>
                 <input className="inp" placeholder="0.90" value={xgScaler} onChange={e => setXgScaler(e.target.value)} />
               </div>
             </div>
 
-            {/* ── POKROČILÉ NASTAVENIA ── */}
+            {/* Pokročilé nastavenia */}
             <div className="card">
               <div className="advanced-toggle" onClick={() => setShowAdvanced(v => !v)}>
                 <div className="label" style={{ marginBottom: 0 }}>
                   ⚙ Pokročilé nastavenia
-                  <span style={{ color: 'var(--text3)', marginLeft: 6, textTransform: 'none', letterSpacing: 0 }}>
-                    Dixon-Coles · Market cal · Prob cal · Filtre
-                  </span>
+                  <span style={{ color: 'var(--text3)', marginLeft: 6, textTransform: 'none', letterSpacing: 0 }}>Dixon-Coles · Market cal · Prob cal · Filtre</span>
                 </div>
                 <button className="btn-toggle">{showAdvanced ? '▲ Skryť' : '▼ Zobraziť'}</button>
               </div>
 
               {showAdvanced && (
                 <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 14 }}>
-
-                  {/* Dixon-Coles */}
                   <div>
                     <div className="section-title" style={{ marginBottom: 8 }}>📐 Dixon-Coles korekcia</div>
-                    <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 8 }}>
-                      Upravuje pravdepodobnosti pre nízke skóre (0-0, 1-0, 0-1, 1-1). ρ = 0 vypne korekciu.
-                    </div>
+                    <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 8 }}>Upravuje pravdepodobnosti pre nízke skóre (0-0, 1-0, 0-1, 1-1). ρ = 0 vypne korekciu.</div>
                     <div>
                       <div className="label">ρ (rho) — korelačný parameter <span style={{ color: 'var(--accent2)' }}>(-0.05 až -0.15)</span></div>
                       <input className="inp" placeholder="-0.10" value={rho} onChange={e => setRho(e.target.value)} />
                     </div>
                   </div>
-
-                  {/* Market calibration */}
                   <div>
                     <div className="section-title" style={{ marginBottom: 8 }}>📊 Market calibration</div>
-                    <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 8 }}>
-                      Blend modelu s trhovou pravdepodobnosťou. Nechaj prázdne ak nechceš použiť.
-                    </div>
+                    <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 8 }}>Blend modelu s trhovou pravdepodobnosťou. Nechaj prázdne ak nechceš použiť.</div>
                     <div className="grid2" style={{ marginBottom: 10 }}>
                       <div>
                         <div className="label">Market kurz Over 2.5</div>
@@ -1782,25 +1650,17 @@ export default function App() {
                       <input className="inp" placeholder="0.50" value={marketWeight} onChange={e => setMarketWeight(e.target.value)} />
                     </div>
                   </div>
-
-                  {/* Probability calibration */}
                   <div>
                     <div className="section-title" style={{ marginBottom: 8 }}>🎯 Probability calibration</div>
-                    <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 8 }}>
-                      Kalibrácia k 50%. k &lt; 1 = stiahni k 50%, k = 1 = bez zmeny, k &gt; 1 = polarizuj.
-                    </div>
+                    <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 8 }}>Kalibrácia k 50%. k &lt; 1 = stiahni k 50%, k = 1 = bez zmeny, k &gt; 1 = polarizuj.</div>
                     <div>
                       <div className="label">k — kalibračný exponent <span style={{ color: 'var(--accent2)' }}>(default 0.85)</span></div>
                       <input className="inp" placeholder="0.85" value={calibK} onChange={e => setCalibK(e.target.value)} />
                     </div>
                   </div>
-
-                  {/* Filtre */}
                   <div>
                     <div className="section-title" style={{ marginBottom: 8 }}>🔍 Bet filtre</div>
-                    <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 8 }}>
-                      Tieto filtre sa zobrazia po výpočte pri každom markete.
-                    </div>
+                    <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 8 }}>Tieto filtre sa zobrazia po výpočte pri každom markete.</div>
                     <div className="grid3">
                       <div>
                         <div className="label">Min EV% <span style={{ color: 'var(--accent2)' }}>(default 4)</span></div>
@@ -1816,11 +1676,9 @@ export default function App() {
                       </div>
                     </div>
                   </div>
-
                 </div>
               )}
             </div>
-            {/* ── KONIEC POKROČILÉ ── */}
 
             {/* Stake / komisia */}
             <div className="card">
@@ -1832,7 +1690,6 @@ export default function App() {
 
             <button className="btn btn-primary" onClick={handleCalc}>▶ Vypočítať</button>
 
-            {/* Recommendation Engine */}
             {calc && recommendation && (
               <div style={{
                 padding: '12px 16px', borderRadius: 8, marginTop: 8,
@@ -1851,13 +1708,10 @@ export default function App() {
                     </span>
                   )}
                 </div>
-                <div style={{ fontSize: 11, color: 'var(--text3)' }}>
-                  Dôvod: {recommendation.reason}
-                </div>
+                <div style={{ fontSize: 11, color: 'var(--text3)' }}>Dôvod: {recommendation.reason}</div>
               </div>
             )}
 
-            {/* Market toggle */}
             {calc && (
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
                 <span style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 600, letterSpacing: 1 }}>MARKET:</span>
@@ -1873,7 +1727,6 @@ export default function App() {
               </div>
             )}
 
-            {/* Markets */}
             <div className="markets-grid">
               {marketMode === 'ou25' && [true, false].map(isOver => {
                 const fer = isOver ? calc?.ferOver : calc?.ferUnder
@@ -1906,7 +1759,6 @@ export default function App() {
                       </div>
                     </div>}
 
-                    {/* Pravdepodobnosti pipeline */}
                     {calc && probRaw != null && (
                       <div className="prob-compare">
                         <div className="prob-box">
@@ -1930,7 +1782,6 @@ export default function App() {
                       </div>
                     )}
 
-                    {/* Debug súhrn: Market / Model / Final / ΔP */}
                     {calc && probCalib != null && pMarket != null && (() => {
                       const dpLabel = deltaP != null ? (Math.abs(deltaP) < 3 ? 'blízko trhu' : Math.abs(deltaP) < 6 ? 'mierna odchýlka' : Math.abs(deltaP) < 10 ? 'veľká odchýlka' : 'extrémna odchýlka') : null
                       const dpColor = deltaP == null ? 'var(--text3)' : Math.abs(deltaP) < 1 ? 'var(--text3)' : deltaP > 0 ? 'var(--green)' : 'var(--red)'
@@ -1998,8 +1849,6 @@ export default function App() {
                         const evB = calcBackEV(prob, actualOdds, comm)
                         const evL = calcLayEV(prob, actualOdds, comm)
                         const usingMyOdds = myO > 1
-
-                        // Filtre
                         const evMinVal = calc?.evMinVal || 0.12
                         const oLow = calc?.oLow || 1.4
                         const oHigh = calc?.oHigh || 3.5
@@ -2009,49 +1858,27 @@ export default function App() {
 
                         return <>
                           <div>
-                            <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 2 }}>
-                              ▲ Back EV {usingMyOdds && <span style={{color:'var(--accent2)'}}>(@{fmt3(actualOdds)})</span>}
-                            </div>
-                            <div className={`ev-big ${evB > 0 ? 'pos' : 'neg'}`}>
-                              {fmtSignPct(evB * 100)}<span className="ev-eur">{fmtSign(evB * st)}€</span>
-                            </div>
+                            <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 2 }}>▲ Back EV {usingMyOdds && <span style={{color:'var(--accent2)'}}>(@{fmt3(actualOdds)})</span>}</div>
+                            <div className={`ev-big ${evB > 0 ? 'pos' : 'neg'}`}>{fmtSignPct(evB * 100)}<span className="ev-eur">{fmtSign(evB * st)}€</span></div>
                           </div>
                           <div style={{ marginTop: 6 }}>
-                            <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 2 }}>
-                              ▼ Lay EV {usingMyOdds && <span style={{color:'var(--accent2)'}}>(@{fmt3(actualOdds)})</span>}
-                            </div>
-                            <div className={`ev-big ${evL > 0 ? 'pos' : 'neg'}`}>
-                              {fmtSignPct(evL * 100)}<span className="ev-eur">{fmtSign(evL * st)}€</span>
-                            </div>
+                            <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 2 }}>▼ Lay EV {usingMyOdds && <span style={{color:'var(--accent2)'}}>(@{fmt3(actualOdds)})</span>}</div>
+                            <div className={`ev-big ${evL > 0 ? 'pos' : 'neg'}`}>{fmtSignPct(evL * 100)}<span className="ev-eur">{fmtSign(evL * st)}€</span></div>
                             <div className="liability-note">Liability: {fmt2(layLiability(mid, st))}€</div>
                           </div>
-
-                          {/* Filter výsledok */}
                           <div style={{ marginTop: 8, fontSize: 10, display: 'flex', flexDirection: 'column', gap: 3 }}>
-                            <div style={{ color: oddsPass ? 'var(--green)' : 'var(--red)' }}>
-                              {oddsPass ? '✓' : '✗'} Kurz {fmt3(actualOdds)} {oddsPass ? `v pásme (${oLow}–${oHigh})` : `mimo pásma (${oLow}–${oHigh})`}
-                            </div>
-                            <div style={{ color: evPassB ? 'var(--green)' : 'var(--text3)' }}>
-                              {evPassB ? '✓' : '✗'} Back EV {evPassB ? 'spĺňa' : 'nespĺňa'} min {fmtPct(evMinVal * 100)}
-                            </div>
-                            <div style={{ color: evPassL ? 'var(--green)' : 'var(--text3)' }}>
-                              {evPassL ? '✓' : '✗'} Lay EV {evPassL ? 'spĺňa' : 'nespĺňa'} min {fmtPct(evMinVal * 100)}
-                            </div>
+                            <div style={{ color: oddsPass ? 'var(--green)' : 'var(--red)' }}>{oddsPass ? '✓' : '✗'} Kurz {fmt3(actualOdds)} {oddsPass ? `v pásme (${oLow}–${oHigh})` : `mimo pásma (${oLow}–${oHigh})`}</div>
+                            <div style={{ color: evPassB ? 'var(--green)' : 'var(--text3)' }}>{evPassB ? '✓' : '✗'} Back EV {evPassB ? 'spĺňa' : 'nespĺňa'} min {fmtPct(evMinVal * 100)}</div>
+                            <div style={{ color: evPassL ? 'var(--green)' : 'var(--text3)' }}>{evPassL ? '✓' : '✗'} Lay EV {evPassL ? 'spĺňa' : 'nespĺňa'} min {fmtPct(evMinVal * 100)}</div>
                             {oddsPass && (evPassB || evPassL) && (
-                              <div style={{ marginTop: 4, color: 'var(--green)', fontWeight: 700 }}>
-                                ✅ BET SIGNAL: {evPassB && oddsPass ? 'BACK ' : ''}{evPassL && oddsPass ? 'LAY' : ''}
-                              </div>
+                              <div style={{ marginTop: 4, color: 'var(--green)', fontWeight: 700 }}>✅ BET SIGNAL: {evPassB && oddsPass ? 'BACK ' : ''}{evPassL && oddsPass ? 'LAY' : ''}</div>
                             )}
                           </div>
                         </>
                       })()}
                       <div className="save-btns">
-                        <button className="btn-save-back" onClick={() => handleSave(mkt, 'back')} disabled={saving}>
-                          {savedKey === mkt + '-back' ? '✓' : '+ Back'}
-                        </button>
-                        <button className="btn-save-lay" onClick={() => handleSave(mkt, 'lay')} disabled={saving}>
-                          {savedKey === mkt + '-lay' ? '✓' : '+ Lay'}
-                        </button>
+                        <button className="btn-save-back" onClick={() => handleSave(mkt, 'back')} disabled={saving}>{savedKey === mkt + '-back' ? '✓' : '+ Back'}</button>
+                        <button className="btn-save-lay" onClick={() => handleSave(mkt, 'lay')} disabled={saving}>{savedKey === mkt + '-lay' ? '✓' : '+ Lay'}</button>
                       </div>
                       <div style={{ fontSize: 9, color: 'var(--text3)', textAlign: 'center', marginTop: 4 }}>kom {(comm * 100).toFixed(0)}%</div>
                     </> : <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 8 }}>Zadaj Back aj Lay pre mid price</div>}
@@ -2059,7 +1886,6 @@ export default function App() {
                 )
               })}
 
-              {/* O/U 3.0 markets */}
               {marketMode === 'ou30' && calc?.ou30 && [
                 { label: 'Over 3.0', mkt: 'over3.0', prob: calc.ou30.pOver3, fer: calc.ou30.fairOver, backVal: backOver30, setBack: setBackOver30, layVal: layOver30, setLay: setLayOver30, myOddsVal: myOddsOver30, setMyOdds: setMyOddsOver30, color: 'var(--accent2)', borderColor: 'var(--accent)', isOver: true },
                 { label: 'Under 3.0', mkt: 'under3.0', prob: calc.ou30.pUnder2, fer: calc.ou30.fairUnder, backVal: backUnder30, setBack: setBackUnder30, layVal: layUnder30, setLay: setLayUnder30, myOddsVal: myOddsUnder30, setMyOdds: setMyOddsUnder30, color: 'var(--green)', borderColor: 'var(--green)', isOver: false },
@@ -2087,12 +1913,9 @@ export default function App() {
                     {fer && (
                       <div style={{ marginBottom: 10 }}>
                         <div className="label">FER kurz</div>
-                        <div className="fer-num" style={{ color }}>
-                          {fmt3(fer)} <span style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 400 }}>({fmtPct(prob * 100)})</span>
-                        </div>
+                        <div className="fer-num" style={{ color }}>{fmt3(fer)} <span style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 400 }}>({fmtPct(prob * 100)})</span></div>
                       </div>
                     )}
-                    {/* Win / Push / Lose breakdown */}
                     <div style={{ marginBottom: 8, padding: '6px 10px', background: 'var(--bg3)', borderRadius: 6, fontSize: 11, color: 'var(--text3)', lineHeight: 1.8 }}>
                       <div>P(Win): <b style={{ color: 'var(--green)' }}>{fmtPct(prob * 100)}</b></div>
                       <div>P(Push — 3 góly): <b style={{ color: 'var(--accent2)' }}>{fmtPct(calc.ou30.pExact3 * 100)}</b></div>
@@ -2111,7 +1934,7 @@ export default function App() {
                       <input className="inp inp-sm" placeholder="napr. 2.08" value={myOddsVal} onChange={e => setMyOdds(e.target.value)} />
                     </div>
                     <div style={{ marginBottom: 8 }}>
-                      <div className="label">Pinnacle kurz <span style={{ color: 'var(--text3)' }}>(opt — uloží sa s betom)</span></div>
+                      <div className="label">Pinnacle kurz <span style={{ color: 'var(--text3)' }}>(opt)</span></div>
                       <input className="inp inp-sm" placeholder="napr. 1.90"
                         value={isOver ? pinnOver30 : pinnUnder30}
                         onChange={e => isOver ? setPinnOver30(e.target.value) : setPinnUnder30(e.target.value)} />
@@ -2130,25 +1953,15 @@ export default function App() {
                       </div>
                       <div>
                         <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 2 }}>▲ Back EV (s push) {usingMyOdds && <span style={{ color: 'var(--accent2)' }}>(@{fmt3(actualOdds)})</span>}</div>
-                        <div className={`ev-big ${evB > 0 ? 'pos' : 'neg'}`}>
-                          {fmtSignPct(evB * 100)}<span className="ev-eur">{fmtSign(evB * st)}€</span>
-                        </div>
+                        <div className={`ev-big ${evB > 0 ? 'pos' : 'neg'}`}>{fmtSignPct(evB * 100)}<span className="ev-eur">{fmtSign(evB * st)}€</span></div>
                       </div>
                       <div style={{ marginTop: 8, fontSize: 10, display: 'flex', flexDirection: 'column', gap: 3 }}>
-                        <div style={{ color: oddsPass ? 'var(--green)' : 'var(--red)' }}>
-                          {oddsPass ? '✓' : '✗'} Kurz {fmt3(actualOdds)} {oddsPass ? `v pásme (${oLow}–${oHigh})` : `mimo pásma`}
-                        </div>
-                        <div style={{ color: evPassB ? 'var(--green)' : 'var(--text3)' }}>
-                          {evPassB ? '✓' : '✗'} EV {evPassB ? 'spĺňa' : 'nespĺňa'} min {fmtPct(evMinVal * 100)}
-                        </div>
-                        {oddsPass && evPassB && (
-                          <div style={{ marginTop: 4, color: 'var(--green)', fontWeight: 700 }}>✅ BET SIGNAL: BACK</div>
-                        )}
+                        <div style={{ color: oddsPass ? 'var(--green)' : 'var(--red)' }}>{oddsPass ? '✓' : '✗'} Kurz {fmt3(actualOdds)} {oddsPass ? `v pásme (${oLow}–${oHigh})` : `mimo pásma`}</div>
+                        <div style={{ color: evPassB ? 'var(--green)' : 'var(--text3)' }}>{evPassB ? '✓' : '✗'} EV {evPassB ? 'spĺňa' : 'nespĺňa'} min {fmtPct(evMinVal * 100)}</div>
+                        {oddsPass && evPassB && <div style={{ marginTop: 4, color: 'var(--green)', fontWeight: 700 }}>✅ BET SIGNAL: BACK</div>}
                       </div>
                       <div className="save-btns">
-                        <button className="btn-save-back" onClick={() => handleSave(mkt, 'back')} disabled={saving}>
-                          {savedKey === mkt + '-back' ? '✓' : '+ Back'}
-                        </button>
+                        <button className="btn-save-back" onClick={() => handleSave(mkt, 'back')} disabled={saving}>{savedKey === mkt + '-back' ? '✓' : '+ Back'}</button>
                       </div>
                       <div style={{ fontSize: 9, color: 'var(--text3)', textAlign: 'center', marginTop: 4 }}>kom {(comm * 100).toFixed(0)}% · Push = stake späť</div>
                     </> : <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 8 }}>Zadaj Back aj Lay pre mid price</div>}
@@ -2156,7 +1969,6 @@ export default function App() {
                 )
               })}
 
-              {/* O/U 2.75 a O/U 2.25 markets — rovnaká štruktúra */}
               {(marketMode === 'ou275' || marketMode === 'ou225') && calc && (() => {
                 const is275 = marketMode === 'ou275'
                 const ouData = is275 ? calc.ou275 : calc.ou225
@@ -2164,16 +1976,12 @@ export default function App() {
                 const comm_ = calc.comm || 0.05
                 const cards = is275
                   ? [
-                      { label: 'Over 2.75', mkt: 'over2.75', prob: ouData.pOver275, fer: asianFairOdds(ouData.p4plus, ouData.p3, ouData.p0_2, comm_, false), backVal: backOver275, setBack: setBackOver275, layVal: layOver275, setLay: setLayOver275, myOddsVal: myOddsOver275, setMyOdds: setMyOddsOver275, color: 'var(--accent2)', borderColor: 'var(--accent)', isOver: true,
-                        winProb: ouData.p4plus, halfProb: ouData.p3, loseProb: ouData.p0_2, winLabel: '4+ gólov', halfLabel: '3 góly (half lose)', loseLabel: '0-2 góly' },
-                      { label: 'Under 2.75', mkt: 'under2.75', prob: ouData.pUnder275, fer: asianFairOdds(ouData.p0_2, ouData.p3, ouData.p4plus, comm_, true), backVal: backUnder275, setBack: setBackUnder275, layVal: layUnder275, setLay: setLayUnder275, myOddsVal: myOddsUnder275, setMyOdds: setMyOddsUnder275, color: 'var(--green)', borderColor: 'var(--green)', isOver: false,
-                        winProb: ouData.p0_2, halfProb: ouData.p3, loseProb: ouData.p4plus, winLabel: '0-2 góly', halfLabel: '3 góly (half win)', loseLabel: '4+ gólov' },
+                      { label: 'Over 2.75', mkt: 'over2.75', prob: ouData.pOver275, fer: asianFairOdds(ouData.p4plus, ouData.p3, ouData.p0_2, comm_, false), backVal: backOver275, setBack: setBackOver275, layVal: layOver275, setLay: setLayOver275, myOddsVal: myOddsOver275, setMyOdds: setMyOddsOver275, color: 'var(--accent2)', borderColor: 'var(--accent)', isOver: true, winProb: ouData.p4plus, halfProb: ouData.p3, loseProb: ouData.p0_2, winLabel: '4+ gólov', halfLabel: '3 góly (half lose)', loseLabel: '0-2 góly' },
+                      { label: 'Under 2.75', mkt: 'under2.75', prob: ouData.pUnder275, fer: asianFairOdds(ouData.p0_2, ouData.p3, ouData.p4plus, comm_, true), backVal: backUnder275, setBack: setBackUnder275, layVal: layUnder275, setLay: setLayUnder275, myOddsVal: myOddsUnder275, setMyOdds: setMyOddsUnder275, color: 'var(--green)', borderColor: 'var(--green)', isOver: false, winProb: ouData.p0_2, halfProb: ouData.p3, loseProb: ouData.p4plus, winLabel: '0-2 góly', halfLabel: '3 góly (half win)', loseLabel: '4+ gólov' },
                     ]
                   : [
-                      { label: 'Over 2.25', mkt: 'over2.25', prob: ouData.pOver225, fer: asianFairOdds(ouData.p3plus, ouData.p2, ouData.p0_1, comm_, true), backVal: backOver225, setBack: setBackOver225, layVal: layOver225, setLay: setLayOver225, myOddsVal: myOddsOver225, setMyOdds: setMyOddsOver225, color: 'var(--accent2)', borderColor: 'var(--accent)', isOver: true,
-                        winProb: ouData.p3plus, halfProb: ouData.p2, loseProb: ouData.p0_1, winLabel: '3+ gólov', halfLabel: '2 góly (half win)', loseLabel: '0-1 góly' },
-                      { label: 'Under 2.25', mkt: 'under2.25', prob: ouData.pUnder225, fer: asianFairOdds(ouData.p0_1, ouData.p2, ouData.p3plus, comm_, false), backVal: backUnder225, setBack: setBackUnder225, layVal: layUnder225, setLay: setLayUnder225, myOddsVal: myOddsUnder225, setMyOdds: setMyOddsUnder225, color: 'var(--green)', borderColor: 'var(--green)', isOver: false,
-                        winProb: ouData.p0_1, halfProb: ouData.p2, loseProb: ouData.p3plus, winLabel: '0-1 góly', halfLabel: '2 góly (half lose)', loseLabel: '3+ gólov' },
+                      { label: 'Over 2.25', mkt: 'over2.25', prob: ouData.pOver225, fer: asianFairOdds(ouData.p3plus, ouData.p2, ouData.p0_1, comm_, true), backVal: backOver225, setBack: setBackOver225, layVal: layOver225, setLay: setLayOver225, myOddsVal: myOddsOver225, setMyOdds: setMyOddsOver225, color: 'var(--accent2)', borderColor: 'var(--accent)', isOver: true, winProb: ouData.p3plus, halfProb: ouData.p2, loseProb: ouData.p0_1, winLabel: '3+ gólov', halfLabel: '2 góly (half win)', loseLabel: '0-1 góly' },
+                      { label: 'Under 2.25', mkt: 'under2.25', prob: ouData.pUnder225, fer: asianFairOdds(ouData.p0_1, ouData.p2, ouData.p3plus, comm_, false), backVal: backUnder225, setBack: setBackUnder225, layVal: layUnder225, setLay: setLayUnder225, myOddsVal: myOddsUnder225, setMyOdds: setMyOddsUnder225, color: 'var(--green)', borderColor: 'var(--green)', isOver: false, winProb: ouData.p0_1, halfProb: ouData.p2, loseProb: ouData.p3plus, winLabel: '0-1 góly', halfLabel: '2 góly (half lose)', loseLabel: '3+ gólov' },
                     ]
                 return cards.map(({ label, mkt, prob, fer, backVal, setBack, layVal, setLay, myOddsVal, setMyOdds, color, borderColor, isOver, winProb, halfProb, loseProb, winLabel, halfLabel, loseLabel }) => {
                   const mid = midPrice(pf(backVal) || null, pf(layVal) || null)
@@ -2185,11 +1993,7 @@ export default function App() {
                   const evMinVal = calc.evMinVal || 0.12
                   const oLow = calc.oLow || 1.4
                   const oHigh = calc.oHigh || 3.5
-                  const evB = actualOdds
-                    ? (is275
-                        ? calcEVOU275(isOver, ouData.p0_2, ouData.p3, ouData.p4plus, actualOdds, comm)
-                        : calcEVOU225(isOver, ouData.p0_1, ouData.p2, ouData.p3plus, actualOdds, comm))
-                    : null
+                  const evB = actualOdds ? (is275 ? calcEVOU275(isOver, ouData.p0_2, ouData.p3, ouData.p4plus, actualOdds, comm) : calcEVOU225(isOver, ouData.p0_1, ouData.p2, ouData.p3plus, actualOdds, comm)) : null
                   const evPassB = evFilter(evB, evMinVal)
                   const oddsPass = actualOdds ? oddsBandFilter(actualOdds, oLow, oHigh) : false
                   const edge = actualOdds && fer ? (actualOdds / fer - 1) * 100 : null
@@ -2200,40 +2004,20 @@ export default function App() {
                         <div className="market-title" style={{ color, marginBottom: 0 }}>{label}</div>
                         {isRecommended && <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--green)', background: 'rgba(0,184,148,0.15)', padding: '2px 7px', borderRadius: 3, letterSpacing: '0.08em' }}>RECOMMENDED</span>}
                       </div>
-                      {fer && (
-                        <div style={{ marginBottom: 10 }}>
-                          <div className="label">FER kurz</div>
-                          <div className="fer-num" style={{ color }}>
-                            {fmt3(fer)} <span style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 400 }}>({fmtPct(prob * 100)})</span>
-                          </div>
-                        </div>
-                      )}
+                      {fer && <div style={{ marginBottom: 10 }}><div className="label">FER kurz</div><div className="fer-num" style={{ color }}>{fmt3(fer)} <span style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 400 }}>({fmtPct(prob * 100)})</span></div></div>}
                       <div style={{ marginBottom: 8, padding: '6px 10px', background: 'var(--bg3)', borderRadius: 6, fontSize: 11, color: 'var(--text3)', lineHeight: 1.8 }}>
                         <div>P(Win — {winLabel}): <b style={{ color: 'var(--green)' }}>{fmtPct(winProb * 100)}</b></div>
                         <div>P(Half — {halfLabel}): <b style={{ color: 'var(--yellow)' }}>{fmtPct(halfProb * 100)}</b></div>
                         <div>P(Lose — {loseLabel}): <b style={{ color: 'var(--red)' }}>{fmtPct(loseProb * 100)}</b></div>
                       </div>
-                      <div style={{ marginTop: 10, marginBottom: 8 }}>
-                        <div className="label">Best Back</div>
-                        <input className="inp inp-sm" placeholder="1.85" value={backVal} onChange={e => setBack(e.target.value)} />
-                      </div>
+                      <div style={{ marginTop: 10, marginBottom: 8 }}><div className="label">Best Back</div><input className="inp inp-sm" placeholder="1.85" value={backVal} onChange={e => setBack(e.target.value)} /></div>
+                      <div style={{ marginBottom: 8 }}><div className="label">Best Lay</div><input className="inp inp-sm" placeholder="1.88" value={layVal} onChange={e => setLay(e.target.value)} /></div>
+                      <div style={{ marginBottom: 8 }}><div className="label">Môj kurz <span style={{ color: 'var(--accent2)' }}>(opt)</span></div><input className="inp inp-sm" placeholder="napr. 2.08" value={myOddsVal} onChange={e => setMyOdds(e.target.value)} /></div>
                       <div style={{ marginBottom: 8 }}>
-                        <div className="label">Best Lay</div>
-                        <input className="inp inp-sm" placeholder="1.88" value={layVal} onChange={e => setLay(e.target.value)} />
-                      </div>
-                      <div style={{ marginBottom: 8 }}>
-                        <div className="label">Môj kurz <span style={{ color: 'var(--accent2)' }}>(opt)</span></div>
-                        <input className="inp inp-sm" placeholder="napr. 2.08" value={myOddsVal} onChange={e => setMyOdds(e.target.value)} />
-                      </div>
-                      <div style={{ marginBottom: 8 }}>
-                        <div className="label">Pinnacle kurz <span style={{ color: 'var(--text3)' }}>(opt — uloží sa s betom)</span></div>
+                        <div className="label">Pinnacle kurz <span style={{ color: 'var(--text3)' }}>(opt)</span></div>
                         <input className="inp inp-sm" placeholder="napr. 1.90"
                           value={is275 ? (isOver ? pinnOver275 : pinnUnder275) : (isOver ? pinnOver225 : pinnUnder225)}
-                          onChange={e => {
-                            const val = e.target.value
-                            if (is275) { isOver ? setPinnOver275(val) : setPinnUnder275(val) }
-                            else { isOver ? setPinnOver225(val) : setPinnUnder225(val) }
-                          }} />
+                          onChange={e => { const val = e.target.value; if (is275) { isOver ? setPinnOver275(val) : setPinnUnder275(val) } else { isOver ? setPinnOver225(val) : setPinnUnder225(val) } }} />
                         {(() => {
                           const pinnVal = is275 ? (isOver ? pinnOver275 : pinnUnder275) : (isOver ? pinnOver225 : pinnUnder225)
                           const pinnO = pf(pinnVal)
@@ -2250,23 +2034,15 @@ export default function App() {
                         </div>
                         <div>
                           <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 2 }}>▲ Back EV (s half)</div>
-                          <div className={`ev-big ${evB > 0 ? 'pos' : 'neg'}`}>
-                            {fmtSignPct(evB * 100)}<span className="ev-eur">{fmtSign(evB * st)}€</span>
-                          </div>
+                          <div className={`ev-big ${evB > 0 ? 'pos' : 'neg'}`}>{fmtSignPct(evB * 100)}<span className="ev-eur">{fmtSign(evB * st)}€</span></div>
                         </div>
                         <div style={{ marginTop: 8, fontSize: 10, display: 'flex', flexDirection: 'column', gap: 3 }}>
-                          <div style={{ color: oddsPass ? 'var(--green)' : 'var(--red)' }}>
-                            {oddsPass ? '✓' : '✗'} Kurz {fmt3(actualOdds)} {oddsPass ? `v pásme` : `mimo pásma`}
-                          </div>
-                          <div style={{ color: evPassB ? 'var(--green)' : 'var(--text3)' }}>
-                            {evPassB ? '✓' : '✗'} EV {evPassB ? 'spĺňa' : 'nespĺňa'} min {fmtPct(evMinVal * 100)}
-                          </div>
+                          <div style={{ color: oddsPass ? 'var(--green)' : 'var(--red)' }}>{oddsPass ? '✓' : '✗'} Kurz {fmt3(actualOdds)} {oddsPass ? `v pásme` : `mimo pásma`}</div>
+                          <div style={{ color: evPassB ? 'var(--green)' : 'var(--text3)' }}>{evPassB ? '✓' : '✗'} EV {evPassB ? 'spĺňa' : 'nespĺňa'} min {fmtPct(evMinVal * 100)}</div>
                           {oddsPass && evPassB && <div style={{ marginTop: 4, color: 'var(--green)', fontWeight: 700 }}>✅ BET SIGNAL: BACK</div>}
                         </div>
                         <div className="save-btns">
-                          <button className="btn-save-back" onClick={() => handleSave(mkt, 'back')} disabled={saving}>
-                            {savedKey === mkt + '-back' ? '✓' : '+ Back'}
-                          </button>
+                          <button className="btn-save-back" onClick={() => handleSave(mkt, 'back')} disabled={saving}>{savedKey === mkt + '-back' ? '✓' : '+ Back'}</button>
                         </div>
                         <div style={{ fontSize: 9, color: 'var(--text3)', textAlign: 'center', marginTop: 4 }}>kom {(comm * 100).toFixed(0)}% · Half = 50% stake späť</div>
                       </> : <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 8 }}>Zadaj Back aj Lay pre mid price</div>}
@@ -2276,55 +2052,34 @@ export default function App() {
               })()}
             </div>
 
-            {/* Lambda info + shrink info */}
             {calc && <div className="lambda-row">
               <span>λ Home: <b>{fmt2(calc.lH)}</b></span>
               <span>λ Away: <b>{fmt2(calc.lA)}</b></span>
               <span>λ Suma: <b>{fmt2(calc.lH + calc.lA)}</b></span>
               <span style={{ color: 'var(--accent2)' }}>
-                {calc.modelType === 'full' ? `xG+GF/GA (α=${calc.alpha})` :
-                 calc.modelType === 'xga' ? 'xG+xGA' :
-                 calc.modelType === 'goals' ? `xG+GF/GA (α=${calc.alpha})` : 'xG only'}
+                {calc.modelType === 'full' ? `xG+GF/GA (α=${calc.alpha})` : calc.modelType === 'xga' ? 'xG+xGA' : calc.modelType === 'goals' ? `xG+GF/GA (α=${calc.alpha})` : 'xG only'}
               </span>
               <span style={{ color: 'var(--text3)' }}>ρ={fmt2(calc.rho)}</span>
               <span style={{ color: 'var(--yellow)' }}>k={fmt2(calc.calibK)}</span>
-              {calc.xgScaler != null && calc.xgScaler !== 1 && (
-                <span style={{ color: 'var(--yellow)' }}>sc={fmt2(calc.xgScaler)}</span>
-              )}
-              {calc.shrinkInfo && (
-                <span style={{ color: 'var(--green)' }}>
-                  + shrink {calc.shrinkInfo.source === 'api' ? '📡' : '✍'} ({calc.shrinkInfo.rawTotal} → {calc.shrinkInfo.shrunkTotal})
-                </span>
-              )}
-              {calc.formInfo && (
-                <span style={{ color: 'var(--accent2)' }}>
-                  + forma {'L' + calc.formInfo.window} (w={fmt2(calc.formInfo.weight)}) {calc.formInfo.lHbefore}→{calc.formInfo.lHafter} / {calc.formInfo.lAbefore}→{calc.formInfo.lAafter}
-                </span>
-              )}
-              {(calc.marketCalibUsed?.over || calc.marketCalibUsed?.under) && (
-                <span style={{ color: 'var(--yellow)' }}>+ mkt blend (w={fmt2(calc.marketCalibUsed.w)})</span>
-              )}
+              {calc.xgScaler != null && calc.xgScaler !== 1 && <span style={{ color: 'var(--yellow)' }}>sc={fmt2(calc.xgScaler)}</span>}
+              {calc.shrinkInfo && <span style={{ color: 'var(--green)' }}>+ shrink {calc.shrinkInfo.source === 'api' ? '📡' : '✍'} ({calc.shrinkInfo.rawTotal} → {calc.shrinkInfo.shrunkTotal})</span>}
+              {calc.formInfo && <span style={{ color: 'var(--accent2)' }}>+ forma {'L' + calc.formInfo.window} (w={fmt2(calc.formInfo.weight)}) {calc.formInfo.lHbefore}→{calc.formInfo.lHafter} / {calc.formInfo.lAbefore}→{calc.formInfo.lAafter}</span>}
+              {(calc.marketCalibUsed?.over || calc.marketCalibUsed?.under) && <span style={{ color: 'var(--yellow)' }}>+ mkt blend (w={fmt2(calc.marketCalibUsed.w)})</span>}
             </div>}
 
-            {/* Shrink detail */}
             {calc?.shrinkInfo && (
               <div className="shrink-info">
-                <b>Shrinkage:</b> λ_raw = {calc.shrinkInfo.lHraw} + {calc.shrinkInfo.lAraw} = {calc.shrinkInfo.rawTotal} →
-                shrunk na {calc.shrinkInfo.shrunkTotal} (liga avg: {calc.shrinkInfo.leagueAvgH} + {calc.shrinkInfo.leagueAvgA}) ·
-                ratio {calc.shrinkInfo.ratio} · zdroj: {calc.shrinkInfo.source === 'api' ? '📡 FootyStats API' : '✍ manuálne'}
+                <b>Shrinkage:</b> λ_raw = {calc.shrinkInfo.lHraw} + {calc.shrinkInfo.lAraw} = {calc.shrinkInfo.rawTotal} → shrunk na {calc.shrinkInfo.shrunkTotal} (liga avg: {calc.shrinkInfo.leagueAvgH} + {calc.shrinkInfo.leagueAvgA}) · ratio {calc.shrinkInfo.ratio} · zdroj: {calc.shrinkInfo.source === 'api' ? '📡 FootyStats API' : '✍ manuálne'}
               </div>
             )}
 
-            {/* Calibration detail */}
             {calc && (calc.calibK !== 1 || calc.marketCalibUsed?.over || calc.marketCalibUsed?.under) && (
               <div className="calib-info">
-                <b>Kalibrácia:</b>
-                {` Kalibrácia (k=${fmt2(calc.calibK)}) aplikovaná`}
+                <b>Kalibrácia:</b>{` Kalibrácia (k=${fmt2(calc.calibK)}) aplikovaná`}
                 {calc.marketCalibUsed?.over && ` · Over market blend (w=${fmt2(calc.marketCalibUsed.w)})`}
                 {calc.marketCalibUsed?.under && ` · Under market blend (w=${fmt2(calc.marketCalibUsed.w)})`}
               </div>
             )}
-
           </div>
         )}
 
@@ -2412,16 +2167,12 @@ export default function App() {
                     </div>
                     {b.pinnacle_open != null && (
                       <div style={{ marginBottom: 8 }}>
-                        <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 4 }}>
-                          Pinnacle open bol {fmt3(b.pinnacle_open)} — zadaj Pinnacle closing:
-                        </div>
+                        <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 4 }}>Pinnacle open bol {fmt3(b.pinnacle_open)} — zadaj Pinnacle closing:</div>
                         <input className="inp" placeholder="Pinnacle closing (napr. 1.78)" value={settlePinnClose} onChange={e => setSettlePinnClose(e.target.value)} />
                         {pf(settlePinnClose) > 1 && (
                           <div style={{ fontSize: 11, marginTop: 4, fontWeight: 700, color: (b.pinnacle_open / pf(settlePinnClose) - 1) > 0 ? 'var(--green)' : 'var(--red)' }}>
                             Pinnacle CLV: {((b.pinnacle_open / pf(settlePinnClose) - 1) * 100) > 0 ? '+' : ''}{((b.pinnacle_open / pf(settlePinnClose) - 1) * 100).toFixed(1)}%
-                            {(b.pinnacle_open / pf(settlePinnClose) - 1) > 0
-                              ? ' ↑ kurz išiel hore (bol si pred trhom)'
-                              : ' ↓ kurz išiel dole (trh vedel viac)'}
+                            {(b.pinnacle_open / pf(settlePinnClose) - 1) > 0 ? ' ↑ kurz išiel hore (bol si pred trhom)' : ' ↓ kurz išiel dole (trh vedel viac)'}
                           </div>
                         )}
                       </div>
@@ -2434,6 +2185,7 @@ export default function App() {
                   </div>
                 )}
 
+                {/* ── SETTLE RESULT — OPRAVENÝ BLOK S xG BRIER ── */}
                 {settlingId === b.id && settleMode === 'result' && (
                   <div className="settle-box">
                     <div style={{ fontSize: 11, color: 'var(--yellow)', marginBottom: 8 }}>🏁 Výsledok zápasu</div>
@@ -2455,6 +2207,13 @@ export default function App() {
                         <option value="4">½ Lose (2 góly — {b.market === 'under2.25' ? 'Under half lose' : 'Over half win'} — 50% strata)</option>
                       </>)}
                     </select>
+                    <div style={{ marginBottom: 8 }}>
+                      <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 4 }}>🔬 xG Brier (opt) — zadaj skutočné xG zo zápasu</div>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <input className="inp" placeholder="xG Home" value={settleXgHome} onChange={e => setSettleXgHome(e.target.value)} style={{ flex: 1 }} />
+                        <input className="inp" placeholder="xG Away" value={settleXgAway} onChange={e => setSettleXgAway(e.target.value)} style={{ flex: 1 }} />
+                      </div>
+                    </div>
                     <button className="btn btn-primary" style={{ padding: '10px' }} onClick={() => handleSettle(b.id)}>Potvrdiť výsledok</button>
                   </div>
                 )}
@@ -2483,7 +2242,6 @@ export default function App() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             {settled.length === 0 ? <div className="empty">Žiadne uzavreté bety.<br />Settle aspoň jeden bet.</div> : (<>
 
-              {/* ── CONFIDENCE SCORE ── */}
               {confidenceOverall && (
                 <div className="card" style={{ padding: 16, borderLeft: `3px solid ${stabilityDowngrade ? 'var(--red)' : stabilityWarning ? 'var(--yellow)' : confidenceOverall.color}` }}>
                   <div className="section-title" style={{ marginBottom: 12 }}>🎯 Confidence Score</div>
@@ -2538,7 +2296,6 @@ export default function App() {
                 </div>
               )}
 
-              {/* ── FINANCE ── */}
               <div>
                 <div className="section-title">💰 Finance</div>
                 <div className="grid3">
@@ -2548,12 +2305,7 @@ export default function App() {
                     { l: 'ROI', v: fmtSignPct(roi), cls: roi >= 0 ? 'pos' : 'neg' },
                     { l: 'Total Stake', v: totalStake + '€' },
                     { l: 'Max Drawdown', v: fmt2(maxDD) + '€', cls: 'neg' },
-                    { l: 'Výhry / Prehry', v: (() => {
-                      let s = `${wins} / ${nonPushSettled.length - wins}`
-                      if (pushes > 0) s += ` / ${pushes}P`
-                      if (halfWins > 0 || halfLoses > 0) s += ` / ${halfWins}½W ${halfLoses}½L`
-                      return s
-                    })() },
+                    { l: 'Výhry / Prehry', v: (() => { let s = `${wins} / ${nonPushSettled.length - wins}`; if (pushes > 0) s += ` / ${pushes}P`; if (halfWins > 0 || halfLoses > 0) s += ` / ${halfWins}½W ${halfLoses}½L`; return s })() },
                   ].map(({ l, v, cls }) => (
                     <div key={l} className="card" style={{ padding: 14 }}>
                       <div className="label">{l}</div>
@@ -2563,7 +2315,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* ── EDGE ── */}
               <div>
                 <div className="section-title">📈 Edge</div>
                 <div className="grid3">
@@ -2582,7 +2333,6 @@ export default function App() {
                     </div>
                   ))}
                 </div>
-                {/* Pinnacle CLV porovnanie */}
                 {pinnBets.length >= 3 && (
                   <div className="card" style={{ marginTop: 10, padding: 14, borderLeft: '3px solid var(--accent)' }}>
                     <div className="label" style={{ marginBottom: 10 }}>📌 Pinnacle CLV ({pinnBets.length} betov)</div>
@@ -2601,9 +2351,7 @@ export default function App() {
                         <div style={{ color: 'var(--text3)', fontSize: 10, marginBottom: 3 }}>vs Exchange CLV</div>
                         {avgCLV != null && avgPinnCLV != null ? (
                           <>
-                            <div style={{ fontWeight: 700, fontSize: 16, color: avgPinnCLV > avgCLV ? 'var(--green)' : 'var(--yellow)' }}>
-                              {avgPinnCLV > avgCLV ? '↑' : '↓'} {fmtSignPct(avgPinnCLV - avgCLV)}
-                            </div>
+                            <div style={{ fontWeight: 700, fontSize: 16, color: avgPinnCLV > avgCLV ? 'var(--green)' : 'var(--yellow)' }}>{avgPinnCLV > avgCLV ? '↑' : '↓'} {fmtSignPct(avgPinnCLV - avgCLV)}</div>
                             <div style={{ fontSize: 10, color: 'var(--text3)' }}>Pinn {avgPinnCLV > avgCLV ? 'lepší' : 'horší'} ako Exchange</div>
                           </>
                         ) : <div style={{ color: 'var(--text3)' }}>—</div>}
@@ -2613,22 +2361,13 @@ export default function App() {
                 )}
               </div>
 
-              {/* ── EV PÁSMA ── */}
               <div>
                 <div className="section-title">🎯 EV pásma — kde ti to reálne vychádza</div>
-                <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 10 }}>
-                  Rozdelenie betov podľa EV pri uložení. Ukazuje kde má model reálny edge vs šum.
-                </div>
+                <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 10 }}>Rozdelenie betov podľa EV pri uložení. Ukazuje kde má model reálny edge vs šum.</div>
                 {(() => {
-                  const bands = [
-                    { label: '0–5%', min: 0, max: 5 },
-                    { label: '5–10%', min: 5, max: 10 },
-                    { label: '10–15%', min: 10, max: 15 },
-                    { label: '15%+', min: 15, max: Infinity },
-                  ]
+                  const bands = [{ label: '0–5%', min: 0, max: 5 }, { label: '5–10%', min: 5, max: 10 }, { label: '10–15%', min: 10, max: 15 }, { label: '15%+', min: 15, max: Infinity }]
                   return (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {/* Header */}
                       <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr 1fr 1fr 1fr 1fr', gap: 8, fontSize: 9, color: 'var(--text3)', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0 14px' }}>
                         <span>EV pásmo</span><span>Bety</span><span>Hit Rate</span><span>Avg CLV</span><span>ROI</span><span>PnL</span>
                       </div>
@@ -2648,9 +2387,8 @@ export default function App() {
                         const bROI = bStake > 0 ? bPnL / bStake * 100 : null
                         const bCLV = bb.filter(b => b.clv != null)
                         const bAvgCLV = bCLV.length > 0 ? bCLV.reduce((s, b) => s + b.clv, 0) / bCLV.length : null
-                        const isGood = bROI > 0
                         return (
-                          <div key={band.label} className="card" style={{ padding: '10px 14px', display: 'grid', gridTemplateColumns: '80px 1fr 1fr 1fr 1fr 1fr', gap: 8, alignItems: 'center', borderLeft: `3px solid ${isGood ? 'var(--green)' : 'var(--red)'}` }}>
+                          <div key={band.label} className="card" style={{ padding: '10px 14px', display: 'grid', gridTemplateColumns: '80px 1fr 1fr 1fr 1fr 1fr', gap: 8, alignItems: 'center', borderLeft: `3px solid ${bROI > 0 ? 'var(--green)' : 'var(--red)'}` }}>
                             <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent2)' }}>{band.label}</span>
                             <span style={{ fontSize: 12 }}>{bb.length}</span>
                             <span style={{ fontSize: 12, color: bHR > 50 ? 'var(--green)' : 'var(--text2)' }}>{fmtPct(bHR)}</span>
@@ -2660,15 +2398,12 @@ export default function App() {
                           </div>
                         )
                       })}
-                      <div style={{ fontSize: 10, color: 'var(--text3)', padding: '4px 14px' }}>
-                        💡 Pásma s pozitívnym ROI = tam má tvoj model reálny edge. Zvýš EV filter na minimálne toto pásmo.
-                      </div>
+                      <div style={{ fontSize: 10, color: 'var(--text3)', padding: '4px 14px' }}>💡 Pásma s pozitívnym ROI = tam má tvoj model reálny edge. Zvýš EV filter na minimálne toto pásmo.</div>
                     </div>
                   )
                 })()}
               </div>
 
-              {/* ── OVER vs UNDER BREAKDOWN ── */}
               <div>
                 <div className="section-title">⚖️ Over 2.5 vs Under 2.5</div>
                 {(() => {
@@ -2690,38 +2425,15 @@ export default function App() {
                         const isOver = mkt === 'over2.5'
                         return (
                           <div key={mkt} className="card" style={{ padding: 14, borderTop: `3px solid ${isOver ? 'var(--accent)' : 'var(--green)'}` }}>
-                            <div className="label" style={{ color: isOver ? 'var(--accent2)' : 'var(--green)', marginBottom: 10 }}>
-                              {isOver ? '▲ Over 2.5' : '▼ Under 2.5'}
-                            </div>
+                            <div className="label" style={{ color: isOver ? 'var(--accent2)' : 'var(--green)', marginBottom: 10 }}>{isOver ? '▲ Over 2.5' : '▼ Under 2.5'}</div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 5, fontSize: 12 }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ color: 'var(--text3)' }}>Bety</span>
-                                <b>{mb.length}</b>
-                              </div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ color: 'var(--text3)' }}>Hit Rate</span>
-                                <b style={{ color: mHR > 50 ? 'var(--green)' : 'var(--text2)' }}>{fmtPct(mHR)}</b>
-                              </div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ color: 'var(--text3)' }}>Avg Prob</span>
-                                <b>{fmtPct(mAvgProb * 100)}</b>
-                              </div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ color: 'var(--text3)' }}>Kalibrácia</span>
-                                <b style={{ color: Math.abs(mCalib) < 5 ? 'var(--green)' : 'var(--red)' }}>{fmtSign(mCalib)}pp</b>
-                              </div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ color: 'var(--text3)' }}>Avg CLV</span>
-                                <b style={{ color: mAvgCLV > 0 ? 'var(--green)' : 'var(--red)' }}>{mAvgCLV != null ? fmtSignPct(mAvgCLV) : '—'}</b>
-                              </div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border)', paddingTop: 5, marginTop: 2 }}>
-                                <span style={{ color: 'var(--text3)' }}>ROI</span>
-                                <b style={{ color: mROI > 0 ? 'var(--green)' : 'var(--red)', fontSize: 14 }}>{mROI != null ? fmtSignPct(mROI) : '—'}</b>
-                              </div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ color: 'var(--text3)' }}>PnL</span>
-                                <b style={{ color: mPnL >= 0 ? 'var(--green)' : 'var(--red)' }}>{fmtSign(mPnL)}€</b>
-                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text3)' }}>Bety</span><b>{mb.length}</b></div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text3)' }}>Hit Rate</span><b style={{ color: mHR > 50 ? 'var(--green)' : 'var(--text2)' }}>{fmtPct(mHR)}</b></div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text3)' }}>Avg Prob</span><b>{fmtPct(mAvgProb * 100)}</b></div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text3)' }}>Kalibrácia</span><b style={{ color: Math.abs(mCalib) < 5 ? 'var(--green)' : 'var(--red)' }}>{fmtSign(mCalib)}pp</b></div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text3)' }}>Avg CLV</span><b style={{ color: mAvgCLV > 0 ? 'var(--green)' : 'var(--red)' }}>{mAvgCLV != null ? fmtSignPct(mAvgCLV) : '—'}</b></div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border)', paddingTop: 5, marginTop: 2 }}><span style={{ color: 'var(--text3)' }}>ROI</span><b style={{ color: mROI > 0 ? 'var(--green)' : 'var(--red)', fontSize: 14 }}>{mROI != null ? fmtSignPct(mROI) : '—'}</b></div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text3)' }}>PnL</span><b style={{ color: mPnL >= 0 ? 'var(--green)' : 'var(--red)' }}>{fmtSign(mPnL)}€</b></div>
                             </div>
                           </div>
                         )
@@ -2731,52 +2443,30 @@ export default function App() {
                 })()}
               </div>
 
-              {/* ── ODDS BUCKET ANALYSIS ── */}
               <div>
                 <div className="section-title">📐 Odds bucket analýza</div>
-                <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 10 }}>
-                  Výkonnosť podľa výšky kurzu. Ukazuje kde model reálne nájde edge.
-                </div>
+                <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 10 }}>Výkonnosť podľa výšky kurzu. Ukazuje kde model reálne nájde edge.</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '90px 1fr 1fr 1fr 1fr 1fr', gap: 8, fontSize: 9, color: 'var(--text3)', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0 14px' }}>
                     <span>Kurz</span><span>Bety</span><span>Avg CLV</span><span>Pos CLV</span><span>Avg EV</span><span>ROI</span>
                   </div>
                   {oddsBucketStats.map(b => (
-                    <div key={b.label} className="card" style={{
-                      padding: '10px 14px',
-                      display: 'grid',
-                      gridTemplateColumns: '90px 1fr 1fr 1fr 1fr 1fr',
-                      gap: 8,
-                      alignItems: 'center',
-                      opacity: b.count === 0 ? 0.4 : 1,
-                      borderLeft: b.count > 0 ? `3px solid ${b.roi > 0 ? 'var(--green)' : 'var(--red)'}` : '3px solid var(--border)',
-                    }}>
+                    <div key={b.label} className="card" style={{ padding: '10px 14px', display: 'grid', gridTemplateColumns: '90px 1fr 1fr 1fr 1fr 1fr', gap: 8, alignItems: 'center', opacity: b.count === 0 ? 0.4 : 1, borderLeft: b.count > 0 ? `3px solid ${b.roi > 0 ? 'var(--green)' : 'var(--red)'}` : '3px solid var(--border)' }}>
                       <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent2)' }}>{b.label}</span>
                       <span style={{ fontSize: 12, color: 'var(--text2)' }}>{b.count === 0 ? '—' : b.count}</span>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: b.avgCLV == null ? 'var(--text3)' : b.avgCLV > 0 ? 'var(--green)' : 'var(--red)' }}>
-                        {b.avgCLV == null ? '—' : fmtSignPct(b.avgCLV)}
-                      </span>
-                      <span style={{ fontSize: 12, color: b.posCLV == null ? 'var(--text3)' : b.posCLV >= 50 ? 'var(--green)' : 'var(--red)' }}>
-                        {b.posCLV == null ? '—' : fmtPct(b.posCLV)}
-                      </span>
-                      <span style={{ fontSize: 12, color: b.avgEV == null ? 'var(--text3)' : b.avgEV > 0 ? 'var(--green)' : 'var(--red)' }}>
-                        {b.avgEV == null ? '—' : fmtSignPct(b.avgEV)}
-                      </span>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: b.roi == null ? 'var(--text3)' : b.roi > 0 ? 'var(--green)' : 'var(--red)' }}>
-                        {b.roi == null ? '—' : fmtSignPct(b.roi)}
-                      </span>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: b.avgCLV == null ? 'var(--text3)' : b.avgCLV > 0 ? 'var(--green)' : 'var(--red)' }}>{b.avgCLV == null ? '—' : fmtSignPct(b.avgCLV)}</span>
+                      <span style={{ fontSize: 12, color: b.posCLV == null ? 'var(--text3)' : b.posCLV >= 50 ? 'var(--green)' : 'var(--red)' }}>{b.posCLV == null ? '—' : fmtPct(b.posCLV)}</span>
+                      <span style={{ fontSize: 12, color: b.avgEV == null ? 'var(--text3)' : b.avgEV > 0 ? 'var(--green)' : 'var(--red)' }}>{b.avgEV == null ? '—' : fmtSignPct(b.avgEV)}</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: b.roi == null ? 'var(--text3)' : b.roi > 0 ? 'var(--green)' : 'var(--red)' }}>{b.roi == null ? '—' : fmtSignPct(b.roi)}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* ── CLV ANALÝZA ── */}
               {clvBets.length > 0 && (
                 <div>
                   <div className="section-title">📊 CLV analýza — trh vs model</div>
-                  <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 10 }}>
-                    CLV = closing line value. Pozitívne = bol si pred trhom. Záporné = trh vedel viac ako ty.
-                  </div>
+                  <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 10 }}>CLV = closing line value. Pozitívne = bol si pred trhom. Záporné = trh vedel viac ako ty.</div>
                   <div className="grid3">
                     {(() => {
                       const posC = clvBets.filter(b => b.clv > 0)
@@ -2798,7 +2488,6 @@ export default function App() {
                       ))
                     })()}
                   </div>
-                  {/* CLV distribution bar */}
                   <div className="card" style={{ marginTop: 10, padding: 14 }}>
                     <div className="label" style={{ marginBottom: 10 }}>CLV distribúcia</div>
                     <div style={{ display: 'flex', gap: 3, alignItems: 'flex-end', height: 48 }}>
@@ -2820,13 +2509,10 @@ export default function App() {
                 </div>
               )}
 
-              {/* ── CLV BREAKDOWN ── */}
               {clvBets.length >= 5 && (
                 <div className="card" style={{ padding: 16 }}>
                   <div className="section-title" style={{ marginBottom: 12 }}>📊 CLV analýza</div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-
-                    {/* CLV podľa času */}
                     {clvByTime.length > 0 && (
                       <div>
                         <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 8, fontWeight: 600, letterSpacing: 1 }}>CLV PODĽA ČASU BETU</div>
@@ -2842,8 +2528,6 @@ export default function App() {
                         </div>
                       </div>
                     )}
-
-                    {/* CLV podľa marketu */}
                     {clvByMarket.length > 0 && (
                       <div>
                         <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 8, fontWeight: 600, letterSpacing: 1 }}>CLV PODĽA MARKETU</div>
@@ -2859,8 +2543,6 @@ export default function App() {
                         </div>
                       </div>
                     )}
-
-                    {/* CLV podľa ligy */}
                     {clvByLeague.length > 1 && (
                       <div style={{ gridColumn: '1 / -1' }}>
                         <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 8, fontWeight: 600, letterSpacing: 1 }}>CLV PODĽA LIGY</div>
@@ -2876,28 +2558,16 @@ export default function App() {
                         </div>
                       </div>
                     )}
-
-                    {/* Model vs Market prob */}
                     {avgModelProb != null && avgMarketProb != null && (
                       <div style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--border)', paddingTop: 12, marginTop: 4 }}>
                         <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 8, fontWeight: 600, letterSpacing: 1 }}>MODEL vs MARKET PRAVDEPODOBNOSŤ</div>
                         <div style={{ display: 'flex', gap: 24, fontSize: 12 }}>
-                          <div>
-                            <span style={{ color: 'var(--text3)' }}>Avg model prob: </span>
-                            <b style={{ color: 'var(--text2)' }}>{fmtPct(avgModelProb * 100)}</b>
-                          </div>
-                          <div>
-                            <span style={{ color: 'var(--text3)' }}>Avg market prob: </span>
-                            <b style={{ color: 'var(--text2)' }}>{fmtPct(avgMarketProb * 100)}</b>
-                          </div>
+                          <div><span style={{ color: 'var(--text3)' }}>Avg model prob: </span><b style={{ color: 'var(--text2)' }}>{fmtPct(avgModelProb * 100)}</b></div>
+                          <div><span style={{ color: 'var(--text3)' }}>Avg market prob: </span><b style={{ color: 'var(--text2)' }}>{fmtPct(avgMarketProb * 100)}</b></div>
                           <div>
                             <span style={{ color: 'var(--text3)' }}>Rozdiel: </span>
-                            <b style={{ color: (avgModelProb - avgMarketProb) > 0 ? 'var(--green)' : 'var(--red)' }}>
-                              {fmtSignPct((avgModelProb - avgMarketProb) * 100)}
-                            </b>
-                            <span style={{ color: 'var(--text3)', marginLeft: 6, fontSize: 11 }}>
-                              {(avgModelProb - avgMarketProb) > 0.02 ? '↑ model preceňuje góly' : (avgModelProb - avgMarketProb) < -0.02 ? '↓ model podceňuje góly' : '≈ model a trh súhlasia'}
-                            </span>
+                            <b style={{ color: (avgModelProb - avgMarketProb) > 0 ? 'var(--green)' : 'var(--red)' }}>{fmtSignPct((avgModelProb - avgMarketProb) * 100)}</b>
+                            <span style={{ color: 'var(--text3)', marginLeft: 6, fontSize: 11 }}>{(avgModelProb - avgMarketProb) > 0.02 ? '↑ model preceňuje góly' : (avgModelProb - avgMarketProb) < -0.02 ? '↓ model podceňuje góly' : '≈ model a trh súhlasia'}</span>
                           </div>
                         </div>
                       </div>
@@ -2906,7 +2576,6 @@ export default function App() {
                 </div>
               )}
 
-              {/* ── ODPORÚČANIA ── */}
               <div className="card" style={{ padding: 16, borderLeft: '3px solid var(--yellow)' }}>
                 <div className="section-title" style={{ marginBottom: 10 }}>💡 Odporúčania na základe tvojich dát</div>
                 {(() => {
@@ -2914,7 +2583,6 @@ export default function App() {
                   if (calib != null && calib < -5) recs.push({ icon: '⚠️', text: `Model je preoptimistický o ${Math.abs(calib).toFixed(1)}pp — zníž k na 0.85 v pokročilých nastaveniach`, color: 'var(--red)' })
                   if (avgCLV != null && avgCLV < 0) recs.push({ icon: '📉', text: `Avg CLV je záporné (${fmtSignPct(avgCLV)}) — trh vie viac ako model. Zvýš EV filter.`, color: 'var(--red)' })
                   if (posCLV != null && posCLV < 50) recs.push({ icon: '🎯', text: `Len ${fmtPct(posCLV)} betov má pozitívne CLV — betuješ príliš veľa "šumu". Odporúčaný EV filter: 12–15%`, color: 'var(--yellow)' })
-                  // Find best EV band
                   const bands2 = [{ label: '15%+', min: 15, max: Infinity }, { label: '10–15%', min: 10, max: 15 }, { label: '5–10%', min: 5, max: 10 }]
                   for (const band of bands2) {
                     const bb = settled.filter(b => b.ev_pct != null && b.ev_pct >= band.min && b.ev_pct < band.max)
@@ -2925,7 +2593,6 @@ export default function App() {
                       if (bROI > 0) { recs.push({ icon: '✅', text: `EV pásmo ${band.label} má ROI ${fmtSignPct(bROI)} — toto je tvoj skutočný edge. Fokusuj sa na tieto bety.`, color: 'var(--green)' }); break }
                     }
                   }
-                  // Over vs Under
                   const overB = settled.filter(b => b.market === 'over2.5')
                   const underB = settled.filter(b => b.market === 'under2.5')
                   if (overB.length > 3 && underB.length > 3) {
@@ -2945,7 +2612,6 @@ export default function App() {
                 })()}
               </div>
 
-              {/* ── MODEL ── */}
               <div>
                 <div className="section-title">🧠 Model</div>
                 <div className="grid3">
@@ -2961,7 +2627,6 @@ export default function App() {
                     </div>
                   ))}
                 </div>
-                {/* xG Brier karta */}
                 {(() => {
                   const xgBets = settled.filter(b => b.xg_brier != null && b.brier != null)
                   if (xgBets.length < 3) return null
@@ -2973,28 +2638,15 @@ export default function App() {
                     <div className="card" style={{ marginTop: 10, padding: 14, borderLeft: `3px solid ${processGood ? 'var(--green)' : 'var(--yellow)'}` }}>
                       <div className="label" style={{ marginBottom: 10 }}>🔬 xG Brier — proces vs výsledok ({xgBets.length} betov)</div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-                        <div>
-                          <div style={{ color: 'var(--text3)', fontSize: 10, marginBottom: 3 }}>Klasický Brier</div>
-                          <div style={{ fontWeight: 700, fontSize: 16 }}>{avgClassicBrier.toFixed(3)}</div>
-                          <div style={{ fontSize: 10, color: 'var(--text3)' }}>výsledok</div>
-                        </div>
-                        <div>
-                          <div style={{ color: 'var(--text3)', fontSize: 10, marginBottom: 3 }}>xG Brier</div>
-                          <div style={{ fontWeight: 700, fontSize: 16 }}>{avgXgBrier.toFixed(3)}</div>
-                          <div style={{ fontSize: 10, color: 'var(--text3)' }}>proces</div>
-                        </div>
-                        <div>
-                          <div style={{ color: 'var(--text3)', fontSize: 10, marginBottom: 3 }}>Rozdiel</div>
-                          <div style={{ fontWeight: 700, fontSize: 16, color: processGood ? 'var(--green)' : 'var(--yellow)' }}>{diff > 0 ? '+' : ''}{diff.toFixed(3)}</div>
-                          <div style={{ fontSize: 10, color: processGood ? 'var(--green)' : 'var(--yellow)' }}>{processGood ? 'proces lepší ako luck' : 'luck lepší ako proces'}</div>
-                        </div>
+                        <div><div style={{ color: 'var(--text3)', fontSize: 10, marginBottom: 3 }}>Klasický Brier</div><div style={{ fontWeight: 700, fontSize: 16 }}>{avgClassicBrier.toFixed(3)}</div><div style={{ fontSize: 10, color: 'var(--text3)' }}>výsledok</div></div>
+                        <div><div style={{ color: 'var(--text3)', fontSize: 10, marginBottom: 3 }}>xG Brier</div><div style={{ fontWeight: 700, fontSize: 16 }}>{avgXgBrier.toFixed(3)}</div><div style={{ fontSize: 10, color: 'var(--text3)' }}>proces</div></div>
+                        <div><div style={{ color: 'var(--text3)', fontSize: 10, marginBottom: 3 }}>Rozdiel</div><div style={{ fontWeight: 700, fontSize: 16, color: processGood ? 'var(--green)' : 'var(--yellow)' }}>{diff > 0 ? '+' : ''}{diff.toFixed(3)}</div><div style={{ fontSize: 10, color: processGood ? 'var(--green)' : 'var(--yellow)' }}>{processGood ? 'proces lepší ako luck' : 'luck lepší ako proces'}</div></div>
                       </div>
                     </div>
                   )
                 })()}
               </div>
 
-              {/* ── PNL TIMELINE ── */}
               <div className="card">
                 <div className="label" style={{ marginBottom: 12 }}>PnL timeline</div>
                 <div className="pnl-bar-wrap">
