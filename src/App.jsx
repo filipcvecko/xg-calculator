@@ -293,6 +293,9 @@ const css = `
   @media(max-width:520px){ .markets-grid{grid-template-columns:1fr;} .grid3{grid-template-columns:1fr 1fr;} .grid4{grid-template-columns:1fr 1fr;} .tab{padding:10px 8px;font-size:10px;} }
 `
 
+const INITIAL_BANKROLL = 132.80
+const BANKROLL_KEY = 'xgcalc_bankroll'
+
 export default function App() {
   const [tab, setTab] = useState('calc')
   const [statsMarket, setStatsMarket] = useState('all')
@@ -402,6 +405,16 @@ export default function App() {
   const [settlePinnClose, setSettlePinnClose] = useState('')
   const [settleXgHome, setSettleXgHome] = useState('')
   const [settleXgAway, setSettleXgAway] = useState('')
+  const [bankroll, setBankroll] = useState(() => {
+    try { const v = localStorage.getItem(BANKROLL_KEY); return v ? parseFloat(v) : INITIAL_BANKROLL } catch { return INITIAL_BANKROLL }
+  })
+  const [editingBankroll, setEditingBankroll] = useState(false)
+  const [bankrollInput, setBankrollInput] = useState('')
+
+  function saveBankroll(val) {
+    setBankroll(val)
+    try { localStorage.setItem(BANKROLL_KEY, String(val)) } catch {}
+  }
 
   async function requestNotifPermission() {
     if (typeof Notification === 'undefined') return
@@ -888,6 +901,8 @@ export default function App() {
       pinnacle_open: pinnOpen > 1 ? pinnOpen : null,
       pinnacle_close: null,
       pinnacle_clv: null,
+      is_archived: false,
+      stake_pct_bankroll: currentBankroll > 0 ? Math.round((calc.st / currentBankroll) * 1000) / 10 : null,
     }).select()
     if (error) {
       console.error('Supabase insert error:', error)
@@ -975,6 +990,11 @@ export default function App() {
     await loadBets()
   }
 
+  async function handleToggleArchive(id, currentVal) {
+    await supabase.from('bets').update({ is_archived: !currentVal }).eq('id', id)
+    await loadBets()
+  }
+
   async function handleDelete(id) {
     await supabase.from('bets').delete().eq('id', id)
     await loadBets()
@@ -985,7 +1005,9 @@ export default function App() {
   const OU275_MARKETS = ['over2.75', 'under2.75']
   const OU30_MARKETS  = ['over3.0', 'under3.0']
   const EXCLUDED_MARKETS = [...OU225_MARKETS, ...OU275_MARKETS]
-  const settled_all = bets.filter(b => b.result != null)
+  const activeBets = bets.filter(b => !b.is_archived)
+  const archivedBets = bets.filter(b => b.is_archived)
+  const settled_all = activeBets.filter(b => b.result != null)
   const settled = settled_all.filter(b => {
     if (EXCLUDED_MARKETS.includes(b.market) && statsMarket === 'all') return false
     if (statsMarket === 'ou25'  && !OU25_MARKETS.includes(b.market))  return false
@@ -994,7 +1016,7 @@ export default function App() {
     if (statsMarket === 'ou30'  && !OU30_MARKETS.includes(b.market))  return false
     return true
   })
-  const pending = bets.filter(b => b.result == null)
+  const pending = activeBets.filter(b => b.result == null)
   const totalStake = settled.reduce((s, b) => s + b.stake, 0)
   const totalPnL = settled.reduce((s, b) => s + (b.pnl || 0), 0)
   const roi = totalStake > 0 ? (totalPnL / totalStake) * 100 : null
@@ -1014,6 +1036,10 @@ export default function App() {
   const avgEV = evBets.length > 0 ? evBets.reduce((s, b) => s + b.ev_pct, 0) / evBets.length : null
   const maxDD = calcMaxDrawdown(settled)
   const calib = hitRate != null && avgProb != null ? (hitRate - avgProb) * 100 : null
+  const pendingStake = pending.reduce((s, b) => s + b.stake, 0)
+  const currentBankroll = bankroll + totalPnL
+  const availableBankroll = currentBankroll - pendingStake
+  const bankrollGrowth = bankroll > 0 ? ((currentBankroll - bankroll) / bankroll) * 100 : null
   const pinnBets = settled.filter(b => b.pinnacle_clv != null)
   const avgPinnCLV = pinnBets.length > 0 ? pinnBets.reduce((s, b) => s + b.pinnacle_clv, 0) / pinnBets.length : null
   const posPinnCLV = pinnBets.length > 0 ? (pinnBets.filter(b => b.pinnacle_clv > 0).length / pinnBets.length) * 100 : null
@@ -1216,11 +1242,11 @@ export default function App() {
         <span style={{ color: 'var(--border2)', fontSize: 12 }}>|</span>
         <span style={{ fontSize: 11, color: 'var(--text3)', letterSpacing: '0.1em' }}>O/U 2.5 · EXCHANGE</span>
         <div className="meta">
-          {bets.length} betov {pending.length > 0 && <span style={{ color: 'var(--yellow)' }}>• {pending.length} čaká</span>}
+          {activeBets.length} betov {pending.length > 0 && <span style={{ color: 'var(--yellow)' }}>• {pending.length} čaká</span>}
         </div>
       </div>
       <div className="tabs">
-        {[['calc', 'Kalkulačka'], ['history', `História (${bets.length})`], ['stats', 'Štatistiky']].map(([id, lbl]) => (
+        {[['calc', 'Kalkulačka'], ['history', `História (${activeBets.length})`], ['stats', 'Štatistiky'], ['archive', `Archív (${archivedBets.length})`]].map(([id, lbl]) => (
           <button key={id} className={`tab ${tab === id ? 'active' : ''}`} onClick={() => setTab(id)}>{lbl}</button>
         ))}
       </div>
@@ -1228,6 +1254,31 @@ export default function App() {
       <div className="wrap">
         {tab === 'calc' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+            {/* Bankroll card */}
+            <div className="card" style={{ borderLeft: '3px solid var(--accent)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <div className="label">💰 Bankroll</div>
+                  {editingBankroll ? (
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 4 }}>
+                      <input className="inp" style={{ width: 120 }} placeholder={String(bankroll)} value={bankrollInput} onChange={e => setBankrollInput(e.target.value)} autoFocus />
+                      <button className="btn-ghost" onClick={() => { const v = pf(bankrollInput); if (v > 0) saveBankroll(v); setEditingBankroll(false); setBankrollInput('') }}>✓</button>
+                      <button className="btn-ghost" onClick={() => { setEditingBankroll(false); setBankrollInput('') }}>✕</button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', gap: 16, alignItems: 'baseline', marginTop: 4, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 22, fontWeight: 800, color: 'var(--accent2)' }}>{fmt2(currentBankroll)}€</span>
+                      <span style={{ fontSize: 11, color: 'var(--text3)' }}>štart: {fmt2(bankroll)}€</span>
+                      {bankrollGrowth != null && <span style={{ fontSize: 12, fontWeight: 700, color: bankrollGrowth >= 0 ? 'var(--green)' : 'var(--red)' }}>{bankrollGrowth >= 0 ? '+' : ''}{bankrollGrowth.toFixed(1)}%</span>}
+                    </div>
+                  )}
+                </div>
+                {!editingBankroll && <button className="btn-toggle" onClick={() => { setEditingBankroll(true); setBankrollInput(String(bankroll)) }}>Zmeniť</button>}
+              </div>
+              {pendingStake > 0 && <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text3)' }}>V hre: <b style={{ color: 'var(--yellow)' }}>{fmt2(pendingStake)}€</b> · Voľný: <b style={{ color: 'var(--green)' }}>{fmt2(availableBankroll)}€</b></div>}
+              {pf(stake) > 0 && currentBankroll > 0 && <div style={{ marginTop: 6, fontSize: 11, color: 'var(--text3)' }}>Stake {stake}€ = <b style={{ color: 'var(--accent2)' }}>{((pf(stake) / currentBankroll) * 100).toFixed(1)}%</b> bankrollu</div>}
+            </div>
 
             {/* Zápas + čas */}
             <div className="card">
@@ -2095,8 +2146,8 @@ export default function App() {
         {tab === 'history' && (
           <div>
             {loading && <div className="loading">Načítavam...</div>}
-            {!loading && bets.length === 0 && <div className="empty">Žiadne bety.<br />Vypočítaj a ulož prvý bet.</div>}
-            {bets.map(b => (
+            {!loading && activeBets.length === 0 && <div className="empty">Žiadne bety.<br />Vypočítaj a ulož prvý bet.</div>}
+            {activeBets.map(b => (
               <div key={b.id} className="bet-row">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
                   <div style={{ flex: 1, cursor: 'pointer' }} onClick={() => setExpandedId(expandedId === b.id ? null : b.id)}>
@@ -2118,6 +2169,7 @@ export default function App() {
                       <span>FER: <b style={{ color: 'var(--accent2)' }}>{fmt3(b.fer_odds)}</b></span>
                       {b.odds_open && <span>Kurz: <b style={{ color: 'var(--text2)' }}>{fmt3(b.odds_open)}</b></span>}
                       <span>Stake: <b style={{ color: 'var(--text2)' }}>{b.stake}€</b></span>
+                      {b.stake_pct_bankroll && <span>BR%: <b style={{ color: 'var(--accent2)' }}>{b.stake_pct_bankroll}%</b></span>}
                       {b.ev_pct != null && <span>EV: <b className={b.ev_pct > 0 ? 'pos' : 'neg'}>{fmtSignPct(b.ev_pct)}</b></span>}
                       {b.clv != null && <span>CLV: <b className={b.clv > 0 ? 'pos' : 'neg'}>{fmtSignPct(b.clv)}</b></span>}
                       {b.pnl != null && <span>PnL: <b className={b.pnl > 0 ? 'pos' : 'neg'}>{fmtSign(b.pnl)}€</b></span>}
@@ -2138,6 +2190,11 @@ export default function App() {
                         else { setSettlingId(b.id); setSettleMode(b.odds_close ? 'result' : 'clv'); setSettleClose(''); setSettleResult('') }
                       }}>
                         {b.odds_close ? 'Result' : 'CLV / Result'}
+                      </button>
+                    )}
+                    {b.result != null && (
+                      <button className="btn-ghost" style={{ fontSize: 10 }} onClick={() => handleToggleArchive(b.id, b.is_archived)}>
+                        📦 Archivovať
                       </button>
                     )}
                     <button className="btn-danger" onClick={() => handleDelete(b.id)}>✕</button>
@@ -2250,6 +2307,20 @@ export default function App() {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             {settled.length === 0 ? <div className="empty">Žiadne uzavreté bety.<br />Settle aspoň jeden bet.</div> : (<>
+
+              {/* Bankroll overview */}
+              <div className="card" style={{ borderLeft: '3px solid var(--accent)' }}>
+                <div className="section-title" style={{ marginBottom: 12 }}>💰 Bankroll tracking</div>
+                <div className="grid3">
+                  {[
+                    { l: 'Počiatočný', v: fmt2(bankroll) + '€' },
+                    { l: 'Aktuálny', v: fmt2(currentBankroll) + '€', cls: currentBankroll >= bankroll ? 'pos' : 'neg' },
+                    { l: 'Rast', v: bankrollGrowth != null ? (bankrollGrowth >= 0 ? '+' : '') + bankrollGrowth.toFixed(1) + '%' : '—', cls: bankrollGrowth != null && bankrollGrowth >= 0 ? 'pos' : 'neg' },
+                  ].map(({ l, v, cls }) => (
+                    <div key={l} className="card" style={{ padding: 14 }}><div className="label">{l}</div><div className={`stat-val ${cls || ''}`}>{v}</div></div>
+                  ))}
+                </div>
+              </div>
 
               {confidenceOverall && (
                 <div className="card" style={{ padding: 16, borderLeft: `3px solid ${stabilityDowngrade ? 'var(--red)' : stabilityWarning ? 'var(--yellow)' : confidenceOverall.color}` }}>
@@ -2680,6 +2751,65 @@ export default function App() {
           </>
         )}
       </div>
+
+        {tab === 'archive' && (
+          <div>
+            <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', borderRadius: 8, padding: 16, textAlign: 'center', marginBottom: 16 }}>
+              <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 8 }}>📦 Archív — {archivedBets.length} betov</div>
+              <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 12 }}>Skryté zo štatistík. Záloha starých dát (Season 1).</div>
+              {archivedBets.length > 0 && (() => {
+                const aSettled = archivedBets.filter(b => b.result != null)
+                const aPnL = aSettled.reduce((s, b) => s + (b.pnl || 0), 0)
+                const aStake = aSettled.reduce((s, b) => s + b.stake, 0)
+                const aROI = aStake > 0 ? (aPnL / aStake) * 100 : null
+                const aWins = aSettled.filter(b => b.result === 1).length
+                const aClvBets = aSettled.filter(b => b.clv != null)
+                const aAvgCLV = aClvBets.length > 0 ? aClvBets.reduce((s,b) => s+b.clv,0)/aClvBets.length : null
+                return (
+                  <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap', fontSize: 12 }}>
+                    <span>Bety: <b style={{ color: 'var(--text2)' }}>{aSettled.length}</b></span>
+                    <span>PnL: <b className={aPnL >= 0 ? 'pos' : 'neg'}>{fmtSign(aPnL)}€</b></span>
+                    <span>ROI: <b className={aROI >= 0 ? 'pos' : 'neg'}>{aROI != null ? fmtSignPct(aROI) : '—'}</b></span>
+                    <span>Výhry: <b style={{ color: 'var(--green)' }}>{aWins}/{aSettled.length}</b></span>
+                    {aAvgCLV != null && <span>Avg CLV: <b className={aAvgCLV > 0 ? 'pos' : 'neg'}>{fmtSignPct(aAvgCLV)}</b></span>}
+                  </div>
+                )
+              })()}
+            </div>
+            {archivedBets.length === 0 && <div className="empty">Archív je prázdny.<br />Archivuj settled bety tlačidlom v Histórii.</div>}
+            {archivedBets.map(b => (
+              <div key={b.id} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, padding: '12px 16px', marginBottom: 8, opacity: 0.65 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
+                      <span style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text3)', fontSize: 9, padding: '2px 6px', borderRadius: 3, fontWeight: 600, letterSpacing: '0.05em' }}>ARCHÍV</span>
+                      {b.result === 1 && <span className="badge badge-won">WON</span>}
+                      {b.result === 0 && <span className="badge badge-lost">LOST</span>}
+                      {b.result === 2 && <span className="badge" style={{ background: 'rgba(108,92,231,0.1)', color: 'var(--accent2)' }}>PUSH</span>}
+                      {b.result === 3 && <span className="badge" style={{ background: 'rgba(0,184,148,0.08)', color: 'var(--green)' }}>½ WIN</span>}
+                      {b.result === 4 && <span className="badge" style={{ background: 'rgba(214,48,49,0.08)', color: 'var(--red)' }}>½ LOSE</span>}
+                      <span className={`badge ${b.bet_type === 'lay' ? 'badge-lay' : 'badge-back'}`}>{b.bet_type === 'lay' ? '▼ LAY' : '▲ BACK'}</span>
+                      <span style={{ fontSize: 11, fontWeight: 600 }}>{MARKET[b.market]}</span>
+                      {b.match_name && <span style={{ fontSize: 10, color: 'var(--text3)' }}>{b.match_name}</span>}
+                    </div>
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', fontSize: 11, color: 'var(--text3)' }}>
+                      <span>Kurz: <b>{fmt3(b.odds_open)}</b></span>
+                      <span>Stake: <b>{b.stake}€</b></span>
+                      {b.clv != null && <span>CLV: <b className={b.clv > 0 ? 'pos' : 'neg'}>{fmtSignPct(b.clv)}</b></span>}
+                      {b.pnl != null && <span>PnL: <b className={b.pnl > 0 ? 'pos' : 'neg'}>{fmtSign(b.pnl)}€</b></span>}
+                      <span>{new Date(b.created_at).toLocaleDateString('sk')}</span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 6, flexDirection: 'column', alignItems: 'flex-end' }}>
+                    <button className="btn-ghost" style={{ fontSize: 10 }} onClick={() => handleToggleArchive(b.id, b.is_archived)}>↩ Obnoviť</button>
+                    <button className="btn-danger" onClick={() => handleDelete(b.id)}>✕</button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
     </>
   )
 }
