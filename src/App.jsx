@@ -1348,6 +1348,7 @@ export default function App() {
         const json = await res.json()
         if (json?.results) betsapiEvents = betsapiEvents.concat(json.results)
       }
+      const teamNameDb = await (async () => { try { const r = await fetch(`https://glhwlnikfmxbmigzhotj.supabase.co/rest/v1/team_name_mapping?select=footystats_name,betfair_name`, { headers: { 'apikey': 'sb_publishable_qMaQZnA6wLIvNfAMW6DwKg_prn93ji0', 'Authorization': 'Bearer sb_publishable_qMaQZnA6wLIvNfAMW6DwKg_prn93ji0' } }); return r.ok ? await r.json() : [] } catch { return [] } })()
       const newOdds = {}
       const CHUNK = 3
       for (let i = 0; i < scannerMatches.length; i += CHUNK) {
@@ -1355,7 +1356,7 @@ export default function App() {
         await Promise.all(chunk.map(async ({ match }) => {
           const homeName = match.home_name || ''
           const awayName = match.away_name || ''
-       const teamNameDb = await (async () => { try { const r = await fetch(`https://glhwlnikfmxbmigzhotj.supabase.co/rest/v1/team_name_mapping?select=footystats_name,betfair_name`, { headers: { 'apikey': 'sb_publishable_qMaQZnA6wLIvNfAMW6DwKg_prn93ji0', 'Authorization': 'Bearer sb_publishable_qMaQZnA6wLIvNfAMW6DwKg_prn93ji0' } }); return r.ok ? await r.json() : [] } catch { return [] } })()
+  
           const norm = s => (s||'').toLowerCase()
           const dbH = teamNameDb.find(t => norm(t.footystats_name) === norm(homeName))
           const dbA = teamNameDb.find(t => norm(t.footystats_name) === norm(awayName))
