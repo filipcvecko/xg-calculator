@@ -2508,6 +2508,52 @@ export default function App() {
                           ✓ Shrinkage aktívny · λ raw: {fmt2(fer.lH)}/{fmt2(fer.lA)} → {fmt2(ferCalc.lH)}/{fmt2(ferCalc.lA)}
                         </div>
                       )}
+
+                      {/* Liga štatistiky z betov */}
+                      {(() => {
+                        const leagueName = match.competition?.name || null
+                        if (!leagueName) return null
+                        const lb = settled_all.filter(b => b.league === leagueName)
+                        if (lb.length === 0) return (
+                          <div style={{ marginTop: 10, fontSize: 10, color: 'var(--text3)', borderTop: '1px solid var(--border)', paddingTop: 8 }}>
+                            📊 Liga <b style={{ color: 'var(--text2)' }}>{leagueName}</b> — zatiaľ žiadne bety
+                          </div>
+                        )
+                        const lbSettled = lb.filter(b => b.result != null)
+                        const lbClv = lb.filter(b => b.clv != null)
+                        const lbEv = lb.filter(b => b.ev_pct != null)
+                        const lbWins = lbSettled.filter(b => b.result === 1).length
+                        const lbNonPush = lbSettled.filter(b => b.result === 0 || b.result === 1)
+                        const lbPnL = lbSettled.reduce((s, b) => s + (b.pnl || 0), 0)
+                        const lbStake = lbSettled.reduce((s, b) => s + b.stake, 0)
+                        const lbROI = lbStake > 0 ? lbPnL / lbStake * 100 : null
+                        const lbAvgCLV = lbClv.length > 0 ? lbClv.reduce((s, b) => s + b.clv, 0) / lbClv.length : null
+                        const lbAvgEV = lbEv.length > 0 ? lbEv.reduce((s, b) => s + b.ev_pct, 0) / lbEv.length : null
+                        const lbHR = lbNonPush.length > 0 ? lbWins / lbNonPush.length * 100 : null
+                        return (
+                          <div style={{ marginTop: 10, borderTop: '1px solid var(--border)', paddingTop: 8 }}>
+                            <div style={{ fontSize: 10, color: 'var(--text3)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>
+                              📊 {leagueName} — {lb.length} betu
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 6 }}>
+                              {[
+                                { l: 'ROI', v: lbROI != null ? (lbROI >= 0 ? '+' : '') + lbROI.toFixed(1) + '%' : '—', c: lbROI == null ? 'var(--text3)' : lbROI >= 0 ? 'var(--green)' : 'var(--red)' },
+                                { l: 'Avg CLV', v: lbAvgCLV != null ? (lbAvgCLV >= 0 ? '+' : '') + lbAvgCLV.toFixed(1) + '%' : '—', c: lbAvgCLV == null ? 'var(--text3)' : lbAvgCLV >= 0 ? 'var(--green)' : 'var(--red)' },
+                                { l: 'Avg EV', v: lbAvgEV != null ? (lbAvgEV >= 0 ? '+' : '') + lbAvgEV.toFixed(1) + '%' : '—', c: lbAvgEV == null ? 'var(--text3)' : lbAvgEV >= 0 ? 'var(--green)' : 'var(--red)' },
+                                { l: 'Hit Rate', v: lbHR != null ? lbHR.toFixed(0) + '%' : '—', c: lbHR == null ? 'var(--text3)' : lbHR >= 50 ? 'var(--green)' : 'var(--text2)' },
+                              ].map(({ l, v, c }) => (
+                                <div key={l} style={{ background: 'var(--bg2)', borderRadius: 6, padding: '6px 8px', textAlign: 'center' }}>
+                                  <div style={{ fontSize: 9, color: 'var(--text3)', marginBottom: 2 }}>{l}</div>
+                                  <div style={{ fontSize: 13, fontWeight: 700, color: c }}>{v}</div>
+                                </div>
+                              ))}
+                            </div>
+                            {lbSettled.length < 10 && (
+                              <div style={{ fontSize: 9, color: 'var(--text3)', marginTop: 4 }}>⚠ Malá vzorka ({lbSettled.length} settled betov)</div>
+                            )}
+                          </div>
+                        )
+                      })()}
                     </div>
                   )}
 
