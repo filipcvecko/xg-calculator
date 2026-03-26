@@ -39,6 +39,25 @@ function pf(v) {
   return parseFloat(String(v).replace(',', '.')) || 0
 }
 
+const VALUE_TRACKER_URL = 'https://glhwlnikfmxbmigzhotj.supabase.co'
+const VALUE_TRACKER_KEY = 'sb_publishable_qMaQZnA6wLIvNfAMW6DwKg_prn93ji0'
+
+async function sendToValueTracker(matchData) {
+  try {
+    const res = await fetch(`${VALUE_TRACKER_URL}/rest/v1/watched_matches`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': VALUE_TRACKER_KEY,
+        'Authorization': `Bearer ${VALUE_TRACKER_KEY}`,
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify(matchData),
+    })
+    return res.ok
+  } catch { return false }
+}
+
 function blendWithGoals(xgH, xgA, xgaH, xgaA, gfH, gaH, gfA, gaA, alpha) {
   const a = alpha
   const attH = a * xgH + (1 - a) * gfH
@@ -1205,6 +1224,7 @@ export default function App() {
   const [scannerOdds, setScannerOdds] = useState({})
   const [scannerRefreshing, setScannerRefreshing] = useState(false)
   const [scannerSaved, setScannerSaved] = useState({})
+  const [scannerWatched, setScannerWatched] = useState({})
   const [scannerExpanded, setScannerExpanded] = useState({})
   const [scannerSettings, setScannerSettings] = useState({})
 
@@ -1404,6 +1424,67 @@ export default function App() {
       await loadBets()
       setScannerSaved(prev => ({ ...prev, [`${match.id}_${market}`]: true }))
       setTimeout(() => setScannerSaved(prev => ({ ...prev, [`${match.id}_${market}`]: false })), 2000)
+    }
+  }
+
+  async function handleWatchMatch(item) {
+    const { match, fer } = item
+    const settings = scannerSettings[match.id] || {}
+    const sLeagueAvgH = pf(settings.leagueAvgH ?? '0')
+    const sLeagueAvgA = pf(settings.leagueAvgA ?? '0')
+    const leagueName = match.competition?.name || match.competition_name || match.league_name ||
+      allLeagues.find(l => l.season?.some(s => s.id === match.competition_id) || l.id === match.competition_id)?.name || null
+    const kickoff = match.date_unix ? new Date(match.date_unix * 1000).toISOString() : null
+    const today = new Date().toISOString().slice(0, 10)
+
+    // Use recalculated fer if settings active
+    const sXgScaler = pf(settings.xgScaler ?? '0.90') || 0.90
+    const sShrinkage = pf(settings.shrinkage ?? '0.15') || 0.15
+    let ferFinal = fer
+    if (sXgScaler !== 0.90 || (sLeagueAvgH > 0 && sLeagueAvgA > 0)) {
+      const sc = sXgScaler
+      const xgH2 = (item.homeStats?.xgH || item.homeStats?.gfH || 0) * sc
+      const xgA2 = (item.awayStats?.xgA || item.awayStats?.gfA || 0) * sc
+      const xgaH2 = (item.homeStats?.xgaH || item.homeStats?.gaH || 0) * sc
+      const xgaA2 = (item.awayStats?.xgaA || item.awayStats?.gaA || 0) * sc
+      if (xgH2 && xgA2 && xgaH2 && xgaA2) {
+        let lH2 = Math.sqrt(xgH2 * xgaA2)
+        let lA2 = Math.sqrt(xgA2 * xgaH2)
+        if (sLeagueAvgH > 0 && sLeagueAvgA > 0) {
+          const res = applyShrinkage(lH2, lA2, sLeagueAvgH, sLeagueAvgA, sShrinkage)
+          lH2 = res.lH; lA2 = res.lA
+        }
+        const ou25r = calcOverUnder(lH2, lA2, -0.10)
+        const ou30r = calcOU30(lH2, lA2)
+        ferFinal = { lH: lH2, lA: lA2, pOver25: ou25r.pOver, pUnder25: ou25r.pUnder, ferOver25: fairOdds(ou25r.pOver), ferUnder25: fairOdds(ou25r.pUnder), pOver30: ou30r.pOver3, pUnder30: ou30r.pUnder2, ferOver30: ou30r.fairOver, ferUnder30: ou30r.fairUnder }
+      }
+    }
+
+    const ok = await sendToValueTracker({
+      match_date: today,
+      footystats_id: match.id,
+      home_name: match.home_name,
+      away_name: match.away_name,
+      league: leagueName,
+      competition_id: match.competition_id || null,
+      kick_off: kickoff,
+      lambda_h: ferFinal.lH,
+      lambda_a: ferFinal.lA,
+      fer_over25: ferFinal.ferOver25,
+      fer_under25: ferFinal.ferUnder25,
+      fer_over30: ferFinal.ferOver30,
+      fer_under30: ferFinal.ferUnder30,
+      p_over25: ferFinal.pOver25,
+      p_under25: ferFinal.pUnder25,
+      p_over30: ferFinal.pOver30,
+      p_under30: ferFinal.pUnder30,
+      xg_scaler: sXgScaler,
+      shrinkage: sShrinkage,
+      league_avg_h: sLeagueAvgH > 0 ? sLeagueAvgH : null,
+      league_avg_a: sLeagueAvgA > 0 ? sLeagueAvgA : null,
+    })
+    if (ok) {
+      setScannerWatched(prev => ({ ...prev, [match.id]: true }))
     }
   }
 
@@ -2433,6 +2514,7 @@ export default function App() {
                 <div key={match.id} className="card" style={{ padding: 14 }}>
                   {/* Match header */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10, flexWrap: 'wrap', gap: 6 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
                     <div style={{ flex: 1, cursor: 'pointer' }} onClick={async () => {
                       const nowExpanded = !scannerExpanded[match.id]
                       setScannerExpanded(prev => ({ ...prev, [match.id]: nowExpanded }))
@@ -2464,6 +2546,20 @@ export default function App() {
                           ✓ Betfair: {odds.matchedWith} ({(odds.score * 100).toFixed(0)}%)
                         </div>
                       )}
+                    </div>
+                    <button
+                      onClick={e => { e.stopPropagation(); handleWatchMatch(item) }}
+                      style={{
+                        flexShrink: 0, cursor: 'pointer', border: '1px solid',
+                        borderColor: scannerWatched[match.id] ? 'rgba(0,184,148,0.5)' : 'rgba(108,92,231,0.4)',
+                        background: scannerWatched[match.id] ? 'rgba(0,184,148,0.15)' : 'rgba(108,92,231,0.1)',
+                        color: scannerWatched[match.id] ? 'var(--green)' : 'var(--accent2)',
+                        fontFamily: 'var(--mono)', fontSize: 11, fontWeight: 700,
+                        padding: '6px 12px', borderRadius: 6,
+                      }}
+                    >
+                      {scannerWatched[match.id] ? '✓ Sledovaný' : '👁 Sledovať'}
+                    </button>
                     </div>
                   </div>
 
