@@ -2689,10 +2689,10 @@ export default function App() {
                           <input
                             className="inp inp-sm"
                             placeholder={mkt.back ? fmt3(mkt.back) : 'kurz'}
-                            value={mkt.manual || (mkt.back ? String(mkt.back) : '')}
+                            value={mkt.manual !== undefined ? String(mkt.manual) : (mkt.back ? String(mkt.back) : '')}
                             onChange={e => setScannerOdds(prev => ({
                               ...prev,
-                              [match.id]: { ...prev[match.id], [`manual_${mkt.key}`]: e.target.value || undefined }
+                              [match.id]: { ...prev[match.id], [`manual_${mkt.key}`]: e.target.value === '' ? '' : e.target.value }
                             }))}
                             style={{ marginBottom: 6, fontSize: 11 }}
                           />
