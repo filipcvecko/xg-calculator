@@ -1355,18 +1355,21 @@ export default function App() {
         await Promise.all(chunk.map(async ({ match }) => {
           const homeName = match.home_name || ''
           const awayName = match.away_name || ''
+       const teamNameDb = await (async () => { try { const r = await fetch(`https://glhwlnikfmxbmigzhotj.supabase.co/rest/v1/team_name_mapping?select=footystats_name,betfair_name`, { headers: { 'apikey': 'sb_publishable_qMaQZnA6wLIvNfAMW6DwKg_prn93ji0', 'Authorization': 'Bearer sb_publishable_qMaQZnA6wLIvNfAMW6DwKg_prn93ji0' } }); return r.ok ? await r.json() : [] } catch { return [] } })()
+          const norm = s => (s||'').toLowerCase()
+          const dbH = teamNameDb.find(t => norm(t.footystats_name) === norm(homeName))
+          const dbA = teamNameDb.find(t => norm(t.footystats_name) === norm(awayName))
           let bestEvent = null, bestScore = 0
           for (const ev of betsapiEvents) {
-            const scoreH = fuzzyScore(homeName, ev.home?.name || '')
-            const scoreA = fuzzyScore(awayName, ev.away?.name || '')
-            const total = (scoreH + scoreA) / 2
-            if (total > bestScore && total > 0.3) { bestScore = total; bestEvent = ev }
+            const sh = dbH ? (norm(ev.home?.name) === norm(dbH.betfair_name) ? 1.0 : 0) : fuzzyScore(homeName, ev.home?.name || '')
+            const sa = dbA ? (norm(ev.away?.name) === norm(dbA.betfair_name) ? 1.0 : 0) : fuzzyScore(awayName, ev.away?.name || '')
+            const total = (sh + sa) / 2
+            if (total > bestScore && total > (dbH || dbA ? 0.4 : 0.3)) { bestScore = total; bestEvent = ev }
           }
-          if (bestEvent) {
+          if (bestEvent && bestScore >= 0.6) {
             const odds = await fetchBetfairOddsForMatch(bestEvent.id)
             if (odds) newOdds[match.id] = { ...odds, matchedWith: `${bestEvent.home?.name} vs ${bestEvent.away?.name}`, score: bestScore.toFixed(2) }
           }
-        }))
       }
       setScannerOdds(prev => ({ ...prev, ...newOdds }))
     } catch (e) { console.error('Scanner odds error:', e) }
