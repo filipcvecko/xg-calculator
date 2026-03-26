@@ -1306,13 +1306,14 @@ export default function App() {
     if (scannerMatches.length === 0) return
     setScannerRefreshing(true)
     try {
-      const pages = [1, 2, 3]
       let betsapiEvents = []
-      for (const page of pages) {
+      let page = 1
+      while (true) {
         const res = await fetch(`/api/betsapi?endpoint=betfair/ex/upcoming&sport_id=1&page=${page}`)
         const json = await res.json()
         if (json?.results) betsapiEvents = betsapiEvents.concat(json.results)
-        if (!json?.pager?.next_page) break
+        if (!json?.pager?.next_page || page >= 15) break
+        page++
       }
       const newOdds = {}
       const CHUNK = 3
