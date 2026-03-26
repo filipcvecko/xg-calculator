@@ -1422,8 +1422,12 @@ export default function App() {
       stake: st, commission: comm * 100,
       ev, ev_pct: ev != null ? ev * 100 : null,
       clv: null, result: null, pnl: null, brier: null, log_loss: null,
-      league: match.competition?.name || null,
+      league: match.competition?.name || match.competition_name || match.league_name ||
+        allLeagues.find(l => l.season?.some(s => s.id === match.competition_id) || l.id === match.competition_id)?.name || null,
       pinnacle_open: pinnOpen > 1 ? pinnOpen : null,
+      match_time: match.date_unix ? new Date(match.date_unix * 1000).toISOString() : null,
+      bet_time: new Date().toISOString(),
+      hours_to_ko: match.date_unix ? Math.round(((match.date_unix * 1000) - Date.now()) / 360000) / 10 : null,
       is_archived: false,
       stake_pct_bankroll: currentBankroll > 0 ? Math.round((st / currentBankroll) * 1000) / 10 : null,
     })
