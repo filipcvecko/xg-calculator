@@ -2511,7 +2511,8 @@ export default function App() {
 
                       {/* Liga štatistiky z betov */}
                       {(() => {
-                        const leagueName = match.competition?.name || null
+                        const leagueName = match.competition?.name || match.competition_name || match.league_name ||
+                          allLeagues.find(l => l.season?.some(s => s.id === match.competition_id) || l.id === match.competition_id)?.name || null
                         if (!leagueName) return null
                         const lb = settled_all.filter(b => b.league === leagueName)
                         if (lb.length === 0) return (
