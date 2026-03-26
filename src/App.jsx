@@ -933,6 +933,8 @@ export default function App() {
       pinnacle_clv: pinnCLV,
     }).eq('id', id)
     setSettleMode('result')
+    setSettleClose('')
+    setSettlePinnClose('')
     await loadBets()
   }
 
