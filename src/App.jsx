@@ -1262,12 +1262,19 @@ export default function App() {
         return null
       }
       const ou25 = markets.find(m => m.description?.marketName === 'Over/Under 2.5 Goals')
-      const ou35 = markets.find(m => m.description?.marketName === 'Over/Under 3.0 Goals') || markets.find(m => m.description?.marketName === 'Over/Under 3.5 Goals')
+      // O/U 3.0 -- try standard market first, fallback to Goal Lines handicap 3
+      const ou30standard = markets.find(m => m.description?.marketName === 'Over/Under 3.0 Goals')
+      const goalLines = markets.find(m => m.description?.marketName === 'Goal Lines')
+      const getGoalLineBack = (handicap, side) => {
+        if (!goalLines) return null
+        const runner = goalLines.runners?.find(r => r.handicap === handicap && r.description?.runnerName?.toLowerCase().startsWith(side))
+        return runner?.exchange?.availableToBack?.[0]?.price || null
+      }
       return {
         backOver25: getBack(ou25, 'over'),
         backUnder25: getBack(ou25, 'under'),
-        backOver30: getBack(ou35, 'over'),
-        backUnder30: getBack(ou35, 'under'),
+        backOver30: ou30standard ? getBack(ou30standard, 'over') : getGoalLineBack(3, 'over'),
+        backUnder30: ou30standard ? getBack(ou30standard, 'under') : getGoalLineBack(3, 'under'),
       }
     } catch { return null }
   }
