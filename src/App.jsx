@@ -2668,7 +2668,7 @@ export default function App() {
                   {/* Markets grid */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8 }}>
                     {mkts.map(mkt => {
-                      const actualOdds = mkt.manual || mkt.back || null
+                      const actualOdds = mkt.manual ? pf(mkt.manual) || null : mkt.back || null
                       const ev = actualOdds ? (mkt.key.includes('3.0')
                         ? calcEVOU30(mkt.key === 'over3.0', ferCalc.pOver30, ferCalc.pUnder30, actualOdds, comm)
                         : calcBackEV(mkt.p, actualOdds, comm)) : null
@@ -2692,7 +2692,7 @@ export default function App() {
                             value={mkt.manual || (mkt.back ? String(mkt.back) : '')}
                             onChange={e => setScannerOdds(prev => ({
                               ...prev,
-                              [match.id]: { ...prev[match.id], [`manual_${mkt.key}`]: e.target.value ? pf(e.target.value) : undefined }
+                              [match.id]: { ...prev[match.id], [`manual_${mkt.key}`]: e.target.value || undefined }
                             }))}
                             style={{ marginBottom: 6, fontSize: 11 }}
                           />
