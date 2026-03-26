@@ -2433,7 +2433,27 @@ export default function App() {
                 <div key={match.id} className="card" style={{ padding: 14 }}>
                   {/* Match header */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10, flexWrap: 'wrap', gap: 6 }}>
-                    <div style={{ flex: 1, cursor: 'pointer' }} onClick={() => setScannerExpanded(prev => ({ ...prev, [match.id]: !prev[match.id] }))}>
+                    <div style={{ flex: 1, cursor: 'pointer' }} onClick={async () => {
+                      const nowExpanded = !scannerExpanded[match.id]
+                      setScannerExpanded(prev => ({ ...prev, [match.id]: nowExpanded }))
+                      // Auto-load league avg on first expand
+                      if (nowExpanded && !scannerSettings[match.id]?.leagueAvgH) {
+                        const seasonId = match.season_id || match.competition_id
+                        if (seasonId) {
+                          const avg = await fetchLeagueAvg(seasonId)
+                          if (avg) {
+                            setScannerSettings(prev => ({
+                              ...prev,
+                              [match.id]: {
+                                ...prev[match.id],
+                                leagueAvgH: String(avg.avgHome.toFixed(3)),
+                                leagueAvgA: String(avg.avgAway.toFixed(3)),
+                              }
+                            }))
+                          }
+                        }
+                      }
+                    }}>
                       <div style={{ fontWeight: 700, fontSize: 13 }}>{match.home_name} vs {match.away_name} <span style={{ fontSize: 11, color: 'var(--text3)' }}>{isExpanded ? '▲' : '▼'}</span></div>
                       <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 2 }}>
                         {match.competition?.name || ''} · λ {fmt2(ferCalc.lH)} / {fmt2(ferCalc.lA)} = {fmt2(ferCalc.lH + ferCalc.lA)}
