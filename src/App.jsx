@@ -1198,6 +1198,185 @@ export default function App() {
     return { bet: best, reason: 'Najvyššie EV po filtroch' }
   }
 
+  // ── SKENER STATE ──
+  const [scannerMatches, setScannerMatches] = useState([])
+  const [scannerLoading, setScannerLoading] = useState(false)
+  const [scannerDate, setScannerDate] = useState(() => new Date().toISOString().slice(0, 10))
+  const [scannerOdds, setScannerOdds] = useState({})
+  const [scannerRefreshing, setScannerRefreshing] = useState(false)
+  const [scannerSaved, setScannerSaved] = useState({})
+
+  function fuzzyScore(a, b) {
+    if (!a || !b) return 0
+    const na = a.toLowerCase().replace(/[^a-z0-9]/g, ' ').replace(/\s+/g, ' ').trim()
+    const nb = b.toLowerCase().replace(/[^a-z0-9]/g, ' ').replace(/\s+/g, ' ').trim()
+    if (na === nb) return 1
+    const tokA = na.split(' ')
+    const tokB = nb.split(' ')
+    let matches = 0
+    for (const ta of tokA) {
+      if (ta.length < 2) continue
+      for (const tb of tokB) {
+        if (tb.length < 2) continue
+        if (ta === tb || ta.startsWith(tb) || tb.startsWith(ta)) { matches++; break }
+      }
+    }
+    return matches / Math.max(tokA.length, tokB.length)
+  }
+
+  async function fetchBetfairOddsForMatch(betsapiEventId) {
+    try {
+      const res = await fetch(`/api/betsapi?endpoint=betfair/ex/event&event_id=${betsapiEventId}`)
+      if (!res.ok) return null
+      const json = await res.json()
+      const markets = json?.results?.[0]?.markets
+      if (!markets) return null
+      const getBack = (market, side) => {
+        if (!market) return null
+        for (const runner of market.runners || []) {
+          const name = runner.description?.runnerName?.toLowerCase() || ''
+          if (name.includes(side)) return runner.exchange?.availableToBack?.[0]?.price || null
+        }
+        return null
+      }
+      const ou25 = markets.find(m => m.description?.marketName === 'Over/Under 2.5 Goals')
+      const ou35 = markets.find(m => m.description?.marketName === 'Over/Under 3.0 Goals')
+      return {
+        backOver25: getBack(ou25, 'over'),
+        backUnder25: getBack(ou25, 'under'),
+        backOver30: getBack(ou35, 'over'),
+        backUnder30: getBack(ou35, 'under'),
+      }
+    } catch { return null }
+  }
+
+  async function loadScanner() {
+    setScannerLoading(true)
+    setScannerMatches([])
+    setScannerOdds({})
+    const matches = await fetchTodaysMatches(scannerDate)
+    if (!matches || matches.length === 0) { setScannerLoading(false); return }
+    const CHUNK = 5
+    const results = []
+    for (let i = 0; i < matches.length; i += CHUNK) {
+      const chunk = matches.slice(i, i + CHUNK)
+      const chunkResults = await Promise.all(chunk.map(async (m) => {
+        try {
+          const [homeRes, awayRes] = await Promise.all([
+            fetch(`/api/footystats?endpoint=team&team_id=${m.homeID}&season_id=${m.season_id || m.competition_id}`).then(r => r.json()),
+            fetch(`/api/footystats?endpoint=team&team_id=${m.awayID}&season_id=${m.season_id || m.competition_id}`).then(r => r.json()),
+          ])
+          const homeData = Array.isArray(homeRes?.data) ? homeRes.data[0] : homeRes?.data
+          const awayData = Array.isArray(awayRes?.data) ? awayRes.data[0] : awayRes?.data
+          const homeStats = homeData ? extractTeamStats(homeData) : null
+          const awayStats = awayData ? extractTeamStats(awayData) : null
+          return { match: m, homeStats, awayStats }
+        } catch { return { match: m, homeStats: null, awayStats: null } }
+      }))
+      results.push(...chunkResults)
+    }
+    const processed = results.map(({ match, homeStats, awayStats }) => {
+      let fer = null
+      if (homeStats && awayStats) {
+        const xgH = homeStats.xgH || homeStats.gfH
+        const xgA = awayStats.xgA || awayStats.gfA
+        const xgaH = homeStats.xgaH || homeStats.gaH
+        const xgaA = awayStats.xgaA || awayStats.gaA
+        if (xgH && xgA && xgaH && xgaA) {
+          const lH = Math.sqrt(xgH * xgaA)
+          const lA = Math.sqrt(xgA * xgaH)
+          const ou25 = calcOverUnder(lH, lA, -0.10)
+          const ou30res = calcOU30(lH, lA)
+          fer = {
+            lH, lA,
+            pOver25: ou25.pOver, pUnder25: ou25.pUnder,
+            ferOver25: fairOdds(ou25.pOver), ferUnder25: fairOdds(ou25.pUnder),
+            pOver30: ou30res.pOver3, pUnder30: ou30res.pUnder2,
+            ferOver30: ou30res.fairOver, ferUnder30: ou30res.fairUnder,
+          }
+        }
+      }
+      return { match, homeStats, awayStats, fer }
+    }).filter(r => r.fer !== null)
+    setScannerMatches(processed)
+    setScannerLoading(false)
+  }
+
+  async function refreshScannerOdds() {
+    if (scannerMatches.length === 0) return
+    setScannerRefreshing(true)
+    try {
+      const pages = [1, 2, 3]
+      let betsapiEvents = []
+      for (const page of pages) {
+        const res = await fetch(`/api/betsapi?endpoint=betfair/ex/upcoming&sport_id=1&page=${page}`)
+        const json = await res.json()
+        if (json?.results) betsapiEvents = betsapiEvents.concat(json.results)
+        if (!json?.pager?.next_page) break
+      }
+      const newOdds = {}
+      const CHUNK = 3
+      for (let i = 0; i < scannerMatches.length; i += CHUNK) {
+        const chunk = scannerMatches.slice(i, i + CHUNK)
+        await Promise.all(chunk.map(async ({ match }) => {
+          const homeName = match.home_name || ''
+          const awayName = match.away_name || ''
+          let bestEvent = null, bestScore = 0
+          for (const ev of betsapiEvents) {
+            const scoreH = fuzzyScore(homeName, ev.home?.name || '')
+            const scoreA = fuzzyScore(awayName, ev.away?.name || '')
+            const total = (scoreH + scoreA) / 2
+            if (total > bestScore && total > 0.3) { bestScore = total; bestEvent = ev }
+          }
+          if (bestEvent) {
+            const odds = await fetchBetfairOddsForMatch(bestEvent.id)
+            if (odds) newOdds[match.id] = { ...odds, matchedWith: `${bestEvent.home?.name} vs ${bestEvent.away?.name}`, score: bestScore.toFixed(2) }
+          }
+        }))
+      }
+      setScannerOdds(prev => ({ ...prev, ...newOdds }))
+    } catch (e) { console.error('Scanner odds error:', e) }
+    setScannerRefreshing(false)
+  }
+
+  async function handleScannerBet(item, market) {
+    const { match, fer } = item
+    const odds = scannerOdds[match.id]
+    const isOver25 = market === 'over2.5'
+    const isOver30 = market === 'over3.0'
+    const isUnder30 = market === 'under3.0'
+    let selProb, ferO, actualOdds
+    if (isOver25) { selProb = fer.pOver25; ferO = fer.ferOver25; actualOdds = odds?.backOver25 || odds?.[`manual_over2.5`] }
+    else if (market === 'under2.5') { selProb = fer.pUnder25; ferO = fer.ferUnder25; actualOdds = odds?.backUnder25 || odds?.[`manual_under2.5`] }
+    else if (isOver30) { selProb = fer.pOver30; ferO = fer.ferOver30; actualOdds = odds?.backOver30 || odds?.[`manual_over3.0`] }
+    else { selProb = fer.pUnder30; ferO = fer.ferUnder30; actualOdds = odds?.backUnder30 || odds?.[`manual_under3.0`] }
+    if (!actualOdds || actualOdds <= 1) return
+    const comm = 0.05
+    const st = pf(stake) || 10
+    const ev = (isOver30 || isUnder30)
+      ? calcEVOU30(isOver30, fer.pOver30, fer.pUnder30, actualOdds, comm)
+      : calcBackEV(selProb, actualOdds, comm)
+    const { error } = await supabase.from('bets').insert({
+      match_name: `${match.home_name} vs ${match.away_name}`,
+      market, bet_type: 'back',
+      lambda_h: fer.lH, lambda_a: fer.lA,
+      p_over: fer.pOver25, p_under: fer.pUnder25,
+      sel_prob: selProb, fer_odds: ferO,
+      odds_open: actualOdds,
+      stake: st, commission: comm * 100,
+      ev, ev_pct: ev != null ? ev * 100 : null,
+      clv: null, result: null, pnl: null, brier: null, log_loss: null,
+      league: match.competition?.name || null,
+      is_archived: false,
+      stake_pct_bankroll: currentBankroll > 0 ? Math.round((st / currentBankroll) * 1000) / 10 : null,
+    })
+    if (!error) {
+      await loadBets()
+      setScannerSaved(prev => ({ ...prev, [`${match.id}_${market}`]: true }))
+      setTimeout(() => setScannerSaved(prev => ({ ...prev, [`${match.id}_${market}`]: false })), 2000)
+    }
+  }
+
   const recommendation = (() => {
     if (!calc) return null
     const evMin = (calc.evMinVal || 0.12) * 100
@@ -1246,7 +1425,7 @@ export default function App() {
         </div>
       </div>
       <div className="tabs">
-        {[['calc', 'Kalkulačka'], ['history', `História (${activeBets.length})`], ['stats', 'Štatistiky'], ['archive', `Archív (${archivedBets.length})`]].map(([id, lbl]) => (
+        {[['calc', 'Kalkulačka'], ['scanner', '🔍 Skener'], ['history', `História (${activeBets.length})`], ['stats', 'Štatistiky'], ['archive', `Archív (${archivedBets.length})`]].map(([id, lbl]) => (
           <button key={id} className={`tab ${tab === id ? 'active' : ''}`} onClick={() => setTab(id)}>{lbl}</button>
         ))}
       </div>
@@ -2140,6 +2319,126 @@ export default function App() {
                 {calc.marketCalibUsed?.under && ` · Under market blend (w=${fmt2(calc.marketCalibUsed.w)})`}
               </div>
             )}
+          </div>
+        )}
+
+        {tab === 'scanner' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {/* Header */}
+            <div className="card" style={{ borderLeft: '3px solid var(--accent)' }}>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                <div className="label" style={{ marginBottom: 0 }}>🔍 Skener — dnešné zápasy</div>
+                <input type="date" className="inp" style={{ width: 160, padding: '6px 10px', fontSize: 12 }} value={scannerDate} onChange={e => setScannerDate(e.target.value)} />
+                <button className="btn btn-primary btn-sm" onClick={loadScanner} disabled={scannerLoading}>
+                  {scannerLoading ? '⏳ Načítavam...' : '▶ Načítať zápasy'}
+                </button>
+                {scannerMatches.length > 0 && (
+                  <button className="btn-ghost" style={{ fontSize: 11 }} onClick={refreshScannerOdds} disabled={scannerRefreshing}>
+                    {scannerRefreshing ? '⏳ Sťahujem kurzy...' : '🔄 Stiahnuť Betfair kurzy'}
+                  </button>
+                )}
+              </div>
+              {scannerMatches.length > 0 && (
+                <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text3)' }}>
+                  {scannerMatches.length} zápasov s FER · Stake: <b style={{ color: 'var(--accent2)' }}>{stake}€</b> · Komisia: <b>5%</b>
+                </div>
+              )}
+            </div>
+
+            {scannerLoading && <div className="loading">Počítam FER pre všetky zápasy... môže trvať 30-60s</div>}
+
+            {!scannerLoading && scannerMatches.length === 0 && (
+              <div className="empty">Klikni "Načítať zápasy" pre dnešné zápasy z tvojich líg.</div>
+            )}
+
+            {scannerMatches.map((item) => {
+              const { match, fer } = item
+              const odds = scannerOdds[match.id] || {}
+              const comm = 0.05
+              const st = pf(stake) || 10
+
+              const mkts = [
+                { key: 'over2.5', label: 'O 2.5', p: fer.pOver25, fer: fer.ferOver25, back: odds.backOver25, manual: odds['manual_over2.5'] },
+                { key: 'under2.5', label: 'U 2.5', p: fer.pUnder25, fer: fer.ferUnder25, back: odds.backUnder25, manual: odds['manual_under2.5'] },
+                { key: 'over3.0', label: 'O 3.0', p: fer.pOver30, fer: fer.ferOver30, back: odds.backOver30, manual: odds['manual_over3.0'] },
+                { key: 'under3.0', label: 'U 3.0', p: fer.pUnder30, fer: fer.ferUnder30, back: odds.backUnder30, manual: odds['manual_under3.0'] },
+              ]
+
+              return (
+                <div key={match.id} className="card" style={{ padding: 14 }}>
+                  {/* Match header */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10, flexWrap: 'wrap', gap: 6 }}>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 13 }}>{match.home_name} vs {match.away_name}</div>
+                      <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 2 }}>
+                        {match.competition?.name || ''} · λ {fmt2(fer.lH)} / {fmt2(fer.lA)} = {fmt2(fer.lH + fer.lA)}
+                        {match.date_unix && <span style={{ marginLeft: 8 }}>{new Date(match.date_unix * 1000).toLocaleTimeString('sk', { hour: '2-digit', minute: '2-digit' })}</span>}
+                      </div>
+                      {odds.matchedWith && (
+                        <div style={{ fontSize: 9, color: 'var(--accent2)', marginTop: 2 }}>
+                          ✓ Betfair: {odds.matchedWith} ({(odds.score * 100).toFixed(0)}%)
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Markets grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8 }}>
+                    {mkts.map(mkt => {
+                      const actualOdds = mkt.manual || mkt.back || null
+                      const ev = actualOdds ? (mkt.key.includes('3.0')
+                        ? calcEVOU30(mkt.key === 'over3.0', fer.pOver30, fer.pUnder30, actualOdds, comm)
+                        : calcBackEV(mkt.p, actualOdds, comm)) : null
+                      const evPct = ev != null ? ev * 100 : null
+                      const isSaved = scannerSaved[`${match.id}_${mkt.key}`]
+                      const hasEdge = evPct != null && evPct >= 5
+                      return (
+                        <div key={mkt.key} style={{
+                          background: hasEdge ? 'rgba(0,184,148,0.08)' : 'var(--bg3)',
+                          border: `1px solid ${hasEdge ? 'rgba(0,184,148,0.3)' : 'var(--border)'}`,
+                          borderRadius: 6, padding: 10,
+                        }}>
+                          <div style={{ fontSize: 10, color: 'var(--text3)', fontWeight: 700, marginBottom: 4 }}>{mkt.label}</div>
+                          <div style={{ fontSize: 12, marginBottom: 2 }}>FER: <b style={{ color: 'var(--accent2)' }}>{mkt.fer ? fmt3(mkt.fer) : '—'}</b></div>
+                          <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 6 }}>P: {fmtPct(mkt.p * 100)}</div>
+
+                          {/* Kurz input */}
+                          <input
+                            className="inp inp-sm"
+                            placeholder={mkt.back ? fmt3(mkt.back) : 'kurz'}
+                            value={mkt.manual || (mkt.back ? String(mkt.back) : '')}
+                            onChange={e => setScannerOdds(prev => ({
+                              ...prev,
+                              [match.id]: { ...prev[match.id], [`manual_${mkt.key}`]: e.target.value ? pf(e.target.value) : undefined }
+                            }))}
+                            style={{ marginBottom: 6, fontSize: 11 }}
+                          />
+
+                          {/* EV */}
+                          {evPct != null && (
+                            <div style={{ fontSize: 12, fontWeight: 700, color: evPct >= 5 ? 'var(--green)' : evPct >= 0 ? 'var(--yellow)' : 'var(--red)', marginBottom: 6 }}>
+                              EV: {evPct >= 0 ? '+' : ''}{evPct.toFixed(1)}%
+                              <span style={{ fontSize: 10, color: 'var(--text3)', fontWeight: 400, marginLeft: 4 }}>{fmtSign(ev * st)}€</span>
+                            </div>
+                          )}
+
+                          {/* Back button */}
+                          {actualOdds && actualOdds > 1 && (
+                            <button
+                              className="btn-save-back"
+                              style={{ width: '100%', padding: '6px', fontSize: 10 }}
+                              onClick={() => handleScannerBet(item, mkt.key)}
+                            >
+                              {isSaved ? '✓ Uložené' : `+ Back ${fmt3(actualOdds)}`}
+                            </button>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
           </div>
         )}
 
