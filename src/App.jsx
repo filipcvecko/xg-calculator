@@ -1205,6 +1205,8 @@ export default function App() {
   const [scannerOdds, setScannerOdds] = useState({})
   const [scannerRefreshing, setScannerRefreshing] = useState(false)
   const [scannerSaved, setScannerSaved] = useState({})
+  const [scannerExpanded, setScannerExpanded] = useState({})
+  const [scannerSettings, setScannerSettings] = useState({})
 
   function fuzzyScore(a, b) {
     if (!a || !b) return 0
@@ -1240,7 +1242,7 @@ export default function App() {
         return null
       }
       const ou25 = markets.find(m => m.description?.marketName === 'Over/Under 2.5 Goals')
-      const ou35 = markets.find(m => m.description?.marketName === 'Over/Under 3.0 Goals')
+      const ou35 = markets.find(m => m.description?.marketName === 'Over/Under 3.0 Goals') || markets.find(m => m.description?.marketName === 'Over/Under 3.5 Goals')
       return {
         backOver25: getBack(ou25, 'over'),
         backUnder25: getBack(ou25, 'under'),
@@ -1341,8 +1343,33 @@ export default function App() {
   }
 
   async function handleScannerBet(item, market) {
-    const { match, fer } = item
+    const { match } = item
     const odds = scannerOdds[match.id]
+    const settings = scannerSettings[match.id] || {}
+    // Use recalculated fer if settings are active
+    const sXgScaler = pf(settings.xgScaler ?? '0.90') || 0.90
+    const sLeagueAvgH = pf(settings.leagueAvgH ?? '0')
+    const sLeagueAvgA = pf(settings.leagueAvgA ?? '0')
+    const sShrinkage = pf(settings.shrinkage ?? '0.15') || 0.15
+    let fer = item.fer
+    if (sXgScaler !== 0.90 || (sLeagueAvgH > 0 && sLeagueAvgA > 0)) {
+      const sc = sXgScaler
+      const xgH2 = (item.homeStats?.xgH || item.homeStats?.gfH || 0) * sc
+      const xgA2 = (item.awayStats?.xgA || item.awayStats?.gfA || 0) * sc
+      const xgaH2 = (item.homeStats?.xgaH || item.homeStats?.gaH || 0) * sc
+      const xgaA2 = (item.awayStats?.xgaA || item.awayStats?.gaA || 0) * sc
+      if (xgH2 && xgA2 && xgaH2 && xgaA2) {
+        let lH2 = Math.sqrt(xgH2 * xgaA2)
+        let lA2 = Math.sqrt(xgA2 * xgaH2)
+        if (sLeagueAvgH > 0 && sLeagueAvgA > 0) {
+          const res = applyShrinkage(lH2, lA2, sLeagueAvgH, sLeagueAvgA, sShrinkage)
+          lH2 = res.lH; lA2 = res.lA
+        }
+        const ou25r = calcOverUnder(lH2, lA2, -0.10)
+        const ou30r = calcOU30(lH2, lA2)
+        fer = { lH: lH2, lA: lA2, pOver25: ou25r.pOver, pUnder25: ou25r.pUnder, ferOver25: fairOdds(ou25r.pOver), ferUnder25: fairOdds(ou25r.pUnder), pOver30: ou30r.pOver3, pUnder30: ou30r.pUnder2, ferOver30: ou30r.fairOver, ferUnder30: ou30r.fairUnder }
+      }
+    }
     const isOver25 = market === 'over2.5'
     const isOver30 = market === 'over3.0'
     const isUnder30 = market === 'under3.0'
@@ -1357,6 +1384,7 @@ export default function App() {
     const ev = (isOver30 || isUnder30)
       ? calcEVOU30(isOver30, fer.pOver30, fer.pUnder30, actualOdds, comm)
       : calcBackEV(selProb, actualOdds, comm)
+    const pinnOpen = pf(settings.pinnacle)
     const { error } = await supabase.from('bets').insert({
       match_name: `${match.home_name} vs ${match.away_name}`,
       market, bet_type: 'back',
@@ -1368,6 +1396,7 @@ export default function App() {
       ev, ev_pct: ev != null ? ev * 100 : null,
       clv: null, result: null, pnl: null, brier: null, log_loss: null,
       league: match.competition?.name || null,
+      pinnacle_open: pinnOpen > 1 ? pinnOpen : null,
       is_archived: false,
       stake_pct_bankroll: currentBankroll > 0 ? Math.round((st / currentBankroll) * 1000) / 10 : null,
     })
@@ -2357,22 +2386,57 @@ export default function App() {
               const odds = scannerOdds[match.id] || {}
               const comm = 0.05
               const st = pf(stake) || 10
+              const isExpanded = !!scannerExpanded[match.id]
+              const settings = scannerSettings[match.id] || {}
+              const sXgScaler = pf(settings.xgScaler ?? '0.90') || 0.90
+              const sShrinkage = pf(settings.shrinkage ?? '0.15') || 0.15
+              const sAlpha = pf(settings.alpha ?? '0.70') || 0.70
+              const sLeagueAvgH = pf(settings.leagueAvgH ?? '0')
+              const sLeagueAvgA = pf(settings.leagueAvgA ?? '0')
+              const sPinnacle = settings.pinnacle || ''
+
+              // Recalc FER with custom settings if expanded
+              let ferCalc = fer
+              if (isExpanded && (sXgScaler !== 0.90 || (sLeagueAvgH > 0 && sLeagueAvgA > 0))) {
+                const sc = sXgScaler
+                const xgH2 = (item.homeStats?.xgH || item.homeStats?.gfH || 0) * sc
+                const xgA2 = (item.awayStats?.xgA || item.awayStats?.gfA || 0) * sc
+                const xgaH2 = (item.homeStats?.xgaH || item.homeStats?.gaH || 0) * sc
+                const xgaA2 = (item.awayStats?.xgaA || item.awayStats?.gaA || 0) * sc
+                if (xgH2 && xgA2 && xgaH2 && xgaA2) {
+                  let lH2 = Math.sqrt(xgH2 * xgaA2)
+                  let lA2 = Math.sqrt(xgA2 * xgaH2)
+                  if (sLeagueAvgH > 0 && sLeagueAvgA > 0) {
+                    const res = applyShrinkage(lH2, lA2, sLeagueAvgH, sLeagueAvgA, sShrinkage)
+                    lH2 = res.lH; lA2 = res.lA
+                  }
+                  const ou25r = calcOverUnder(lH2, lA2, -0.10)
+                  const ou30r = calcOU30(lH2, lA2)
+                  ferCalc = {
+                    lH: lH2, lA: lA2,
+                    pOver25: ou25r.pOver, pUnder25: ou25r.pUnder,
+                    ferOver25: fairOdds(ou25r.pOver), ferUnder25: fairOdds(ou25r.pUnder),
+                    pOver30: ou30r.pOver3, pUnder30: ou30r.pUnder2,
+                    ferOver30: ou30r.fairOver, ferUnder30: ou30r.fairUnder,
+                  }
+                }
+              }
 
               const mkts = [
-                { key: 'over2.5', label: 'O 2.5', p: fer.pOver25, fer: fer.ferOver25, back: odds.backOver25, manual: odds['manual_over2.5'] },
-                { key: 'under2.5', label: 'U 2.5', p: fer.pUnder25, fer: fer.ferUnder25, back: odds.backUnder25, manual: odds['manual_under2.5'] },
-                { key: 'over3.0', label: 'O 3.0', p: fer.pOver30, fer: fer.ferOver30, back: odds.backOver30, manual: odds['manual_over3.0'] },
-                { key: 'under3.0', label: 'U 3.0', p: fer.pUnder30, fer: fer.ferUnder30, back: odds.backUnder30, manual: odds['manual_under3.0'] },
+                { key: 'over2.5', label: 'O 2.5', p: ferCalc.pOver25, fer: ferCalc.ferOver25, back: odds.backOver25, manual: odds['manual_over2.5'] },
+                { key: 'under2.5', label: 'U 2.5', p: ferCalc.pUnder25, fer: ferCalc.ferUnder25, back: odds.backUnder25, manual: odds['manual_under2.5'] },
+                { key: 'over3.0', label: 'O 3.0', p: ferCalc.pOver30, fer: ferCalc.ferOver30, back: odds.backOver30, manual: odds['manual_over3.0'] },
+                { key: 'under3.0', label: 'U 3.0', p: ferCalc.pUnder30, fer: ferCalc.ferUnder30, back: odds.backUnder30, manual: odds['manual_under3.0'] },
               ]
 
               return (
                 <div key={match.id} className="card" style={{ padding: 14 }}>
                   {/* Match header */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10, flexWrap: 'wrap', gap: 6 }}>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: 13 }}>{match.home_name} vs {match.away_name}</div>
+                    <div style={{ flex: 1, cursor: 'pointer' }} onClick={() => setScannerExpanded(prev => ({ ...prev, [match.id]: !prev[match.id] }))}>
+                      <div style={{ fontWeight: 700, fontSize: 13 }}>{match.home_name} vs {match.away_name} <span style={{ fontSize: 11, color: 'var(--text3)' }}>{isExpanded ? '▲' : '▼'}</span></div>
                       <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 2 }}>
-                        {match.competition?.name || ''} · λ {fmt2(fer.lH)} / {fmt2(fer.lA)} = {fmt2(fer.lH + fer.lA)}
+                        {match.competition?.name || ''} · λ {fmt2(ferCalc.lH)} / {fmt2(ferCalc.lA)} = {fmt2(ferCalc.lH + ferCalc.lA)}
                         {match.date_unix && <span style={{ marginLeft: 8 }}>{new Date(match.date_unix * 1000).toLocaleTimeString('sk', { hour: '2-digit', minute: '2-digit' })}</span>}
                       </div>
                       {odds.matchedWith && (
@@ -2382,6 +2446,50 @@ export default function App() {
                       )}
                     </div>
                   </div>
+
+                  {/* Expand panel */}
+                  {isExpanded && (
+                    <div style={{ background: 'var(--bg3)', border: '1px solid rgba(108,92,231,0.3)', borderRadius: 8, padding: 12, marginBottom: 12 }}>
+                      <div style={{ fontSize: 10, color: 'var(--accent2)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>⚙ Pokročilé nastavenia</div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 8 }}>
+                        <div>
+                          <div className="label">xG Scaler</div>
+                          <input className="inp inp-sm" placeholder="0.90" value={settings.xgScaler ?? '0.90'}
+                            onChange={e => setScannerSettings(prev => ({ ...prev, [match.id]: { ...prev[match.id], xgScaler: e.target.value } }))} />
+                        </div>
+                        <div>
+                          <div className="label">Shrinkage</div>
+                          <input className="inp inp-sm" placeholder="0.15" value={settings.shrinkage ?? '0.15'}
+                            onChange={e => setScannerSettings(prev => ({ ...prev, [match.id]: { ...prev[match.id], shrinkage: e.target.value } }))} />
+                        </div>
+                        <div>
+                          <div className="label">α (xG vs góly)</div>
+                          <input className="inp inp-sm" placeholder="0.70" value={settings.alpha ?? '0.70'}
+                            onChange={e => setScannerSettings(prev => ({ ...prev, [match.id]: { ...prev[match.id], alpha: e.target.value } }))} />
+                        </div>
+                        <div>
+                          <div className="label">Liga avg Home</div>
+                          <input className="inp inp-sm" placeholder="1.45" value={settings.leagueAvgH ?? ''}
+                            onChange={e => setScannerSettings(prev => ({ ...prev, [match.id]: { ...prev[match.id], leagueAvgH: e.target.value } }))} />
+                        </div>
+                        <div>
+                          <div className="label">Liga avg Away</div>
+                          <input className="inp inp-sm" placeholder="1.20" value={settings.leagueAvgA ?? ''}
+                            onChange={e => setScannerSettings(prev => ({ ...prev, [match.id]: { ...prev[match.id], leagueAvgA: e.target.value } }))} />
+                        </div>
+                        <div>
+                          <div className="label">Pinnacle kurz</div>
+                          <input className="inp inp-sm" placeholder="napr. 1.90" value={settings.pinnacle ?? ''}
+                            onChange={e => setScannerSettings(prev => ({ ...prev, [match.id]: { ...prev[match.id], pinnacle: e.target.value } }))} />
+                        </div>
+                      </div>
+                      {sLeagueAvgH > 0 && sLeagueAvgA > 0 && (
+                        <div style={{ fontSize: 10, color: 'var(--green)' }}>
+                          ✓ Shrinkage aktívny · λ raw: {fmt2(fer.lH)}/{fmt2(fer.lA)} → {fmt2(ferCalc.lH)}/{fmt2(ferCalc.lA)}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Markets grid */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8 }}>
