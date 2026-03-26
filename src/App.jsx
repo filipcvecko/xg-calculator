@@ -2670,7 +2670,7 @@ export default function App() {
                     {mkts.map(mkt => {
                       const actualOdds = mkt.manual || mkt.back || null
                       const ev = actualOdds ? (mkt.key.includes('3.0')
-                        ? calcEVOU30(mkt.key === 'over3.0', fer.pOver30, fer.pUnder30, actualOdds, comm)
+                        ? calcEVOU30(mkt.key === 'over3.0', ferCalc.pOver30, ferCalc.pUnder30, actualOdds, comm)
                         : calcBackEV(mkt.p, actualOdds, comm)) : null
                       const evPct = ev != null ? ev * 100 : null
                       const isSaved = scannerSaved[`${match.id}_${mkt.key}`]
