@@ -9,6 +9,8 @@ export default async function handler(req, res) {
   const allowedEndpoints = [
     'betfair/upcoming',
     'betfair/event',
+    'betfair/ex/upcoming',
+    'betfair/ex/event',
     'bet365/upcoming',
     'bet365/event',
   ]
