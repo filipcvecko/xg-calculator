@@ -1370,6 +1370,7 @@ export default function App() {
             const odds = await fetchBetfairOddsForMatch(bestEvent.id)
             if (odds) newOdds[match.id] = { ...odds, matchedWith: `${bestEvent.home?.name} vs ${bestEvent.away?.name}`, score: bestScore.toFixed(2) }
           }
+      }))
       }
       setScannerOdds(prev => ({ ...prev, ...newOdds }))
     } catch (e) { console.error('Scanner odds error:', e) }
