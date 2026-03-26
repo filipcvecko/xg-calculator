@@ -1336,13 +1336,16 @@ export default function App() {
     setScannerRefreshing(true)
     try {
       let betsapiEvents = []
-      let page = 1
-      while (true) {
+      const firstRes = await fetch(`/api/betsapi?endpoint=betfair/ex/upcoming&sport_id=1&page=1`)
+      const firstJson = await firstRes.json()
+      if (firstJson?.results) betsapiEvents = betsapiEvents.concat(firstJson.results)
+      const total = firstJson?.pager?.total || 0
+      const perPage = firstJson?.pager?.per_page || 50
+      const totalPages = Math.min(Math.ceil(total / perPage), 15)
+      for (let page = 2; page <= totalPages; page++) {
         const res = await fetch(`/api/betsapi?endpoint=betfair/ex/upcoming&sport_id=1&page=${page}`)
         const json = await res.json()
         if (json?.results) betsapiEvents = betsapiEvents.concat(json.results)
-        if (!json?.pager?.next_page || page >= 15) break
-        page++
       }
       const newOdds = {}
       const CHUNK = 3
