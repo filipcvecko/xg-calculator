@@ -1230,8 +1230,9 @@ export default function App() {
 
   function fuzzyScore(a, b) {
     if (!a || !b) return 0
-    const na = a.toLowerCase().replace(/[^a-z0-9]/g, ' ').replace(/\s+/g, ' ').trim()
-    const nb = b.toLowerCase().replace(/[^a-z0-9]/g, ' ').replace(/\s+/g, ' ').trim()
+    const norm = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, ' ').replace(/\s+/g, ' ').trim()
+    const na = norm(a)
+    const nb = norm(b)
     if (na === nb) return 1
     const tokA = na.split(' ')
     const tokB = nb.split(' ')
