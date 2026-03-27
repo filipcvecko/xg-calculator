@@ -1308,15 +1308,30 @@ export default function App() {
     const processed = results.map(({ match, homeStats, awayStats }) => {
       let fer = null
       if (homeStats && awayStats) {
-        const xgH = homeStats.xgH || homeStats.gfH
-        const xgA = awayStats.xgA || awayStats.gfA
-        const xgaH = homeStats.xgaH || homeStats.gaH
-        const xgaA = awayStats.xgaA || awayStats.gaA
-        if (xgH && xgA && xgaH && xgaA) {
-          const lH = Math.sqrt(xgH * xgaA)
-          const lA = Math.sqrt(xgA * xgaH)
+        const sc = 0.90
+        const xgHs = (homeStats.xgH || homeStats.gfH || 0) * sc
+        const xgAs = (awayStats.xgA || awayStats.gfA || 0) * sc
+        const xgaHs = (homeStats.xgaH || homeStats.gaH || 0) * sc
+        const xgaAs = (awayStats.xgaA || awayStats.gaA || 0) * sc
+        const gfHv = homeStats.gfH || 0, gaHv = homeStats.gaH || 0
+        const gfAv = awayStats.gfA || 0, gaAv = awayStats.gaA || 0
+        if (xgHs > 0 && xgAs > 0) {
+          const hasGoals = gfHv > 0 && gaHv > 0 && gfAv > 0 && gaAv > 0
+          const hasXGA = xgaHs > 0 && xgaAs > 0
+          let lH, lA
+          if (hasGoals && hasXGA) {
+            const r = blendWithGoals(xgHs, xgAs, xgaHs, xgaAs, gfHv, gaHv, gfAv, gaAv, 0.70)
+            lH = r.lH; lA = r.lA
+          } else if (hasGoals) {
+            const r = blendWithGoals(xgHs, xgAs, xgHs, xgAs, gfHv, gaHv, gfAv, gaAv, 0.70)
+            lH = r.lH; lA = r.lA
+          } else if (hasXGA) {
+            lH = Math.sqrt(xgHs * xgaAs); lA = Math.sqrt(xgAs * xgaHs)
+          } else {
+            lH = xgHs; lA = xgAs
+          }
           const ou25 = calcOverUnder(lH, lA, -0.10)
-          const ou30res = calcOU30(lH, lA)
+          const ou30res = calcOU30(lH, lA, -0.10)
           fer = {
             lH, lA,
             pOver25: ou25.pOver, pUnder25: ou25.pUnder,
@@ -1389,22 +1404,37 @@ export default function App() {
     const sLeagueAvgH = pf(settings.leagueAvgH ?? '0')
     const sLeagueAvgA = pf(settings.leagueAvgA ?? '0')
     const sShrinkage = pf(settings.shrinkage ?? '0.15') || 0.15
+    const sAlpha = pf(settings.alpha ?? '0.70') || 0.70
     let fer = item.fer
-    if (sXgScaler !== 0.90 || (sLeagueAvgH > 0 && sLeagueAvgA > 0)) {
+    if (sXgScaler !== 0.90 || sAlpha !== 0.70 || (sLeagueAvgH > 0 && sLeagueAvgA > 0)) {
       const sc = sXgScaler
-      const xgH2 = (item.homeStats?.xgH || item.homeStats?.gfH || 0) * sc
-      const xgA2 = (item.awayStats?.xgA || item.awayStats?.gfA || 0) * sc
-      const xgaH2 = (item.homeStats?.xgaH || item.homeStats?.gaH || 0) * sc
-      const xgaA2 = (item.awayStats?.xgaA || item.awayStats?.gaA || 0) * sc
-      if (xgH2 && xgA2 && xgaH2 && xgaA2) {
-        let lH2 = Math.sqrt(xgH2 * xgaA2)
-        let lA2 = Math.sqrt(xgA2 * xgaH2)
+      const xgHs = (item.homeStats?.xgH || item.homeStats?.gfH || 0) * sc
+      const xgAs = (item.awayStats?.xgA || item.awayStats?.gfA || 0) * sc
+      const xgaHs = (item.homeStats?.xgaH || item.homeStats?.gaH || 0) * sc
+      const xgaAs = (item.awayStats?.xgaA || item.awayStats?.gaA || 0) * sc
+      const gfHv = item.homeStats?.gfH || 0, gaHv = item.homeStats?.gaH || 0
+      const gfAv = item.awayStats?.gfA || 0, gaAv = item.awayStats?.gaA || 0
+      if (xgHs && xgAs) {
+        const hasGoals = gfHv > 0 && gaHv > 0 && gfAv > 0 && gaAv > 0
+        const hasXGA = xgaHs > 0 && xgaAs > 0
+        let lH2, lA2
+        if (hasGoals && hasXGA) {
+          const r = blendWithGoals(xgHs, xgAs, xgaHs, xgaAs, gfHv, gaHv, gfAv, gaAv, sAlpha)
+          lH2 = r.lH; lA2 = r.lA
+        } else if (hasGoals) {
+          const r = blendWithGoals(xgHs, xgAs, xgHs, xgAs, gfHv, gaHv, gfAv, gaAv, sAlpha)
+          lH2 = r.lH; lA2 = r.lA
+        } else if (hasXGA) {
+          lH2 = Math.sqrt(xgHs * xgaAs); lA2 = Math.sqrt(xgAs * xgaHs)
+        } else {
+          lH2 = xgHs; lA2 = xgAs
+        }
         if (sLeagueAvgH > 0 && sLeagueAvgA > 0) {
           const res = applyShrinkage(lH2, lA2, sLeagueAvgH, sLeagueAvgA, sShrinkage)
           lH2 = res.lH; lA2 = res.lA
         }
         const ou25r = calcOverUnder(lH2, lA2, -0.10)
-        const ou30r = calcOU30(lH2, lA2)
+        const ou30r = calcOU30(lH2, lA2, -0.10)
         fer = { lH: lH2, lA: lA2, pOver25: ou25r.pOver, pUnder25: ou25r.pUnder, ferOver25: fairOdds(ou25r.pOver), ferUnder25: fairOdds(ou25r.pUnder), pOver30: ou30r.pOver3, pUnder30: ou30r.pUnder2, ferOver30: ou30r.fairOver, ferUnder30: ou30r.fairUnder }
       }
     }
@@ -1424,9 +1454,15 @@ export default function App() {
     if (!actualOdds || actualOdds <= 1) return
     const comm = 0.05
     const st = pf(stake) || 10
+    const pO30c = calibrateProb(fer.pOver30, 0.85)
+    const pU30c = calibrateProb(fer.pUnder30, 0.85)
+    const pO30f = odds?.backOver30 > 1 ? marketCalibration(pO30c, odds.backOver30, 0.50) : pO30c
+    const pU30f = odds?.backUnder30 > 1 ? marketCalibration(pU30c, odds.backUnder30, 0.50) : pU30c
+    const backRef25 = isOver25 ? odds?.backOver25 : odds?.backUnder25
+    const selProbFinal = backRef25 > 1 ? marketCalibration(selProb, backRef25, 0.50) : selProb
     const ev = (isOver30 || isUnder30)
-      ? calcEVOU30(isOver30, calibrateProb(fer.pOver30, 0.85), calibrateProb(fer.pUnder30, 0.85), actualOdds, comm)
-      : calcBackEV(selProb, actualOdds, comm)
+      ? calcEVOU30(isOver30, pO30f, pU30f, actualOdds, comm)
+      : calcBackEV(selProbFinal, actualOdds, comm)
     const pinnOpen = pf(settings.pinnacle)
     const { error } = await supabase.from('bets').insert({
       match_name: `${match.home_name} vs ${match.away_name}`,
@@ -2505,21 +2541,35 @@ export default function App() {
 
               // Recalc FER with custom settings if expanded
               let ferCalc = fer
-              if (isExpanded && (sXgScaler !== 0.90 || (sLeagueAvgH > 0 && sLeagueAvgA > 0))) {
+              if (isExpanded && (sXgScaler !== 0.90 || sAlpha !== 0.70 || (sLeagueAvgH > 0 && sLeagueAvgA > 0))) {
                 const sc = sXgScaler
-                const xgH2 = (item.homeStats?.xgH || item.homeStats?.gfH || 0) * sc
-                const xgA2 = (item.awayStats?.xgA || item.awayStats?.gfA || 0) * sc
-                const xgaH2 = (item.homeStats?.xgaH || item.homeStats?.gaH || 0) * sc
-                const xgaA2 = (item.awayStats?.xgaA || item.awayStats?.gaA || 0) * sc
-                if (xgH2 && xgA2 && xgaH2 && xgaA2) {
-                  let lH2 = Math.sqrt(xgH2 * xgaA2)
-                  let lA2 = Math.sqrt(xgA2 * xgaH2)
+                const xgHs = (item.homeStats?.xgH || item.homeStats?.gfH || 0) * sc
+                const xgAs = (item.awayStats?.xgA || item.awayStats?.gfA || 0) * sc
+                const xgaHs = (item.homeStats?.xgaH || item.homeStats?.gaH || 0) * sc
+                const xgaAs = (item.awayStats?.xgaA || item.awayStats?.gaA || 0) * sc
+                const gfHv = item.homeStats?.gfH || 0, gaHv = item.homeStats?.gaH || 0
+                const gfAv = item.awayStats?.gfA || 0, gaAv = item.awayStats?.gaA || 0
+                if (xgHs && xgAs) {
+                  const hasGoals = gfHv > 0 && gaHv > 0 && gfAv > 0 && gaAv > 0
+                  const hasXGA = xgaHs > 0 && xgaAs > 0
+                  let lH2, lA2
+                  if (hasGoals && hasXGA) {
+                    const r = blendWithGoals(xgHs, xgAs, xgaHs, xgaAs, gfHv, gaHv, gfAv, gaAv, sAlpha)
+                    lH2 = r.lH; lA2 = r.lA
+                  } else if (hasGoals) {
+                    const r = blendWithGoals(xgHs, xgAs, xgHs, xgAs, gfHv, gaHv, gfAv, gaAv, sAlpha)
+                    lH2 = r.lH; lA2 = r.lA
+                  } else if (hasXGA) {
+                    lH2 = Math.sqrt(xgHs * xgaAs); lA2 = Math.sqrt(xgAs * xgaHs)
+                  } else {
+                    lH2 = xgHs; lA2 = xgAs
+                  }
                   if (sLeagueAvgH > 0 && sLeagueAvgA > 0) {
                     const res = applyShrinkage(lH2, lA2, sLeagueAvgH, sLeagueAvgA, sShrinkage)
                     lH2 = res.lH; lA2 = res.lA
                   }
                   const ou25r = calcOverUnder(lH2, lA2, -0.10)
-                  const ou30r = calcOU30(lH2, lA2)
+                  const ou30r = calcOU30(lH2, lA2, -0.10)
                   ferCalc = {
                     lH: lH2, lA: lA2,
                     pOver25: ou25r.pOver, pUnder25: ou25r.pUnder,
@@ -2685,10 +2735,15 @@ export default function App() {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8 }}>
                     {mkts.map(mkt => {
                       const actualOdds = mkt.manual ? pf(mkt.manual) || null : mkt.back || null
-                     const calibratedP = calibrateProb(mkt.p, 0.85)
-          const ev = actualOdds ? (mkt.key.includes('3.0')
-            ? calcEVOU30(mkt.key === 'over3.0', calibrateProb(ferCalc.pOver30, 0.85), calibrateProb(ferCalc.pUnder30, 0.85), actualOdds, comm)
-            : calcBackEV(calibratedP, actualOdds, comm)) : null
+                      const calibratedP = calibrateProb(mkt.p, 0.85)
+                      const finalP = mkt.back > 1 ? marketCalibration(calibratedP, mkt.back, 0.50) : calibratedP
+                      const pO30c = calibrateProb(ferCalc.pOver30, 0.85)
+                      const pU30c = calibrateProb(ferCalc.pUnder30, 0.85)
+                      const pO30f = odds.backOver30 > 1 ? marketCalibration(pO30c, odds.backOver30, 0.50) : pO30c
+                      const pU30f = odds.backUnder30 > 1 ? marketCalibration(pU30c, odds.backUnder30, 0.50) : pU30c
+                      const ev = actualOdds ? (mkt.key.includes('3.0')
+                        ? calcEVOU30(mkt.key === 'over3.0', pO30f, pU30f, actualOdds, comm)
+                        : calcBackEV(finalP, actualOdds, comm)) : null
                       const evPct = ev != null ? ev * 100 : null
                       const isSaved = scannerSaved[`${match.id}_${mkt.key}`]
                       const hasEdge = evPct != null && evPct >= 5
