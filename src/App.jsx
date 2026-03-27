@@ -1418,7 +1418,7 @@ export default function App() {
     const comm = 0.05
     const st = pf(stake) || 10
     const ev = (isOver30 || isUnder30)
-     ? calcEVOU30(isOver30, calibrateProb(fer.pOver30, 0.85), calibrateProb(fer.pUnder30, 0.85),
+     ? calcEVOU30(isOver30, calibrateProb(fer.pOver30, 0.85), calibrateProb(fer.pUnder30, 0.85), actualOdds, comm)
       : calcBackEV(selProb, actualOdds, comm)
     const pinnOpen = pf(settings.pinnacle)
     const { error } = await supabase.from('bets').insert({
@@ -3387,8 +3387,5 @@ export default function App() {
         )}
 
     </>
-  )
-}
-
   )
 }
