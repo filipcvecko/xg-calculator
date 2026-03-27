@@ -1410,15 +1410,15 @@ export default function App() {
     const isOver30 = market === 'over3.0'
     const isUnder30 = market === 'under3.0'
     let selProb, ferO, actualOdds
-    if (isOver25) { selProb = fer.pOver25; ferO = fer.ferOver25; actualOdds = odds?.backOver25 || odds?.[`manual_over2.5`] }
-    else if (market === 'under2.5') { selProb = fer.pUnder25; ferO = fer.ferUnder25; actualOdds = odds?.backUnder25 || odds?.[`manual_under2.5`] }
-    else if (isOver30) { selProb = fer.pOver30; ferO = fer.ferOver30; actualOdds = odds?.backOver30 || odds?.[`manual_over3.0`] }
-    else { selProb = fer.pUnder30; ferO = fer.ferUnder30; actualOdds = odds?.backUnder30 || odds?.[`manual_under3.0`] }
+   if (isOver25) { selProb = calibrateProb(fer.pOver25, 0.85); ferO = fer.ferOver25; actualOdds = odds?.backOver25 || odds?.[`manual_over2.5`] }
+    else if (market === 'under2.5') { selProb = calibrateProb(fer.pUnder25, 0.85); ferO = fer.ferUnder25; actualOdds = odds?.backUnder25 || odds?.[`manual_under2.5`] }
+    else if (isOver30) { selProb = calibrateProb(fer.pOver30, 0.85); ferO = fer.ferOver30; actualOdds = odds?.backOver30 || odds?.[`manual_over3.0`] }
+    else { selProb = calibrateProb(fer.pUnder30, 0.85); ferO = fer.ferUnder30; actualOdds = odds?.backUnder30 || odds?.[`manual_under3.0`] }
     if (!actualOdds || actualOdds <= 1) return
     const comm = 0.05
     const st = pf(stake) || 10
     const ev = (isOver30 || isUnder30)
-      ? calcEVOU30(isOver30, fer.pOver30, fer.pUnder30, actualOdds, comm)
+     ? calcEVOU30(isOver30, calibrateProb(fer.pOver30, 0.85), calibrateProb(fer.pUnder30, 0.85),
       : calcBackEV(selProb, actualOdds, comm)
     const pinnOpen = pf(settings.pinnacle)
     const { error } = await supabase.from('bets').insert({
