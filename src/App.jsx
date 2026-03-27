@@ -3344,7 +3344,7 @@ export default function App() {
                 <div className="grid3">
                   <div className="card"><div className="label">AVG PINNACLE CLV</div><div className="stat-val" style={{ color: avgPinnCLV > 0 ? 'var(--green)' : 'var(--red)' }}>{avgPinnCLV > 0 ? '+' : ''}{avgPinnCLV.toFixed(1)}%</div><div className="hint">{avgPinnCLV > 0 ? 'pred Pinnacle trhom' : 'Pinnacle vedel viac'}</div></div>
                   <div className="card"><div className="label">POSITIVE PINN CLV</div><div className="stat-val" style={{ color: posPinnCLV > 50 ? 'var(--green)' : 'var(--red)' }}>{posPinnCLV.toFixed(1)}%</div><div className="hint">{pinnBets.length} betov s Pinnacle dátami</div></div>
-                  <div className="card"><div className="label">EDGE ZDROJ</div><div className="stat-val" style={{ fontSize: 14, color: 'var(--accent2)' }}>{avgPinnCLV > 1 ? '⚡ Timing' : '🧠 Model?'}</div><div className="hint">Exchange CLV: {avgCLV != null ? (avgCLV > 0 ? '+' : '') + avgCLV.toFixed(1) + '%' : '—'}</div></div>
+                  <div className="card"><div className="label">EDGE ZDROJ</div><div className="stat-val" style={{ fontSize: 14, color: 'var(--accent2)' }}>{avgPinnCLV > 0 ? '🧠 Model' : '⚡ Timing'}</div><div className="hint">Exchange CLV: {avgCLV != null ? (avgCLV > 0 ? '+' : '') + avgCLV.toFixed(1) + '%' : '—'}</div></div>
                 </div>
               </div>
             )}
