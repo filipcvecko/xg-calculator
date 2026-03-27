@@ -2678,9 +2678,10 @@ export default function App() {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8 }}>
                     {mkts.map(mkt => {
                       const actualOdds = mkt.manual ? pf(mkt.manual) || null : mkt.back || null
-                      const ev = actualOdds ? (mkt.key.includes('3.0')
-                        ? calcEVOU30(mkt.key === 'over3.0', ferCalc.pOver30, ferCalc.pUnder30, actualOdds, comm)
-                        : calcBackEV(mkt.p, actualOdds, comm)) : null
+                     const calibratedP = calibrateProb(mkt.p, 0.85)
+          const ev = actualOdds ? (mkt.key.includes('3.0')
+            ? calcEVOU30(mkt.key === 'over3.0', calibrateProb(ferCalc.pOver30, 0.85), calibrateProb(ferCalc.pUnder30, 0.85), actualOdds, comm)
+            : calcBackEV(calibratedP, actualOdds, comm)) : null
                       const evPct = ev != null ? ev * 100 : null
                       const isSaved = scannerSaved[`${match.id}_${mkt.key}`]
                       const hasEdge = evPct != null && evPct >= 5
