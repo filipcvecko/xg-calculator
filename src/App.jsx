@@ -1292,20 +1292,22 @@ export default function App() {
       const chunk = matches.slice(i, i + CHUNK)
       const chunkResults = await Promise.all(chunk.map(async (m) => {
         try {
-          const [homeRes, awayRes] = await Promise.all([
+          const [homeRes, awayRes, homeLXRes, awayLXRes] = await Promise.all([
             fetch(`/api/footystats?endpoint=team&team_id=${m.homeID}&season_id=${m.season_id || m.competition_id}`).then(r => r.json()),
             fetch(`/api/footystats?endpoint=team&team_id=${m.awayID}&season_id=${m.season_id || m.competition_id}`).then(r => r.json()),
+            fetch(`/api/footystats?endpoint=lastx&team_id=${m.homeID}`).then(r => r.json()).catch(() => null),
+            fetch(`/api/footystats?endpoint=lastx&team_id=${m.awayID}`).then(r => r.json()).catch(() => null),
           ])
           const homeData = Array.isArray(homeRes?.data) ? homeRes.data[0] : homeRes?.data
           const awayData = Array.isArray(awayRes?.data) ? awayRes.data[0] : awayRes?.data
           const homeStats = homeData ? extractTeamStats(homeData) : null
           const awayStats = awayData ? extractTeamStats(awayData) : null
-          return { match: m, homeStats, awayStats }
-        } catch { return { match: m, homeStats: null, awayStats: null } }
+          return { match: m, homeStats, awayStats, homeLastX: homeLXRes || null, awayLastX: awayLXRes || null }
+        } catch { return { match: m, homeStats: null, awayStats: null, homeLastX: null, awayLastX: null } }
       }))
       results.push(...chunkResults)
     }
-    const processed = results.map(({ match, homeStats, awayStats }) => {
+    const processed = results.map(({ match, homeStats, awayStats, homeLastX, awayLastX }) => {
       let fer = null
       if (homeStats && awayStats) {
         const sc = 0.90
@@ -1330,8 +1332,27 @@ export default function App() {
           } else {
             lH = xgHs; lA = xgAs
           }
+          const fw = 0.40
+          const homeForm = homeLastX ? extractLastXStats(homeLastX, 5) : null
+          const awayForm = awayLastX ? extractLastXStats(awayLastX, 5) : null
+          if (homeForm) {
+            const formXgH = homeForm.xgH ?? homeForm.gfH ?? null
+            const formXgaA = awayForm?.xgaA ?? awayForm?.gaA ?? null
+            if (formXgH != null) {
+              const formLH = formXgaA != null ? Math.sqrt(formXgH * formXgaA) : formXgH
+              lH = timeDecayBlend(lH, formLH, fw)
+            }
+          }
+          if (awayForm) {
+            const formXgA = awayForm.xgA ?? awayForm.gfA ?? null
+            const formXgaH = homeForm?.xgaH ?? homeForm?.gaH ?? null
+            if (formXgA != null) {
+              const formLA = formXgaH != null ? Math.sqrt(formXgA * formXgaH) : formXgA
+              lA = timeDecayBlend(lA, formLA, fw)
+            }
+          }
           const ou25 = calcOverUnder(lH, lA, -0.10)
-          const ou30res = calcOU30(lH, lA, -0.10)
+          const ou30res = calcOU30(lH, lA)
           fer = {
             lH, lA,
             pOver25: ou25.pOver, pUnder25: ou25.pUnder,
@@ -1341,7 +1362,7 @@ export default function App() {
           }
         }
       }
-      return { match, homeStats, awayStats, fer }
+      return { match, homeStats, awayStats, homeLastX, awayLastX, fer }
     }).filter(r => r.fer !== null)
     setScannerMatches(processed)
     setScannerLoading(false)
@@ -1433,8 +1454,27 @@ export default function App() {
           const res = applyShrinkage(lH2, lA2, sLeagueAvgH, sLeagueAvgA, sShrinkage)
           lH2 = res.lH; lA2 = res.lA
         }
+        const fw = 0.40
+        const homeForm = item.homeLastX ? extractLastXStats(item.homeLastX, 5) : null
+        const awayForm = item.awayLastX ? extractLastXStats(item.awayLastX, 5) : null
+        if (homeForm) {
+          const formXgH = homeForm.xgH ?? homeForm.gfH ?? null
+          const formXgaA = awayForm?.xgaA ?? awayForm?.gaA ?? null
+          if (formXgH != null) {
+            const formLH = formXgaA != null ? Math.sqrt(formXgH * formXgaA) : formXgH
+            lH2 = timeDecayBlend(lH2, formLH, fw)
+          }
+        }
+        if (awayForm) {
+          const formXgA = awayForm.xgA ?? awayForm.gfA ?? null
+          const formXgaH = homeForm?.xgaH ?? homeForm?.gaH ?? null
+          if (formXgA != null) {
+            const formLA = formXgaH != null ? Math.sqrt(formXgA * formXgaH) : formXgA
+            lA2 = timeDecayBlend(lA2, formLA, fw)
+          }
+        }
         const ou25r = calcOverUnder(lH2, lA2, -0.10)
-        const ou30r = calcOU30(lH2, lA2, -0.10)
+        const ou30r = calcOU30(lH2, lA2)
         fer = { lH: lH2, lA: lA2, pOver25: ou25r.pOver, pUnder25: ou25r.pUnder, ferOver25: fairOdds(ou25r.pOver), ferUnder25: fairOdds(ou25r.pUnder), pOver30: ou30r.pOver3, pUnder30: ou30r.pUnder2, ferOver30: ou30r.fairOver, ferUnder30: ou30r.fairUnder }
       }
     }
@@ -2568,8 +2608,27 @@ export default function App() {
                     const res = applyShrinkage(lH2, lA2, sLeagueAvgH, sLeagueAvgA, sShrinkage)
                     lH2 = res.lH; lA2 = res.lA
                   }
+                  const fwD = 0.40
+                  const homeFormD = item.homeLastX ? extractLastXStats(item.homeLastX, 5) : null
+                  const awayFormD = item.awayLastX ? extractLastXStats(item.awayLastX, 5) : null
+                  if (homeFormD) {
+                    const formXgH = homeFormD.xgH ?? homeFormD.gfH ?? null
+                    const formXgaA = awayFormD?.xgaA ?? awayFormD?.gaA ?? null
+                    if (formXgH != null) {
+                      const formLH = formXgaA != null ? Math.sqrt(formXgH * formXgaA) : formXgH
+                      lH2 = timeDecayBlend(lH2, formLH, fwD)
+                    }
+                  }
+                  if (awayFormD) {
+                    const formXgA = awayFormD.xgA ?? awayFormD.gfA ?? null
+                    const formXgaH = homeFormD?.xgaH ?? homeFormD?.gaH ?? null
+                    if (formXgA != null) {
+                      const formLA = formXgaH != null ? Math.sqrt(formXgA * formXgaH) : formXgA
+                      lA2 = timeDecayBlend(lA2, formLA, fwD)
+                    }
+                  }
                   const ou25r = calcOverUnder(lH2, lA2, -0.10)
-                  const ou30r = calcOU30(lH2, lA2, -0.10)
+                  const ou30r = calcOU30(lH2, lA2)
                   ferCalc = {
                     lH: lH2, lA: lA2,
                     pOver25: ou25r.pOver, pUnder25: ou25r.pUnder,
