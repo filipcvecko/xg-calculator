@@ -1336,6 +1336,7 @@ export default function App() {
     if (scannerMatches.length === 0) return
     setScannerRefreshing(true)
     try {
+      // Fetch page 1 first to get total count, then fetch all remaining pages in parallel
       let betsapiEvents = []
       const firstRes = await fetch(`/api/betsapi?endpoint=betfair/ex/upcoming&sport_id=1&page=1`)
       const firstJson = await firstRes.json()
@@ -1343,36 +1344,37 @@ export default function App() {
       const total = firstJson?.pager?.total || 0
       const perPage = firstJson?.pager?.per_page || 50
       const totalPages = Math.min(Math.ceil(total / perPage), 15)
-      for (let page = 2; page <= totalPages; page++) {
-        const res = await fetch(`/api/betsapi?endpoint=betfair/ex/upcoming&sport_id=1&page=${page}`)
-        const json = await res.json()
-        if (json?.results) betsapiEvents = betsapiEvents.concat(json.results)
+      if (totalPages > 1) {
+        const pageResults = await Promise.all(
+          Array.from({ length: totalPages - 1 }, (_, i) =>
+            fetch(`/api/betsapi?endpoint=betfair/ex/upcoming&sport_id=1&page=${i + 2}`).then(r => r.json())
+          )
+        )
+        for (const json of pageResults) {
+          if (json?.results) betsapiEvents = betsapiEvents.concat(json.results)
+        }
       }
       const teamNameDb = await (async () => { try { const r = await fetch(`https://glhwlnikfmxbmigzhotj.supabase.co/rest/v1/team_name_mapping?select=footystats_name,betfair_name`, { headers: { 'apikey': 'sb_publishable_qMaQZnA6wLIvNfAMW6DwKg_prn93ji0', 'Authorization': 'Bearer sb_publishable_qMaQZnA6wLIvNfAMW6DwKg_prn93ji0' } }); return r.ok ? await r.json() : [] } catch { return [] } })()
+      const norm = s => (s||'').toLowerCase()
       const newOdds = {}
-      const CHUNK = 3
-      for (let i = 0; i < scannerMatches.length; i += CHUNK) {
-        const chunk = scannerMatches.slice(i, i + CHUNK)
-        await Promise.all(chunk.map(async ({ match }) => {
-          const homeName = match.home_name || ''
-          const awayName = match.away_name || ''
-  
-          const norm = s => (s||'').toLowerCase()
-          const dbH = teamNameDb.find(t => norm(t.footystats_name) === norm(homeName))
-          const dbA = teamNameDb.find(t => norm(t.footystats_name) === norm(awayName))
-          let bestEvent = null, bestScore = 0
-          for (const ev of betsapiEvents) {
-            const sh = dbH ? (norm(ev.home?.name) === norm(dbH.betfair_name) ? 1.0 : 0) : fuzzyScore(homeName, ev.home?.name || '')
-            const sa = dbA ? (norm(ev.away?.name) === norm(dbA.betfair_name) ? 1.0 : 0) : fuzzyScore(awayName, ev.away?.name || '')
-            const total = (sh + sa) / 2
-            if (total > bestScore && total > (dbH || dbA ? 0.4 : 0.3)) { bestScore = total; bestEvent = ev }
-          }
-          if (bestEvent && bestScore >= 0.6) {
-            const odds = await fetchBetfairOddsForMatch(bestEvent.id)
-            if (odds) newOdds[match.id] = { ...odds, matchedWith: `${bestEvent.home?.name} vs ${bestEvent.away?.name}`, score: bestScore.toFixed(2) }
-          }
+      // Fetch odds for all matched events in parallel
+      await Promise.all(scannerMatches.map(async ({ match }) => {
+        const homeName = match.home_name || ''
+        const awayName = match.away_name || ''
+        const dbH = teamNameDb.find(t => norm(t.footystats_name) === norm(homeName))
+        const dbA = teamNameDb.find(t => norm(t.footystats_name) === norm(awayName))
+        let bestEvent = null, bestScore = 0
+        for (const ev of betsapiEvents) {
+          const sh = dbH ? (norm(ev.home?.name) === norm(dbH.betfair_name) ? 1.0 : 0) : fuzzyScore(homeName, ev.home?.name || '')
+          const sa = dbA ? (norm(ev.away?.name) === norm(dbA.betfair_name) ? 1.0 : 0) : fuzzyScore(awayName, ev.away?.name || '')
+          const score = (sh + sa) / 2
+          if (score > bestScore && score > (dbH || dbA ? 0.4 : 0.3)) { bestScore = score; bestEvent = ev }
+        }
+        if (bestEvent && bestScore >= 0.6) {
+          const odds = await fetchBetfairOddsForMatch(bestEvent.id)
+          if (odds) newOdds[match.id] = { ...odds, matchedWith: `${bestEvent.home?.name} vs ${bestEvent.away?.name}`, score: bestScore.toFixed(2) }
+        }
       }))
-      }
       setScannerOdds(prev => ({ ...prev, ...newOdds }))
     } catch (e) { console.error('Scanner odds error:', e) }
     setScannerRefreshing(false)
