@@ -3005,33 +3005,7 @@ export default function App() {
                     </div>
                   ))}
                 </div>
-                {pinnBets.length >= 3 && (
-                  <div className="card" style={{ marginTop: 10, padding: 14, borderLeft: '3px solid var(--accent)' }}>
-                    <div className="label" style={{ marginBottom: 10 }}>📌 Pinnacle CLV ({pinnBets.length} betov)</div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, fontSize: 12 }}>
-                      <div>
-                        <div style={{ color: 'var(--text3)', fontSize: 10, marginBottom: 3 }}>Avg Pinnacle CLV</div>
-                        <div style={{ fontWeight: 700, fontSize: 16, color: avgPinnCLV > 0 ? 'var(--green)' : 'var(--red)' }}>{fmtSignPct(avgPinnCLV)}</div>
-                        <div style={{ fontSize: 10, color: 'var(--text3)' }}>cieľ: {'>'} +2%</div>
-                      </div>
-                      <div>
-                        <div style={{ color: 'var(--text3)', fontSize: 10, marginBottom: 3 }}>Positive Pinnacle CLV</div>
-                        <div style={{ fontWeight: 700, fontSize: 16, color: posPinnCLV > 50 ? 'var(--green)' : 'var(--red)' }}>{fmtPct(posPinnCLV)}</div>
-                        <div style={{ fontSize: 10, color: 'var(--text3)' }}>{'>'} 50% = dobré</div>
-                      </div>
-                      <div>
-                        <div style={{ color: 'var(--text3)', fontSize: 10, marginBottom: 3 }}>vs Exchange CLV</div>
-                        {avgCLV != null && avgPinnCLV != null ? (
-                          <>
-                            <div style={{ fontWeight: 700, fontSize: 16, color: avgPinnCLV > avgCLV ? 'var(--green)' : 'var(--yellow)' }}>{avgPinnCLV > avgCLV ? '↑' : '↓'} {fmtSignPct(avgPinnCLV - avgCLV)}</div>
-                            <div style={{ fontSize: 10, color: 'var(--text3)' }}>Pinn {avgPinnCLV > avgCLV ? 'lepší' : 'horší'} ako Exchange</div>
-                          </>
-                        ) : <div style={{ color: 'var(--text3)' }}>—</div>}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
+                
 
               <div>
                 <div className="section-title">🎯 EV pásma — kde ti to reálne vychádza</div>
