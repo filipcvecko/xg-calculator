@@ -1263,7 +1263,7 @@ export default function App() {
         return null
       }
       const ou25 = markets.find(m => m.description?.marketName === 'Over/Under 2.5 Goals')
-      // O/U 3.0 -- try standard market first, fallback to Goal Lines handicap 3
+      // O/U 3.0 -- Goal Lines (source_id=3, sharp market) is primary; Over/Under 3.0 Goals is fallback only
       const ou30standard = markets.find(m => m.description?.marketName === 'Over/Under 3.0 Goals')
       const goalLines = markets.find(m => m.description?.marketName === 'Goal Lines')
       const getGoalLineBack = (handicap, side) => {
@@ -1274,8 +1274,8 @@ export default function App() {
       return {
         backOver25: getBack(ou25, 'over'),
         backUnder25: getBack(ou25, 'under'),
-        backOver30: ou30standard ? getBack(ou30standard, 'over') : getGoalLineBack(3, 'over'),
-        backUnder30: ou30standard ? getBack(ou30standard, 'under') : getGoalLineBack(3, 'under'),
+        backOver30: getGoalLineBack(3, 'over') || (ou30standard ? getBack(ou30standard, 'over') : null),
+        backUnder30: getGoalLineBack(3, 'under') || (ou30standard ? getBack(ou30standard, 'under') : null),
       }
     } catch { return null }
   }
@@ -1409,11 +1409,16 @@ export default function App() {
     const isOver25 = market === 'over2.5'
     const isOver30 = market === 'over3.0'
     const isUnder30 = market === 'under3.0'
+    // Mirror display logic: manual (parsed) has priority over back price
+    const resolveOdds = (manualKey, backOdds) => {
+      const m = odds?.[manualKey]
+      return (m !== '' && m != null) ? pf(m) || null : backOdds || null
+    }
     let selProb, ferO, actualOdds
-   if (isOver25) { selProb = calibrateProb(fer.pOver25, 0.85); ferO = fer.ferOver25; actualOdds = odds?.backOver25 || odds?.[`manual_over2.5`] }
-    else if (market === 'under2.5') { selProb = calibrateProb(fer.pUnder25, 0.85); ferO = fer.ferUnder25; actualOdds = odds?.backUnder25 || odds?.[`manual_under2.5`] }
-    else if (isOver30) { selProb = calibrateProb(fer.pOver30, 0.85); ferO = fer.ferOver30; actualOdds = odds?.backOver30 || odds?.[`manual_over3.0`] }
-    else { selProb = calibrateProb(fer.pUnder30, 0.85); ferO = fer.ferUnder30; actualOdds = odds?.backUnder30 || odds?.[`manual_under3.0`] }
+    if (isOver25) { selProb = calibrateProb(fer.pOver25, 0.85); ferO = fer.ferOver25; actualOdds = resolveOdds('manual_over2.5', odds?.backOver25) }
+    else if (market === 'under2.5') { selProb = calibrateProb(fer.pUnder25, 0.85); ferO = fer.ferUnder25; actualOdds = resolveOdds('manual_under2.5', odds?.backUnder25) }
+    else if (isOver30) { selProb = calibrateProb(fer.pOver30, 0.85); ferO = fer.ferOver30; actualOdds = resolveOdds('manual_over3.0', odds?.backOver30) }
+    else { selProb = calibrateProb(fer.pUnder30, 0.85); ferO = fer.ferUnder30; actualOdds = resolveOdds('manual_under3.0', odds?.backUnder30) }
     if (!actualOdds || actualOdds <= 1) return
     const comm = 0.05
     const st = pf(stake) || 10
