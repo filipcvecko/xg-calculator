@@ -1511,7 +1511,9 @@ export default function App() {
       console.log('[Scanner] total betsapiEvents fetched:', betsapiEvents.length)
       const norm = s => (s||'').toLowerCase()
       const newOdds = {}
-      // Fetch odds for all matched events in parallel
+      const matchedEventIds = {}
+
+      // === BETFAIR: pôvodný kód z a52667c, nezmenený ===
       await Promise.all(scannerMatches.map(async ({ match }) => {
         const homeName = match.home_name || ''
         const awayName = match.away_name || ''
@@ -1526,23 +1528,34 @@ export default function App() {
         }
         console.log('[Scanner] match:', match.home_name, 'vs', match.away_name, '→ bestEvent:', bestEvent?.id, 'score:', bestScore.toFixed(2))
         if (bestEvent && bestScore >= 0.6) {
-          const [betfairOdds, pinnOdds] = await Promise.all([
-            fetchBetfairOddsForMatch(bestEvent.id),
-            fetchPinnacleOddsForMatch(bestEvent.id),
-          ])
-          console.log('[Scanner] betfairOdds:', betfairOdds, 'pinnOdds:', pinnOdds)
-          if (betfairOdds || pinnOdds) {
-            newOdds[match.id] = {
-              ...(betfairOdds || {}),
-              ...(pinnOdds || {}),
-              matchedWith: `${bestEvent.home?.name} vs ${bestEvent.away?.name}`,
-              score: bestScore.toFixed(2),
-            }
+          const odds = await fetchBetfairOddsForMatch(bestEvent.id)
+          if (odds) {
+            newOdds[match.id] = { ...odds, matchedWith: `${bestEvent.home?.name} vs ${bestEvent.away?.name}`, score: bestScore.toFixed(2) }
+            matchedEventIds[match.id] = bestEvent.id
           }
         }
       }))
-      console.log('[Scanner] newOdds collected:', Object.keys(newOdds).length, 'matches')
+      console.log('[Scanner] Betfair newOdds:', Object.keys(newOdds).length, 'matches')
       setScannerOdds(prev => ({ ...prev, ...newOdds }))
+
+      // === PINNACLE: separátny krok, neblokuje Betfair výsledky ===
+      const pinnOddsUpdates = {}
+      await Promise.all(
+        Object.entries(matchedEventIds).map(async ([matchId, eventId]) => {
+          const pinnOdds = await fetchPinnacleOddsForMatch(eventId)
+          console.log('[Scanner] Pinnacle for', matchId, ':', pinnOdds)
+          if (pinnOdds) pinnOddsUpdates[matchId] = pinnOdds
+        })
+      )
+      if (Object.keys(pinnOddsUpdates).length > 0) {
+        setScannerOdds(prev => {
+          const updated = { ...prev }
+          for (const [matchId, pinn] of Object.entries(pinnOddsUpdates)) {
+            if (updated[matchId]) updated[matchId] = { ...updated[matchId], ...pinn }
+          }
+          return updated
+        })
+      }
     } catch (e) { console.error('[Scanner] FATAL ERROR:', e) }
     setScannerRefreshing(false)
   }
