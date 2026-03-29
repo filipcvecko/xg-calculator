@@ -1542,9 +1542,11 @@ export default function App() {
       setScannerOdds(prev => ({ ...prev, ...newOdds }))
 
       // === PINNACLE: separátny krok, neblokuje Betfair výsledky ===
+      console.log('[Scanner] matchedEventIds (matchId → our_event_id):', JSON.stringify(matchedEventIds))
       const pinnOddsUpdates = {}
       await Promise.all(
         Object.entries(matchedEventIds).map(async ([matchId, eventId]) => {
+          console.log('[Pinnacle] calling fetchPinnacleOddsForMatch with event_id:', eventId, 'for matchId:', matchId)
           const pinnOdds = await fetchPinnacleOddsForMatch(eventId)
           console.log('[Scanner] Pinnacle for', matchId, ':', pinnOdds)
           if (pinnOdds) pinnOddsUpdates[matchId] = pinnOdds
