@@ -1499,8 +1499,7 @@ export default function App() {
       const VIRTUAL_PATTERN = /virtual|esoccer|esport|cyber|e-soccer|efootball|efoot/i
       betsapiEvents = betsapiEvents.filter(e => !VIRTUAL_PATTERN.test(e.league?.name || ''))
       console.log('[Scanner] total betsapiEvents fetched (after virtual filter):', betsapiEvents.length)
-      console.log('[Scanner] betsapiEvents sample (first 5):', JSON.stringify(betsapiEvents.slice(0, 5).map(e => ({ id: e.id, league: e.league?.name, home: e.home?.name, away: e.away?.name }))))
-      console.log('[Scanner] scannerMatches sample (first 5):', JSON.stringify(scannerMatches.slice(0, 5).map(({ match }) => ({ id: match.id, home: match.home_name, away: match.away_name }))))
+      console.log('[Scanner] ALL betsapiEvents:', JSON.stringify(betsapiEvents.map(e => `${e.home?.name} vs ${e.away?.name}`)))
       const norm = s => (s||'').toLowerCase()
       const newOdds = {}
       const matchedEventIds = {}
