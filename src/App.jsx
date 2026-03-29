@@ -1502,10 +1502,9 @@ export default function App() {
         )
         console.log('[Scanner] lookup:', homeName, 'vs', awayName, '→ want:', dbH.betfair_name, 'vs', dbA.betfair_name, '→ found:', ev?.id ?? 'NO MATCH')
         if (ev) {
-          const odds = await fetchBetfairOddsForMatch(ev.id)
-          if (odds) {
-            newOdds[match.id] = { ...odds, matchedWith: `${ev.home?.name} vs ${ev.away?.name}`, score: '1.00' }
-          }
+          newOdds[match.id] = { matchedWith: `${ev.home?.name} vs ${ev.away?.name}`, score: '1.00' }
+          const betfairOdds = await fetchBetfairOddsForMatch(ev.id)
+          if (betfairOdds) newOdds[match.id] = { ...newOdds[match.id], ...betfairOdds }
         }
       }))
       console.log('[Scanner] Betfair newOdds:', Object.keys(newOdds).length, 'matches')
