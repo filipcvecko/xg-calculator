@@ -1533,7 +1533,8 @@ export default function App() {
           const odds = await fetchBetfairOddsForMatch(ev.id)
           if (odds) {
             newOdds[match.id] = { ...odds, matchedWith: `${ev.home?.name} vs ${ev.away?.name}`, score: '1.00' }
-            matchedEventIds[match.id] = ev.id
+            // our_event_id is BetsAPI's unified ID needed for event/odds (Pinnacle), ev.id is Betfair-specific
+            matchedEventIds[match.id] = ev.our_event_id || ev.id
           }
         }
       }))
