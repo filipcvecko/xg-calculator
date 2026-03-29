@@ -6,8 +6,8 @@ export default async function handler(req, res) {
   const { endpoint, ...params } = req.query
 
   const allowedEndpoints = [
-    'events/upcoming',
-    'event/view',
+    'betfair/ex/upcoming',
+    'betfair/ex/event',
     'event/odds',
     'bet365/upcoming',
     'bet365/event',
@@ -23,8 +23,6 @@ export default async function handler(req, res) {
 
   const baseUrl = endpoint === 'event/odds'
     ? `https://api.b365api.com/v2/${endpoint}`
-    : endpoint === 'events/upcoming'
-    ? `https://api.b365api.com/v3/${endpoint}`
     : `https://api.betsapi.com/v1/${endpoint}`
 
   const queryParams = new URLSearchParams({ token, ...params }).toString()
