@@ -1497,6 +1497,8 @@ export default function App() {
       }
       const teamNameDb = await (async () => { try { const r = await fetch(`https://glhwlnikfmxbmigzhotj.supabase.co/rest/v1/team_name_mapping?select=footystats_name,betfair_name`, { headers: { 'apikey': 'sb_publishable_qMaQZnA6wLIvNfAMW6DwKg_prn93ji0', 'Authorization': 'Bearer sb_publishable_qMaQZnA6wLIvNfAMW6DwKg_prn93ji0' } }); return r.ok ? await r.json() : [] } catch { return [] } })()
       console.log('[Scanner] total betsapiEvents fetched:', betsapiEvents.length)
+      console.log('[Scanner] betsapiEvents sample (first 5):', JSON.stringify(betsapiEvents.slice(0, 5).map(e => ({ id: e.id, home: e.home?.name, away: e.away?.name }))))
+      console.log('[Scanner] scannerMatches sample (first 5):', JSON.stringify(scannerMatches.slice(0, 5).map(({ match }) => ({ id: match.id, home: match.home_name, away: match.away_name }))))
       const norm = s => (s||'').toLowerCase()
       const newOdds = {}
       const matchedEventIds = {}
