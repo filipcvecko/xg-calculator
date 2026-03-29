@@ -6,13 +6,11 @@ export default async function handler(req, res) {
   const { endpoint, ...params } = req.query
 
   const allowedEndpoints = [
-    'betfair/upcoming',
-    'betfair/event',
-    'betfair/ex/upcoming',
-    'betfair/ex/event',
+    'events/upcoming',
+    'event/view',
+    'event/odds',
     'bet365/upcoming',
     'bet365/event',
-    'event/odds',
   ]
   if (!allowedEndpoints.includes(endpoint)) {
     return res.status(400).json({ error: 'Invalid endpoint' })
@@ -25,6 +23,8 @@ export default async function handler(req, res) {
 
   const baseUrl = endpoint === 'event/odds'
     ? `https://api.b365api.com/v2/${endpoint}`
+    : endpoint === 'events/upcoming'
+    ? `https://api.b365api.com/v3/${endpoint}`
     : `https://api.betsapi.com/v1/${endpoint}`
 
   const queryParams = new URLSearchParams({ token, ...params }).toString()

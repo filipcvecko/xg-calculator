@@ -1336,33 +1336,21 @@ export default function App() {
 
   async function fetchBetfairOddsForMatch(betsapiEventId) {
     try {
-      const res = await fetch(`/api/betsapi?endpoint=betfair/ex/event&event_id=${betsapiEventId}`)
+      // v2/event/odds with source=betfair, market 1_3 = Goal Lines (O/U)
+      const res = await fetch(`/api/betsapi?endpoint=event%2Fodds&event_id=${betsapiEventId}&source=betfair&odds_market=1_3`)
       if (!res.ok) return null
       const json = await res.json()
-      const markets = json?.results?.[0]?.markets
-      if (!markets) return null
-      const getBack = (market, side) => {
-        if (!market) return null
-        for (const runner of market.runners || []) {
-          const name = runner.description?.runnerName?.toLowerCase() || ''
-          if (name.includes(side)) return runner.exchange?.availableToBack?.[0]?.price || null
-        }
-        return null
-      }
-      const ou25 = markets.find(m => m.description?.marketName === 'Over/Under 2.5 Goals')
-      // O/U 3.0 -- Goal Lines (source_id=3, sharp market) is primary; Over/Under 3.0 Goals is fallback only
-      const ou30standard = markets.find(m => m.description?.marketName === 'Over/Under 3.0 Goals')
-      const goalLines = markets.find(m => m.description?.marketName === 'Goal Lines')
-      const getGoalLineBack = (handicap, side) => {
-        if (!goalLines) return null
-        const runner = goalLines.runners?.find(r => r.handicap === handicap && r.description?.runnerName?.toLowerCase().startsWith(side))
-        return runner?.exchange?.availableToBack?.[0]?.price || null
-      }
+      // v2 response: { success: 1, results: { odds: { '1_3': [ { handicap, home_od, away_od }, ... ] } } }
+      const lines = json?.results?.odds?.['1_3']
+      if (!Array.isArray(lines) || lines.length === 0) return null
+      const findLine = (h) => lines.find(l => parseFloat(l.handicap) === h)
+      const ou25line = findLine(2.5)
+      const ou30line = findLine(3) || findLine(3.0)
       return {
-        backOver25: getBack(ou25, 'over'),
-        backUnder25: getBack(ou25, 'under'),
-        backOver30: getGoalLineBack(3, 'over') || (ou30standard ? getBack(ou30standard, 'over') : null),
-        backUnder30: getGoalLineBack(3, 'under') || (ou30standard ? getBack(ou30standard, 'under') : null),
+        backOver25:  ou25line ? parseFloat(ou25line.home_od) || null : null,
+        backUnder25: ou25line ? parseFloat(ou25line.away_od) || null : null,
+        backOver30:  ou30line ? parseFloat(ou30line.home_od) || null : null,
+        backUnder30: ou30line ? parseFloat(ou30line.away_od) || null : null,
       }
     } catch { return null }
   }
@@ -1489,10 +1477,10 @@ export default function App() {
     try {
       // Fetch page 1 first to get total count, then fetch all remaining pages in parallel
       let betsapiEvents = []
-      const firstRes = await fetch(`/api/betsapi?endpoint=betfair/ex/upcoming&sport_id=1&page=1`)
-      console.log('[Scanner] betfair/ex/upcoming page1 status:', firstRes.status)
+      const firstRes = await fetch(`/api/betsapi?endpoint=events/upcoming&sport_id=1&page=1`)
+      console.log('[Scanner] events/upcoming page1 status:', firstRes.status)
       const firstJson = await firstRes.json()
-      console.log('[Scanner] betfair events page1:', firstJson?.results?.length, 'total pager:', firstJson?.pager)
+      console.log('[Scanner] events page1:', firstJson?.results?.length, 'total pager:', firstJson?.pager)
       if (firstJson?.results) betsapiEvents = betsapiEvents.concat(firstJson.results)
       const total = firstJson?.pager?.total || 0
       const perPage = firstJson?.pager?.per_page || 50
@@ -1500,7 +1488,7 @@ export default function App() {
       if (totalPages > 1) {
         const pageResults = await Promise.all(
           Array.from({ length: totalPages - 1 }, (_, i) =>
-            fetch(`/api/betsapi?endpoint=betfair/ex/upcoming&sport_id=1&page=${i + 2}`).then(r => r.json())
+            fetch(`/api/betsapi?endpoint=events/upcoming&sport_id=1&page=${i + 2}`).then(r => r.json())
           )
         )
         for (const json of pageResults) {
