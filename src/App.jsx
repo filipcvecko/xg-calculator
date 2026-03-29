@@ -1385,10 +1385,10 @@ export default function App() {
       const ou30line = findLine(3) || findLine(3.0)
       console.log('[Pinnacle] ou25line:', ou25line, 'ou30line:', ou30line)
       return {
-        pinnOver25:  ou25line ? parseFloat(ou25line.home_od) || null : null,
-        pinnUnder25: ou25line ? parseFloat(ou25line.away_od) || null : null,
-        pinnOver30:  ou30line ? parseFloat(ou30line.home_od) || null : null,
-        pinnUnder30: ou30line ? parseFloat(ou30line.away_od) || null : null,
+        pinnOver25:  ou25line ? parseFloat(ou25line.over_od) || null : null,
+        pinnUnder25: ou25line ? parseFloat(ou25line.under_od) || null : null,
+        pinnOver30:  ou30line ? parseFloat(ou30line.over_od) || null : null,
+        pinnUnder30: ou30line ? parseFloat(ou30line.under_od) || null : null,
       }
     } catch (e) { console.error('[Pinnacle] error:', e); return null }
   }
