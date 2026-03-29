@@ -1368,8 +1368,8 @@ export default function App() {
 
   async function fetchPinnacleOddsForMatch(betsapiEventId) {
     try {
-      // BetsAPI v2/event/odds with source=pinnaclesports, market 1_3 = Goal Line (O/U)
-      const res = await fetch(`/api/betsapi?endpoint=event%2Fodds&event_id=${betsapiEventId}&source=pinnaclesports&odds_market=1_3`)
+      // BetsAPI v2/event/odds with source=pinnaclesports — no odds_market filter (it breaks the response)
+      const res = await fetch(`/api/betsapi?endpoint=event%2Fodds&event_id=${betsapiEventId}&source=pinnaclesports`)
       console.log('[Pinnacle] HTTP status:', res.status, 'for event_id:', betsapiEventId)
       if (!res.ok) { console.warn('[Pinnacle] non-ok response'); return null }
       const json = await res.json()
