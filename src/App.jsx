@@ -1492,18 +1492,17 @@ export default function App() {
         const awayName = match.away_name || ''
         const dbH = teamNameDb.find(t => norm(t.footystats_name) === norm(homeName))
         const dbA = teamNameDb.find(t => norm(t.footystats_name) === norm(awayName))
-        if (!dbH || !dbA) {
-          console.log('[Scanner] skip (not in DB):', homeName, 'vs', awayName, '→ dbH:', !!dbH, 'dbA:', !!dbA)
-          return
+        let bestEvent = null, bestScore = 0
+        for (const ev of betsapiEvents) {
+          const sh = dbH ? (norm(ev.home?.name) === norm(dbH.betfair_name) ? 1.0 : 0) : fuzzyScore(homeName, ev.home?.name || '')
+          const sa = dbA ? (norm(ev.away?.name) === norm(dbA.betfair_name) ? 1.0 : 0) : fuzzyScore(awayName, ev.away?.name || '')
+          const score = (sh + sa) / 2
+          if (score > bestScore && score > (dbH || dbA ? 0.4 : 0.3)) { bestScore = score; bestEvent = ev }
         }
-        const ev = betsapiEvents.find(e =>
-          norm(e.home?.name) === norm(dbH.betfair_name) &&
-          norm(e.away?.name) === norm(dbA.betfair_name)
-        )
-        console.log('[Scanner] lookup:', homeName, 'vs', awayName, '→ want:', dbH.betfair_name, 'vs', dbA.betfair_name, '→ found:', ev?.id ?? 'NO MATCH')
-        if (ev) {
-          newOdds[match.id] = { matchedWith: `${ev.home?.name} vs ${ev.away?.name}`, score: '1.00' }
-          const betfairOdds = await fetchBetfairOddsForMatch(ev.id)
+        console.log('[Scanner] match:', match.home_name, 'vs', match.away_name, '→ bestEvent:', bestEvent?.id, 'score:', bestScore.toFixed(2))
+        if (bestEvent && bestScore >= 0.6) {
+          newOdds[match.id] = { matchedWith: `${bestEvent.home?.name} vs ${bestEvent.away?.name}`, score: bestScore.toFixed(2) }
+          const betfairOdds = await fetchBetfairOddsForMatch(bestEvent.id)
           if (betfairOdds) newOdds[match.id] = { ...newOdds[match.id], ...betfairOdds }
         }
       }))
