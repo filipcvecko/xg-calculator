@@ -385,6 +385,8 @@ export default function App() {
   const [selectedHomeTeam, setSelectedHomeTeam] = useState(null)
   const [selectedAwayTeam, setSelectedAwayTeam] = useState(null)
   const [autofillInfo, setAutofillInfo] = useState(null)
+  const [homeTeamError, setHomeTeamError] = useState(null)
+  const [awayTeamError, setAwayTeamError] = useState(null)
 
   const [homeLastX, setHomeLastX] = useState(null)
   const [awayLastX, setAwayLastX] = useState(null)
@@ -577,22 +579,78 @@ export default function App() {
     setLeagueOpen(false)
   }
 
-  async function handleSelectHomeTeam(team) {
-    setSelectedHomeTeam({ ...team, loading: true })
-    setHomeTeamOpen(false)
-    setHomeTeamSearch('')
-    setHomeLastX(null)
-    const lastxPromise = fetchTeamLastX(team.id)
+  function blendStats(sNew, sOld, matches) {
+    if (!sOld) return { stats: sNew, blended: false }
+    const wNew = Math.min(matches / 6, 1)
+    const wOld = 1 - wNew
+    const blendVal = (a, b) => (a != null && b != null) ? +((wNew * a + wOld * b).toFixed(2)) : (a ?? b)
+    return {
+      stats: {
+        xgH:  blendVal(sNew.xgH,  sOld.xgH),
+        xgA:  blendVal(sNew.xgA,  sOld.xgA),
+        xgaH: blendVal(sNew.xgaH, sOld.xgaH),
+        xgaA: blendVal(sNew.xgaA, sOld.xgaA),
+        gfH:  blendVal(sNew.gfH,  sOld.gfH),
+        gfA:  blendVal(sNew.gfA,  sOld.gfA),
+        gaH:  blendVal(sNew.gaH,  sOld.gaH),
+        gaA:  blendVal(sNew.gaA,  sOld.gaA),
+        mp_h: sNew.mp_h,
+        mp_a: sNew.mp_a,
+        _raw: sNew._raw,
+      },
+      blended: true,
+      wNew: Math.round(wNew * 100),
+      wOld: Math.round(wOld * 100),
+    }
+  }
+
+  async function fetchWithFallback(team, role) {
+    // role = 'home' | 'away'
+    const seasons = selectedLeague?.season ?? []
     let rawData = null
     if (team._statsRaw && Object.keys(team._statsRaw).length > 5) {
       rawData = team._statsRaw
     } else {
       rawData = await fetchTeamStats(team.id, team.seasonId)
     }
+    if (!rawData) return { stats: null, blendInfo: null, error: `❌ Nepodarilo sa načítať dáta pre ${team.name}` }
+
+    const sNew = extractTeamStats(rawData)
+    const matches = role === 'home' ? (sNew.mp_h || 0) : (sNew.mp_a || 0)
+
+    if (matches < 6 && seasons.length > 1) {
+      const prevSeason = seasons
+        .filter(s => s.id < team.seasonId)
+        .reduce((best, s) => (!best || s.id > best.id ? s : best), null)
+      if (prevSeason) {
+        const rawOld = await fetchTeamStats(team.id, prevSeason.id)
+        if (rawOld) {
+          const sOld = extractTeamStats(rawOld)
+          const { stats, blended, wNew, wOld } = blendStats(sNew, sOld, matches)
+          return { stats, blendInfo: blended ? { matches, wNew, wOld, prevSeasonId: prevSeason.id } : null, error: null }
+        }
+      }
+    }
+    return { stats: sNew, blendInfo: null, error: null }
+  }
+
+  async function handleSelectHomeTeam(team) {
+    setSelectedHomeTeam({ ...team, loading: true })
+    setHomeTeamError(null)
+    setHomeTeamOpen(false)
+    setHomeTeamSearch('')
+    setHomeLastX(null)
+    const lastxPromise = fetchTeamLastX(team.id)
+    const { stats: s, blendInfo, error } = await fetchWithFallback(team, 'home')
     const lastx = await lastxPromise
-    const raw = rawData
-    const s = raw ? extractTeamStats(raw) : null
-    const finalTeam = { ...team, stats: s, loading: false }
+    if (error) {
+      setHomeTeamError(error)
+      setSelectedHomeTeam({ ...team, stats: null, loading: false })
+      setHomeLastX(lastx)
+      updateAutofillInfo({ ...team, stats: null }, selectedAwayTeam, null, null)
+      return
+    }
+    const finalTeam = { ...team, stats: s, loading: false, blendInfo }
     setSelectedHomeTeam(finalTeam)
     setHomeLastX(lastx)
     if (s) {
@@ -608,20 +666,21 @@ export default function App() {
 
   async function handleSelectAwayTeam(team) {
     setSelectedAwayTeam({ ...team, loading: true })
+    setAwayTeamError(null)
     setAwayTeamOpen(false)
     setAwayTeamSearch('')
     setAwayLastX(null)
     const lastxPromise = fetchTeamLastX(team.id)
-    let rawData = null
-    if (team._statsRaw && Object.keys(team._statsRaw).length > 5) {
-      rawData = team._statsRaw
-    } else {
-      rawData = await fetchTeamStats(team.id, team.seasonId)
-    }
+    const { stats: s, blendInfo, error } = await fetchWithFallback(team, 'away')
     const lastx = await lastxPromise
-    const raw = rawData
-    const s = raw ? extractTeamStats(raw) : null
-    const finalTeam = { ...team, stats: s, loading: false }
+    if (error) {
+      setAwayTeamError(error)
+      setSelectedAwayTeam({ ...team, stats: null, loading: false })
+      setAwayLastX(lastx)
+      updateAutofillInfo(selectedHomeTeam, { ...team, stats: null }, null, null)
+      return
+    }
+    const finalTeam = { ...team, stats: s, loading: false, blendInfo }
     setSelectedAwayTeam(finalTeam)
     setAwayLastX(lastx)
     if (s) {
@@ -651,6 +710,7 @@ export default function App() {
     setSelectedHomeTeam(null)
     setHomeTeamSearch('')
     setHomeLastX(null)
+    setHomeTeamError(null)
     setXgH(''); setXgaH(''); setGfH(''); setGaH('')
     setAutofillInfo(null)
   }
@@ -659,6 +719,7 @@ export default function App() {
     setSelectedAwayTeam(null)
     setAwayTeamSearch('')
     setAwayLastX(null)
+    setAwayTeamError(null)
     setXgA(''); setXgaA(''); setGfA(''); setGaA('')
     setAutofillInfo(null)
   }
@@ -1825,11 +1886,24 @@ export default function App() {
                       )}
                     </div>
                   ) : (
-                    <div className="team-badge">
-                      {selectedHomeTeam.loading ? '⏳' : '🏠'} {selectedHomeTeam.name}
-                      {selectedHomeTeam.loading && <span style={{color:'var(--yellow)'}}>načítavam...</span>}
-                      <button onClick={clearHomeTeam} title="Zmeniť">✕</button>
-                    </div>
+                    <>
+                      <div className="team-badge">
+                        {selectedHomeTeam.loading ? '⏳' : '🏠'} {selectedHomeTeam.name}
+                        {selectedHomeTeam.loading && <span style={{color:'var(--yellow)'}}>načítavam...</span>}
+                        <button onClick={clearHomeTeam} title="Zmeniť">✕</button>
+                      </div>
+                      {homeTeamError && (
+                        <div style={{ marginTop: 5, fontSize: 11, color: 'var(--red)', background: 'rgba(231,76,60,0.08)', border: '1px solid rgba(231,76,60,0.25)', borderRadius: 5, padding: '5px 9px' }}>
+                          {homeTeamError}
+                        </div>
+                      )}
+                      {!homeTeamError && selectedHomeTeam.stats && (selectedHomeTeam.stats.mp_h || 0) < 6 && (
+                        <div style={{ marginTop: 5, fontSize: 11, color: 'var(--yellow)', background: 'rgba(241,196,15,0.08)', border: '1px solid rgba(241,196,15,0.25)', borderRadius: 5, padding: '5px 9px' }}>
+                          ⚠️ Málo zápasov ({selectedHomeTeam.stats.mp_h ?? 0}) — dáta nemusia byť spoľahlivé
+                          {selectedHomeTeam.blendInfo && <span style={{ color: 'var(--text3)' }}> · blend {selectedHomeTeam.blendInfo.wNew}% nová / {selectedHomeTeam.blendInfo.wOld}% predošlá sezóna</span>}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
 
@@ -1861,11 +1935,24 @@ export default function App() {
                       )}
                     </div>
                   ) : (
-                    <div className="team-badge">
-                      {selectedAwayTeam.loading ? '⏳' : '✈️'} {selectedAwayTeam.name}
-                      {selectedAwayTeam.loading && <span style={{color:'var(--yellow)'}}>načítavam...</span>}
-                      <button onClick={clearAwayTeam} title="Zmeniť">✕</button>
-                    </div>
+                    <>
+                      <div className="team-badge">
+                        {selectedAwayTeam.loading ? '⏳' : '✈️'} {selectedAwayTeam.name}
+                        {selectedAwayTeam.loading && <span style={{color:'var(--yellow)'}}>načítavam...</span>}
+                        <button onClick={clearAwayTeam} title="Zmeniť">✕</button>
+                      </div>
+                      {awayTeamError && (
+                        <div style={{ marginTop: 5, fontSize: 11, color: 'var(--red)', background: 'rgba(231,76,60,0.08)', border: '1px solid rgba(231,76,60,0.25)', borderRadius: 5, padding: '5px 9px' }}>
+                          {awayTeamError}
+                        </div>
+                      )}
+                      {!awayTeamError && selectedAwayTeam.stats && (selectedAwayTeam.stats.mp_a || 0) < 6 && (
+                        <div style={{ marginTop: 5, fontSize: 11, color: 'var(--yellow)', background: 'rgba(241,196,15,0.08)', border: '1px solid rgba(241,196,15,0.25)', borderRadius: 5, padding: '5px 9px' }}>
+                          ⚠️ Málo zápasov ({selectedAwayTeam.stats.mp_a ?? 0}) — dáta nemusia byť spoľahlivé
+                          {selectedAwayTeam.blendInfo && <span style={{ color: 'var(--text3)' }}> · blend {selectedAwayTeam.blendInfo.wNew}% nová / {selectedAwayTeam.blendInfo.wOld}% predošlá sezóna</span>}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
