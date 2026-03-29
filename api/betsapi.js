@@ -3,7 +3,8 @@ const BETFAIR_PINNACLE_TOKEN = process.env.PINNACLE_TOKEN || '247216-BtDsNpmSHVb
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
 
-  const { endpoint, ...params } = req.query
+  const { endpoint: rawEndpoint, ...params } = req.query
+  const endpoint = decodeURIComponent(rawEndpoint || '')
 
   const allowedEndpoints = [
     'betfair/ex/upcoming',
