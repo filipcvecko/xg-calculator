@@ -12,18 +12,23 @@ export default async function handler(req, res) {
     'betfair/ex/event',
     'bet365/upcoming',
     'bet365/event',
-    'pinnaclesports/event',
+    'event/odds',
   ]
   if (!allowedEndpoints.includes(endpoint)) {
     return res.status(400).json({ error: 'Invalid endpoint' })
   }
 
-  const isPinnacle = endpoint.startsWith('pinnaclesports')
-  const token = isPinnacle ? PINNACLE_TOKEN : process.env.BETSAPI_TOKEN
+  // event/odds uses v2 API and Pinnacle-specific token when source=pinnaclesports
+  const isPinnacleOdds = endpoint === 'event/odds' && params.source === 'pinnaclesports'
+  const token = isPinnacleOdds ? PINNACLE_TOKEN : process.env.BETSAPI_TOKEN
   if (!token) return res.status(500).json({ error: 'Missing BETSAPI_TOKEN' })
 
+  const baseUrl = endpoint === 'event/odds'
+    ? `https://api.b365api.com/v2/${endpoint}`
+    : `https://api.betsapi.com/v1/${endpoint}`
+
   const queryParams = new URLSearchParams({ token, ...params }).toString()
-  const url = `https://api.betsapi.com/v1/${endpoint}?${queryParams}`
+  const url = `${baseUrl}?${queryParams}`
 
   try {
     const response = await fetch(url)

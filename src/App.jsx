@@ -1369,41 +1369,29 @@ export default function App() {
 
   async function fetchPinnacleOddsForMatch(betsapiEventId) {
     try {
-      const res = await fetch(`/api/betsapi?endpoint=pinnaclesports/event&event_id=${betsapiEventId}`)
+      // BetsAPI v2/event/odds with source=pinnaclesports, market 1_3 = Goal Line (O/U)
+      const res = await fetch(`/api/betsapi?endpoint=event%2Fodds&event_id=${betsapiEventId}&source=pinnaclesports&odds_market=1_3`)
       console.log('[Pinnacle] HTTP status:', res.status, 'for event_id:', betsapiEventId)
       if (!res.ok) { console.warn('[Pinnacle] non-ok response'); return null }
       const json = await res.json()
-      console.log('[Pinnacle] raw response:', JSON.stringify(json).slice(0, 400))
-      const markets = json?.results?.[0]?.markets
-      if (!markets) { console.warn('[Pinnacle] no markets in response'); return null }
-      const getPrice = (market, side) => {
-        if (!market) return null
-        for (const runner of market.runners || []) {
-          const name = runner.description?.runnerName?.toLowerCase() || ''
-          if (name.includes(side)) {
-            return runner.sp?.nearPrice || runner.sp?.officialPrice ||
-                   runner.exchange?.availableToBack?.[0]?.price || null
-          }
-        }
+      console.log('[Pinnacle] raw response:', JSON.stringify(json).slice(0, 600))
+      // v2 response: { success: 1, results: { odds: { '1_3': [ { handicap, home_od, away_od }, ... ] } } }
+      const lines = json?.results?.odds?.['1_3']
+      if (!Array.isArray(lines) || lines.length === 0) {
+        console.warn('[Pinnacle] no 1_3 lines in response, keys:', Object.keys(json?.results?.odds || {}))
         return null
       }
-      const ou25 = markets.find(m => m.description?.marketName === 'Over/Under 2.5 Goals')
-      const ou30standard = markets.find(m => m.description?.marketName === 'Over/Under 3.0 Goals')
-      const goalLines = markets.find(m => m.description?.marketName === 'Goal Lines')
-      const getPinnGoalLinePrice = (handicap, side) => {
-        if (!goalLines) return null
-        const runner = goalLines.runners?.find(r => r.handicap === handicap &&
-          r.description?.runnerName?.toLowerCase().startsWith(side))
-        return runner?.sp?.nearPrice || runner?.sp?.officialPrice ||
-               runner?.exchange?.availableToBack?.[0]?.price || null
-      }
+      const findLine = (h) => lines.find(l => parseFloat(l.handicap) === h)
+      const ou25line = findLine(2.5)
+      const ou30line = findLine(3) || findLine(3.0)
+      console.log('[Pinnacle] ou25line:', ou25line, 'ou30line:', ou30line)
       return {
-        pinnOver25:  getPrice(ou25, 'over'),
-        pinnUnder25: getPrice(ou25, 'under'),
-        pinnOver30:  getPinnGoalLinePrice(3, 'over')  || (ou30standard ? getPrice(ou30standard, 'over')  : null),
-        pinnUnder30: getPinnGoalLinePrice(3, 'under') || (ou30standard ? getPrice(ou30standard, 'under') : null),
+        pinnOver25:  ou25line ? parseFloat(ou25line.home_od) || null : null,
+        pinnUnder25: ou25line ? parseFloat(ou25line.away_od) || null : null,
+        pinnOver30:  ou30line ? parseFloat(ou30line.home_od) || null : null,
+        pinnUnder30: ou30line ? parseFloat(ou30line.away_od) || null : null,
       }
-    } catch { return null }
+    } catch (e) { console.error('[Pinnacle] error:', e); return null }
   }
 
   async function loadScanner() {
