@@ -1477,7 +1477,7 @@ export default function App() {
     try {
       // Fetch page 1 first to get total count, then fetch all remaining pages in parallel
       let betsapiEvents = []
-      const firstRes = await fetch(`/api/betsapi?endpoint=events/upcoming&sport_id=1&page=1`)
+      const firstRes = await fetch(`/api/betsapi?endpoint=events/upcoming&sport_id=1&skip_esports=1&page=1`)
       console.log('[Scanner] events/upcoming page1 status:', firstRes.status)
       const firstJson = await firstRes.json()
       console.log('[Scanner] events page1:', firstJson?.results?.length, 'total pager:', firstJson?.pager)
@@ -1488,7 +1488,7 @@ export default function App() {
       if (totalPages > 1) {
         const pageResults = await Promise.all(
           Array.from({ length: totalPages - 1 }, (_, i) =>
-            fetch(`/api/betsapi?endpoint=events/upcoming&sport_id=1&page=${i + 2}`).then(r => r.json())
+            fetch(`/api/betsapi?endpoint=events/upcoming&sport_id=1&skip_esports=1&page=${i + 2}`).then(r => r.json())
           )
         )
         for (const json of pageResults) {
@@ -1496,8 +1496,10 @@ export default function App() {
         }
       }
       const teamNameDb = await (async () => { try { const r = await fetch(`https://glhwlnikfmxbmigzhotj.supabase.co/rest/v1/team_name_mapping?select=footystats_name,betfair_name`, { headers: { 'apikey': 'sb_publishable_qMaQZnA6wLIvNfAMW6DwKg_prn93ji0', 'Authorization': 'Bearer sb_publishable_qMaQZnA6wLIvNfAMW6DwKg_prn93ji0' } }); return r.ok ? await r.json() : [] } catch { return [] } })()
-      console.log('[Scanner] total betsapiEvents fetched:', betsapiEvents.length)
-      console.log('[Scanner] betsapiEvents sample (first 5):', JSON.stringify(betsapiEvents.slice(0, 5).map(e => ({ id: e.id, home: e.home?.name, away: e.away?.name }))))
+      const VIRTUAL_PATTERN = /virtual|esoccer|esport|cyber|e-soccer|efootball|efoot/i
+      betsapiEvents = betsapiEvents.filter(e => !VIRTUAL_PATTERN.test(e.league?.name || ''))
+      console.log('[Scanner] total betsapiEvents fetched (after virtual filter):', betsapiEvents.length)
+      console.log('[Scanner] betsapiEvents sample (first 5):', JSON.stringify(betsapiEvents.slice(0, 5).map(e => ({ id: e.id, league: e.league?.name, home: e.home?.name, away: e.away?.name }))))
       console.log('[Scanner] scannerMatches sample (first 5):', JSON.stringify(scannerMatches.slice(0, 5).map(({ match }) => ({ id: match.id, home: match.home_name, away: match.away_name }))))
       const norm = s => (s||'').toLowerCase()
       const newOdds = {}
