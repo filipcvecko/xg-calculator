@@ -1370,10 +1370,12 @@ export default function App() {
   async function fetchPinnacleOddsForMatch(betsapiEventId) {
     try {
       const res = await fetch(`/api/betsapi?endpoint=pinnaclesports/event&event_id=${betsapiEventId}`)
-      if (!res.ok) return null
+      console.log('[Pinnacle] HTTP status:', res.status, 'for event_id:', betsapiEventId)
+      if (!res.ok) { console.warn('[Pinnacle] non-ok response'); return null }
       const json = await res.json()
+      console.log('[Pinnacle] raw response:', JSON.stringify(json).slice(0, 400))
       const markets = json?.results?.[0]?.markets
-      if (!markets) return null
+      if (!markets) { console.warn('[Pinnacle] no markets in response'); return null }
       const getPrice = (market, side) => {
         if (!market) return null
         for (const runner of market.runners || []) {
@@ -1495,11 +1497,14 @@ export default function App() {
   async function refreshScannerOdds() {
     if (scannerMatches.length === 0) return
     setScannerRefreshing(true)
+    console.log('[Scanner] refreshScannerOdds START, matches:', scannerMatches.length)
     try {
       // Fetch page 1 first to get total count, then fetch all remaining pages in parallel
       let betsapiEvents = []
       const firstRes = await fetch(`/api/betsapi?endpoint=betfair/ex/upcoming&sport_id=1&page=1`)
+      console.log('[Scanner] betfair/ex/upcoming page1 status:', firstRes.status)
       const firstJson = await firstRes.json()
+      console.log('[Scanner] betfair events page1:', firstJson?.results?.length, 'total pager:', firstJson?.pager)
       if (firstJson?.results) betsapiEvents = betsapiEvents.concat(firstJson.results)
       const total = firstJson?.pager?.total || 0
       const perPage = firstJson?.pager?.per_page || 50
@@ -1515,6 +1520,7 @@ export default function App() {
         }
       }
       const teamNameDb = await (async () => { try { const r = await fetch(`https://glhwlnikfmxbmigzhotj.supabase.co/rest/v1/team_name_mapping?select=footystats_name,betfair_name`, { headers: { 'apikey': 'sb_publishable_qMaQZnA6wLIvNfAMW6DwKg_prn93ji0', 'Authorization': 'Bearer sb_publishable_qMaQZnA6wLIvNfAMW6DwKg_prn93ji0' } }); return r.ok ? await r.json() : [] } catch { return [] } })()
+      console.log('[Scanner] total betsapiEvents fetched:', betsapiEvents.length)
       const norm = s => (s||'').toLowerCase()
       const newOdds = {}
       // Fetch odds for all matched events in parallel
@@ -1530,11 +1536,13 @@ export default function App() {
           const score = (sh + sa) / 2
           if (score > bestScore && score > (dbH || dbA ? 0.4 : 0.3)) { bestScore = score; bestEvent = ev }
         }
+        console.log('[Scanner] match:', match.home_name, 'vs', match.away_name, '→ bestEvent:', bestEvent?.id, 'score:', bestScore.toFixed(2))
         if (bestEvent && bestScore >= 0.6) {
           const [betfairOdds, pinnOdds] = await Promise.all([
             fetchBetfairOddsForMatch(bestEvent.id),
             fetchPinnacleOddsForMatch(bestEvent.id),
           ])
+          console.log('[Scanner] betfairOdds:', betfairOdds, 'pinnOdds:', pinnOdds)
           if (betfairOdds || pinnOdds) {
             newOdds[match.id] = {
               ...(betfairOdds || {}),
@@ -1545,8 +1553,9 @@ export default function App() {
           }
         }
       }))
+      console.log('[Scanner] newOdds collected:', Object.keys(newOdds).length, 'matches')
       setScannerOdds(prev => ({ ...prev, ...newOdds }))
-    } catch (e) { console.error('Scanner odds error:', e) }
+    } catch (e) { console.error('[Scanner] FATAL ERROR:', e) }
     setScannerRefreshing(false)
   }
 
