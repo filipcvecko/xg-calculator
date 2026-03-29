@@ -5,7 +5,7 @@ import {
   buildScoreMatrix, blendLambda, fairOdds, calcCLV,
   brierScore, logLoss, calcMaxDrawdown,
   marketCalibration, calibrateProb, evFilter, oddsBandFilter,
-  timeDecayBlend, extractLastXStats,
+  timeDecayBlend, extractLastXStats, calcSotAdjustment,
   fmt2, fmt3, fmtPct, fmtSign, fmtSignPct
 } from './math'
 
@@ -392,6 +392,15 @@ export default function App() {
   const [awayLastX, setAwayLastX] = useState(null)
   const [formWindow, setFormWindow] = useState(5)
   const [formWeight, setFormWeight] = useState('0.40')
+
+  const [sotEnabled, setSotEnabled] = useState(false)
+  const [sotHomeFor, setSotHomeFor] = useState('')
+  const [sotAwayFor, setSotAwayFor] = useState('')
+  const [sotHomeAgainst, setSotHomeAgainst] = useState('')
+  const [sotAwayAgainst, setSotAwayAgainst] = useState('')
+  const [leagueAvgSot, setLeagueAvgSot] = useState('4.5')
+  const [sotWeight, setSotWeight] = useState('0.3')
+  const [sotMaxCap, setSotMaxCap] = useState('5')
 
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [rho, setRho] = useState('-0.10')
@@ -830,6 +839,22 @@ export default function App() {
       lA = result.lA
     }
 
+    let sotInfo = null
+    if (sotEnabled && pf(sotHomeFor) > 0 && pf(sotAwayFor) > 0) {
+      const { homeAdj, awayAdj } = calcSotAdjustment({
+        homeSotFor: pf(sotHomeFor),
+        awaySotFor: pf(sotAwayFor),
+        homeSotAgainst: pf(sotHomeAgainst) > 0 ? pf(sotHomeAgainst) : null,
+        awaySotAgainst: pf(sotAwayAgainst) > 0 ? pf(sotAwayAgainst) : null,
+        leagueAvgSot: pf(leagueAvgSot) || 4.5,
+        weight: pf(sotWeight) || 0.3,
+        maxCap: (pf(sotMaxCap) || 5) / 100,
+      })
+      sotInfo = { lHbase: lH.toFixed(3), lAbase: lA.toFixed(3), homeAdj, awayAdj }
+      lH = lH * (1 + homeAdj)
+      lA = lA * (1 + awayAdj)
+    }
+
     const rhoVal = pf(rho) || -0.10
     const { pOver: pOverRaw, pUnder: pUnderRaw } = calcOverUnder(lH, lA, rhoVal)
     const ou30  = calcOU30(lH, lA)
@@ -886,6 +911,7 @@ export default function App() {
       modelType: hasGoals ? (hasXGA ? 'full' : 'goals') : (hasXGA ? 'xga' : 'basic'),
       alpha: alph.toFixed(2),
       shrinkInfo,
+      sotInfo,
       rho: rhoVal,
       calibK: kVal,
       marketCalibUsed: { over: moOver > 1, under: moUnder > 1, w: mw },
@@ -2150,6 +2176,70 @@ export default function App() {
                 <div className="label">xG scaler <span style={{ color: 'var(--accent2)', textTransform: 'none', letterSpacing: 0 }}>(0.90 = FootyStats xG × 0.90)</span></div>
                 <input className="inp" placeholder="0.90" value={xgScaler} onChange={e => setXgScaler(e.target.value)} />
               </div>
+            </div>
+
+            {/* SoT Adjustment */}
+            <div className="card">
+              <div className="advanced-toggle" onClick={() => setSotEnabled(v => !v)}>
+                <div className="label" style={{ marginBottom: 0 }}>
+                  🎯 SoT Adjustment
+                  <span style={{ color: 'var(--text3)', marginLeft: 6, textTransform: 'none', letterSpacing: 0 }}>— korekcia λ cez strely na bránku</span>
+                </div>
+                <button className="btn-toggle">{sotEnabled ? '▲ Zapnuté' : '▼ Vypnuté'}</button>
+              </div>
+              {sotEnabled && (
+                <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div className="grid2">
+                    <div>
+                      <div className="label">Home SoT for <span style={{ color: 'var(--accent2)', textTransform: 'none', letterSpacing: 0 }}>(avg/zápas)</span></div>
+                      <input className="inp" placeholder="napr. 5.2" value={sotHomeFor} onChange={e => setSotHomeFor(e.target.value)} />
+                    </div>
+                    <div>
+                      <div className="label">Away SoT for <span style={{ color: 'var(--accent2)', textTransform: 'none', letterSpacing: 0 }}>(avg/zápas)</span></div>
+                      <input className="inp" placeholder="napr. 4.1" value={sotAwayFor} onChange={e => setSotAwayFor(e.target.value)} />
+                    </div>
+                  </div>
+                  <div className="grid2">
+                    <div>
+                      <div className="label">Home SoT against <span style={{ color: 'var(--text3)', textTransform: 'none', letterSpacing: 0 }}>(voliteľné)</span></div>
+                      <input className="inp" placeholder="napr. 3.8" value={sotHomeAgainst} onChange={e => setSotHomeAgainst(e.target.value)} />
+                    </div>
+                    <div>
+                      <div className="label">Away SoT against <span style={{ color: 'var(--text3)', textTransform: 'none', letterSpacing: 0 }}>(voliteľné)</span></div>
+                      <input className="inp" placeholder="napr. 4.6" value={sotAwayAgainst} onChange={e => setSotAwayAgainst(e.target.value)} />
+                    </div>
+                  </div>
+                  <div className="grid3">
+                    <div>
+                      <div className="label">Liga avg SoT</div>
+                      <input className="inp" placeholder="4.5" value={leagueAvgSot} onChange={e => setLeagueAvgSot(e.target.value)} />
+                    </div>
+                    <div>
+                      <div className="label">Weight</div>
+                      <input className="inp" placeholder="0.3" value={sotWeight} onChange={e => setSotWeight(e.target.value)} />
+                    </div>
+                    <div>
+                      <div className="label">Max cap %</div>
+                      <input className="inp" placeholder="5" value={sotMaxCap} onChange={e => setSotMaxCap(e.target.value)} />
+                    </div>
+                  </div>
+                  {calc?.sotInfo && (
+                    <div style={{ fontSize: 11, color: 'var(--accent2)', background: 'rgba(108,92,231,0.08)', border: '1px solid rgba(108,92,231,0.2)', borderRadius: 6, padding: '8px 12px', lineHeight: 1.8 }}>
+                      <b>Base λ:</b> H {calc.sotInfo.lHbase} / A {calc.sotInfo.lAbase}
+                      <span style={{ margin: '0 8px', color: 'var(--border)' }}>·</span>
+                      <b>SoT Adj:</b>{' '}
+                      <span style={{ color: calc.sotInfo.homeAdj >= 0 ? 'var(--green)' : 'var(--red)' }}>
+                        H {calc.sotInfo.homeAdj >= 0 ? '+' : ''}{(calc.sotInfo.homeAdj * 100).toFixed(1)}%
+                      </span>{' '}
+                      <span style={{ color: calc.sotInfo.awayAdj >= 0 ? 'var(--green)' : 'var(--red)' }}>
+                        A {calc.sotInfo.awayAdj >= 0 ? '+' : ''}{(calc.sotInfo.awayAdj * 100).toFixed(1)}%
+                      </span>
+                      <span style={{ margin: '0 8px', color: 'var(--border)' }}>·</span>
+                      <b>Final λ:</b> H {fmt3(calc.lH)} / A {fmt3(calc.lA)}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Pokročilé nastavenia */}

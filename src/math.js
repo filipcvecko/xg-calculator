@@ -53,18 +53,33 @@ export function buildScoreMatrix(lambdaH, lambdaA, rho = -0.10, maxG = 10) {
 }
 
 // Over/Under 3.0 s push logikou
-// T ~ Poisson(lambdaH + lambdaA)
 // Over 3.0: T<=2 lose, T=3 push, T>=4 win
 // Under 3.0: T<=2 win, T=3 push, T>=4 lose
-export function calcOU30(lambdaH, lambdaA) {
+// rho != 0 → Dixon-Coles korekcia cez buildScoreMatrix (rovnako ako O/U 2.5)
+// rho = 0  → čistý Poisson na T = lambdaH + lambdaA (spätná kompatibilita)
+export function calcOU30(lambdaH, lambdaA, rho = 0) {
+  if (rho !== 0) {
+    const matrix = buildScoreMatrix(lambdaH, lambdaA, rho)
+    let pUnder2 = 0, pExact3 = 0, pOver3 = 0
+    for (const [key, prob] of matrix.entries()) {
+      const [h, a] = key.split('-').map(Number)
+      const total = h + a
+      if (total <= 2) pUnder2 += prob
+      else if (total === 3) pExact3 += prob
+      else pOver3 += prob
+    }
+    const fairOver  = pOver3  > 0 ? 1 + pUnder2 / pOver3  : null
+    const fairUnder = pUnder2 > 0 ? 1 + pOver3  / pUnder2 : null
+    return { pOver3, pExact3, pUnder2, fairOver, fairUnder }
+  }
   const lt = lambdaH + lambdaA
   const p0 = poissonPMF(0, lt)
   const p1 = poissonPMF(1, lt)
   const p2 = poissonPMF(2, lt)
   const p3 = poissonPMF(3, lt)
-  const pUnder2 = p0 + p1 + p2          // T <= 2
-  const pExact3 = p3                     // T = 3 (push)
-  const pOver3  = 1 - pUnder2 - pExact3 // T >= 4
+  const pUnder2 = p0 + p1 + p2
+  const pExact3 = p3
+  const pOver3  = 1 - pUnder2 - pExact3
   const fairOver  = pOver3  > 0 ? 1 + pUnder2 / pOver3  : null
   const fairUnder = pUnder2 > 0 ? 1 + pOver3  / pUnder2 : null
   return { pOver3, pExact3, pUnder2, fairOver, fairUnder }
@@ -203,6 +218,30 @@ export function calcMaxDrawdown(bets) {
     if (dd > maxDD) maxDD = dd
   })
   return maxDD
+}
+
+// SoT adjustment — upraví lambda na základe streleckých pokusov na bránku
+// Vracia { homeAdj, awayAdj } ako desatinné čísla (napr. 0.032 = +3.2%)
+export function calcSotAdjustment({
+  homeSotFor, awaySotFor,
+  homeSotAgainst = null, awaySotAgainst = null,
+  leagueAvgSot = 4.5, weight = 0.3, maxCap = 0.05
+}) {
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
+  const lg = leagueAvgSot > 0 ? leagueAvgSot : 4.5
+
+  let homeRatio, awayRatio
+  if (homeSotAgainst != null && awaySotAgainst != null && homeSotAgainst > 0 && awaySotAgainst > 0) {
+    homeRatio = (homeSotFor / lg + lg / awaySotAgainst) / 2
+    awayRatio = (awaySotFor / lg + lg / homeSotAgainst) / 2
+  } else {
+    homeRatio = homeSotFor / lg
+    awayRatio = awaySotFor / lg
+  }
+
+  const homeAdj = clamp((homeRatio - 1) * weight, -maxCap, maxCap)
+  const awayAdj = clamp((awayRatio - 1) * weight, -maxCap, maxCap)
+  return { homeAdj, awayAdj }
 }
 
 // Time decay blend
