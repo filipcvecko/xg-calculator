@@ -1367,6 +1367,43 @@ export default function App() {
     } catch { return null }
   }
 
+  async function fetchPinnacleOddsForMatch(betsapiEventId) {
+    try {
+      const res = await fetch(`/api/betsapi?endpoint=pinnaclesports/event&event_id=${betsapiEventId}`)
+      if (!res.ok) return null
+      const json = await res.json()
+      const markets = json?.results?.[0]?.markets
+      if (!markets) return null
+      const getPrice = (market, side) => {
+        if (!market) return null
+        for (const runner of market.runners || []) {
+          const name = runner.description?.runnerName?.toLowerCase() || ''
+          if (name.includes(side)) {
+            return runner.sp?.nearPrice || runner.sp?.officialPrice ||
+                   runner.exchange?.availableToBack?.[0]?.price || null
+          }
+        }
+        return null
+      }
+      const ou25 = markets.find(m => m.description?.marketName === 'Over/Under 2.5 Goals')
+      const ou30standard = markets.find(m => m.description?.marketName === 'Over/Under 3.0 Goals')
+      const goalLines = markets.find(m => m.description?.marketName === 'Goal Lines')
+      const getPinnGoalLinePrice = (handicap, side) => {
+        if (!goalLines) return null
+        const runner = goalLines.runners?.find(r => r.handicap === handicap &&
+          r.description?.runnerName?.toLowerCase().startsWith(side))
+        return runner?.sp?.nearPrice || runner?.sp?.officialPrice ||
+               runner?.exchange?.availableToBack?.[0]?.price || null
+      }
+      return {
+        pinnOver25:  getPrice(ou25, 'over'),
+        pinnUnder25: getPrice(ou25, 'under'),
+        pinnOver30:  getPinnGoalLinePrice(3, 'over')  || (ou30standard ? getPrice(ou30standard, 'over')  : null),
+        pinnUnder30: getPinnGoalLinePrice(3, 'under') || (ou30standard ? getPrice(ou30standard, 'under') : null),
+      }
+    } catch { return null }
+  }
+
   async function loadScanner() {
     setScannerLoading(true)
     setScannerMatches([])
@@ -1494,8 +1531,18 @@ export default function App() {
           if (score > bestScore && score > (dbH || dbA ? 0.4 : 0.3)) { bestScore = score; bestEvent = ev }
         }
         if (bestEvent && bestScore >= 0.6) {
-          const odds = await fetchBetfairOddsForMatch(bestEvent.id)
-          if (odds) newOdds[match.id] = { ...odds, matchedWith: `${bestEvent.home?.name} vs ${bestEvent.away?.name}`, score: bestScore.toFixed(2) }
+          const [betfairOdds, pinnOdds] = await Promise.all([
+            fetchBetfairOddsForMatch(bestEvent.id),
+            fetchPinnacleOddsForMatch(bestEvent.id),
+          ])
+          if (betfairOdds || pinnOdds) {
+            newOdds[match.id] = {
+              ...(betfairOdds || {}),
+              ...(pinnOdds || {}),
+              matchedWith: `${bestEvent.home?.name} vs ${bestEvent.away?.name}`,
+              score: bestScore.toFixed(2),
+            }
+          }
         }
       }))
       setScannerOdds(prev => ({ ...prev, ...newOdds }))
@@ -2725,7 +2772,7 @@ export default function App() {
                 </button>
                 {scannerMatches.length > 0 && (
                   <button className="btn-ghost" style={{ fontSize: 11 }} onClick={refreshScannerOdds} disabled={scannerRefreshing}>
-                    {scannerRefreshing ? '⏳ Sťahujem kurzy...' : '🔄 Stiahnuť Betfair kurzy'}
+                    {scannerRefreshing ? '⏳ Sťahujem kurzy...' : '🔄 Načítať kurzy'}
                   </button>
                 )}
               </div>
@@ -2817,10 +2864,10 @@ export default function App() {
               }
 
               const mkts = [
-                { key: 'over2.5', label: 'O 2.5', p: ferCalc.pOver25, fer: ferCalc.ferOver25, back: odds.backOver25, manual: odds['manual_over2.5'] },
-                { key: 'under2.5', label: 'U 2.5', p: ferCalc.pUnder25, fer: ferCalc.ferUnder25, back: odds.backUnder25, manual: odds['manual_under2.5'] },
-                { key: 'over3.0', label: 'O 3.0', p: ferCalc.pOver30, fer: ferCalc.ferOver30, back: odds.backOver30, manual: odds['manual_over3.0'] },
-                { key: 'under3.0', label: 'U 3.0', p: ferCalc.pUnder30, fer: ferCalc.ferUnder30, back: odds.backUnder30, manual: odds['manual_under3.0'] },
+                { key: 'over2.5',  label: 'O 2.5', p: ferCalc.pOver25,  fer: ferCalc.ferOver25,  back: odds.backOver25,  manual: odds['manual_over2.5'],  pinn: odds.pinnOver25  },
+                { key: 'under2.5', label: 'U 2.5', p: ferCalc.pUnder25, fer: ferCalc.ferUnder25, back: odds.backUnder25, manual: odds['manual_under2.5'], pinn: odds.pinnUnder25 },
+                { key: 'over3.0',  label: 'O 3.0', p: ferCalc.pOver30,  fer: ferCalc.ferOver30,  back: odds.backOver30,  manual: odds['manual_over3.0'],  pinn: odds.pinnOver30  },
+                { key: 'under3.0', label: 'U 3.0', p: ferCalc.pUnder30, fer: ferCalc.ferUnder30, back: odds.backUnder30, manual: odds['manual_under3.0'], pinn: odds.pinnUnder30 },
               ]
 
               return (
@@ -3002,8 +3049,24 @@ export default function App() {
                               ...prev,
                               [match.id]: { ...prev[match.id], [`manual_${mkt.key}`]: e.target.value === '' ? '' : e.target.value }
                             }))}
-                            style={{ marginBottom: 6, fontSize: 11 }}
+                            style={{ marginBottom: 4, fontSize: 11 }}
                           />
+
+                          {/* Pinnacle gap */}
+                          {mkt.pinn > 1 && actualOdds > 1 && (() => {
+                            const gap = (actualOdds / mkt.pinn - 1) * 100
+                            const gapColor = gap > 3 ? 'var(--green)' : gap > 1 ? 'var(--yellow)' : 'var(--red)'
+                            return (
+                              <div style={{ fontSize: 10, color: gapColor, marginBottom: 6, fontWeight: 600 }}>
+                                Pinn: {mkt.pinn.toFixed(2)} · {gap >= 0 ? '+' : ''}{gap.toFixed(1)}%
+                              </div>
+                            )
+                          })()}
+                          {mkt.pinn > 1 && !actualOdds && (
+                            <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 6 }}>
+                              Pinn: {mkt.pinn.toFixed(2)}
+                            </div>
+                          )}
 
                           {/* EV */}
                           {evPct != null && (
