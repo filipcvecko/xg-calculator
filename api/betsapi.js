@@ -6,8 +6,7 @@ export default async function handler(req, res) {
   const { endpoint, ...params } = req.query
 
   const allowedEndpoints = [
-    'betfair/ex/upcoming',
-    'betfair/ex/event',
+    'events/upcoming',
     'event/odds',
     'bet365/upcoming',
     'bet365/event',
@@ -16,13 +15,15 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Invalid endpoint' })
   }
 
-  // event/odds uses v2 API and Pinnacle-specific token when source=pinnaclesports
+  // event/odds uses Pinnacle-specific token only when source=pinnaclesports
   const isPinnacleOdds = endpoint === 'event/odds' && params.source === 'pinnaclesports'
   const token = isPinnacleOdds ? PINNACLE_TOKEN : process.env.BETSAPI_TOKEN
   if (!token) return res.status(500).json({ error: 'Missing BETSAPI_TOKEN' })
 
   const baseUrl = endpoint === 'event/odds'
     ? `https://api.b365api.com/v2/${endpoint}`
+    : endpoint === 'events/upcoming'
+    ? `https://api.b365api.com/v3/${endpoint}`
     : `https://api.betsapi.com/v1/${endpoint}`
 
   const queryParams = new URLSearchParams({ token, ...params }).toString()
@@ -30,11 +31,7 @@ export default async function handler(req, res) {
 
   try {
     const response = await fetch(url)
-    const text = await response.text()
-    if (endpoint === 'betfair/ex/upcoming') {
-      console.log('[betsapi] betfair/ex/upcoming raw (first 500):', text.slice(0, 500))
-    }
-    const data = JSON.parse(text)
+    const data = await response.json()
     return res.status(200).json(data)
   } catch (err) {
     return res.status(500).json({ error: 'Fetch failed', detail: err.message })
