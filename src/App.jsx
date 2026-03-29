@@ -1505,25 +1505,25 @@ export default function App() {
       const newOdds = {}
       const matchedEventIds = {}
 
-      // === BETFAIR: pôvodný kód z a52667c, nezmenený ===
       await Promise.all(scannerMatches.map(async ({ match }) => {
         const homeName = match.home_name || ''
         const awayName = match.away_name || ''
         const dbH = teamNameDb.find(t => norm(t.footystats_name) === norm(homeName))
         const dbA = teamNameDb.find(t => norm(t.footystats_name) === norm(awayName))
-        let bestEvent = null, bestScore = 0
-        for (const ev of betsapiEvents) {
-          const sh = dbH ? (norm(ev.home?.name) === norm(dbH.betfair_name) ? 1.0 : 0) : fuzzyScore(homeName, ev.home?.name || '')
-          const sa = dbA ? (norm(ev.away?.name) === norm(dbA.betfair_name) ? 1.0 : 0) : fuzzyScore(awayName, ev.away?.name || '')
-          const score = (sh + sa) / 2
-          if (score > bestScore && score > (dbH || dbA ? 0.4 : 0.3)) { bestScore = score; bestEvent = ev }
+        if (!dbH || !dbA) {
+          console.log('[Scanner] skip (not in DB):', homeName, 'vs', awayName, '→ dbH:', !!dbH, 'dbA:', !!dbA)
+          return
         }
-        console.log('[Scanner] match:', match.home_name, 'vs', match.away_name, '→ bestEvent:', bestEvent?.id, 'score:', bestScore.toFixed(2))
-        if (bestEvent && bestScore >= 0.6) {
-          const odds = await fetchBetfairOddsForMatch(bestEvent.id)
+        const ev = betsapiEvents.find(e =>
+          norm(e.home?.name) === norm(dbH.betfair_name) &&
+          norm(e.away?.name) === norm(dbA.betfair_name)
+        )
+        console.log('[Scanner] lookup:', homeName, 'vs', awayName, '→ want:', dbH.betfair_name, 'vs', dbA.betfair_name, '→ found:', ev?.id ?? 'NO MATCH')
+        if (ev) {
+          const odds = await fetchBetfairOddsForMatch(ev.id)
           if (odds) {
-            newOdds[match.id] = { ...odds, matchedWith: `${bestEvent.home?.name} vs ${bestEvent.away?.name}`, score: bestScore.toFixed(2) }
-            matchedEventIds[match.id] = bestEvent.id
+            newOdds[match.id] = { ...odds, matchedWith: `${ev.home?.name} vs ${ev.away?.name}`, score: '1.00' }
+            matchedEventIds[match.id] = ev.id
           }
         }
       }))
