@@ -1493,15 +1493,27 @@ export default function App() {
         const awayName = match.away_name || ''
         const dbH = teamNameDb.find(t => norm(t.footystats_name) === norm(homeName))
         const dbA = teamNameDb.find(t => norm(t.footystats_name) === norm(awayName))
-        let bestEvent = null, bestScore = 0
+        let bestEvent = null, bestScore = 0, bestSh = 0, bestSa = 0, bestHomeDbMatch = false, bestAwayDbMatch = false
         for (const ev of betsapiEvents) {
-          const sh = dbH ? (norm(ev.home?.name) === norm(dbH.betfair_name) ? 1.0 : 0) : fuzzyScore(homeName, ev.home?.name || '')
-          const sa = dbA ? (norm(ev.away?.name) === norm(dbA.betfair_name) ? 1.0 : 0) : fuzzyScore(awayName, ev.away?.name || '')
+          const homeDbMatch = dbH && norm(ev.home?.name) === norm(dbH.betfair_name)
+          const awayDbMatch = dbA && norm(ev.away?.name) === norm(dbA.betfair_name)
+          const sh = homeDbMatch ? 1.0 : fuzzyScore(homeName, ev.home?.name || '')
+          const sa = awayDbMatch ? 1.0 : fuzzyScore(awayName, ev.away?.name || '')
           const score = (sh + sa) / 2
-          if (score > bestScore && score > (dbH || dbA ? 0.4 : 0.3)) { bestScore = score; bestEvent = ev }
+          if (score > bestScore && score > (dbH || dbA ? 0.4 : 0.3)) {
+            bestScore = score; bestEvent = ev
+            bestSh = sh; bestSa = sa
+            bestHomeDbMatch = homeDbMatch; bestAwayDbMatch = awayDbMatch
+          }
         }
-        console.log('[Scanner] match:', match.home_name, 'vs', match.away_name, '→ bestEvent:', bestEvent?.id, 'score:', bestScore.toFixed(2))
-        if (bestEvent && bestScore >= 0.75) {
+        const accepted = bestEvent && (
+          (bestHomeDbMatch && bestAwayDbMatch) ||
+          (bestHomeDbMatch && bestSa >= 0.5) ||
+          (bestAwayDbMatch && bestSh >= 0.5) ||
+          (!bestHomeDbMatch && !bestAwayDbMatch && bestScore >= 0.75)
+        )
+        console.log('[Scanner] match:', match.home_name, 'vs', match.away_name, '→ bestEvent:', bestEvent?.id, 'score:', bestScore.toFixed(2), 'dbH:', !!bestHomeDbMatch, 'dbA:', !!bestAwayDbMatch, 'accepted:', accepted)
+        if (accepted) {
           newOdds[match.id] = { matchedWith: `${bestEvent.home?.name} vs ${bestEvent.away?.name}`, score: bestScore.toFixed(2) }
           const betfairOdds = await fetchBetfairOddsForMatch(bestEvent.id)
           if (betfairOdds) newOdds[match.id] = { ...newOdds[match.id], ...betfairOdds }
