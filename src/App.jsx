@@ -506,13 +506,14 @@ export default function App() {
 
       const CACHE_KEY = 'xgcalc_teams_cache'
       const CACHE_TTL = 24 * 60 * 60 * 1000
+      const leagueIds = leagues.map(l => l.id).sort().join(',')
       try {
         const cached = localStorage.getItem(CACHE_KEY)
         if (cached) {
-          const { teams, ts, leagueCount } = JSON.parse(cached)
+          const { teams, ts, cachedLeagueIds } = JSON.parse(cached)
           const cacheValid = Date.now() - ts < CACHE_TTL
             && teams.length > 0
-            && leagueCount === leagues.length
+            && cachedLeagueIds === leagueIds
           if (cacheValid) {
             setAllTeams(teams)
             return
@@ -545,7 +546,7 @@ export default function App() {
       })
       const unique = Array.from(teamMap.values()).sort((a, b) => a.name.localeCompare(b.name))
       setAllTeams(unique)
-      try { localStorage.setItem(CACHE_KEY, JSON.stringify({ teams: unique, ts: Date.now(), leagueCount: leagues.length })) } catch (e) {}
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify({ teams: unique, ts: Date.now(), cachedLeagueIds: leagueIds })) } catch (e) {}
       setTeamsLoading(false)
     })
   }, [])
