@@ -1501,7 +1501,7 @@ export default function App() {
           if (score > bestScore && score > (dbH || dbA ? 0.4 : 0.3)) { bestScore = score; bestEvent = ev }
         }
         console.log('[Scanner] match:', match.home_name, 'vs', match.away_name, '→ bestEvent:', bestEvent?.id, 'score:', bestScore.toFixed(2))
-        if (bestEvent && bestScore >= 0.6) {
+        if (bestEvent && bestScore >= 0.75) {
           newOdds[match.id] = { matchedWith: `${bestEvent.home?.name} vs ${bestEvent.away?.name}`, score: bestScore.toFixed(2) }
           const betfairOdds = await fetchBetfairOddsForMatch(bestEvent.id)
           if (betfairOdds) newOdds[match.id] = { ...newOdds[match.id], ...betfairOdds }
