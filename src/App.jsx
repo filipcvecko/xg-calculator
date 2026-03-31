@@ -342,6 +342,15 @@ export default function App() {
   const [myOddsOver225, setMyOddsOver225] = useState('')
   const [myOddsUnder225, setMyOddsUnder225] = useState('')
 
+  const [backBTTSYes, setBackBTTSYes] = useState('')
+  const [layBTTSYes, setLayBTTSYes] = useState('')
+  const [myOddsBTTSYes, setMyOddsBTTSYes] = useState('')
+  const [pinnBTTSYes, setPinnBTTSYes] = useState('')
+  const [backBTTSNo, setBackBTTSNo] = useState('')
+  const [layBTTSNo, setLayBTTSNo] = useState('')
+  const [myOddsBTTSNo, setMyOddsBTTSNo] = useState('')
+  const [pinnBTTSNo, setPinnBTTSNo] = useState('')
+
   const [pinnOver25, setPinnOver25] = useState('')
   const [pinnUnder25, setPinnUnder25] = useState('')
   const [pinnOver30, setPinnOver30] = useState('')
@@ -913,13 +922,15 @@ export default function App() {
   async function handleSave(market, betType) {
     if (!calc || saving) return
     setSaving(true)
-    const isOver25 = market === 'over2.5'
-    const isOU30  = market === 'over3.0'  || market === 'under3.0'
-    const isOU275 = market === 'over2.75' || market === 'under2.75'
-    const isOU225 = market === 'over2.25' || market === 'under2.25'
+    const isOver25  = market === 'over2.5'
+    const isOU30    = market === 'over3.0'  || market === 'under3.0'
+    const isOU275   = market === 'over2.75' || market === 'under2.75'
+    const isOU225   = market === 'over2.25' || market === 'under2.25'
+    const isBTTS    = market === 'btts-yes' || market === 'btts-no'
     const isOver30  = market === 'over3.0'
     const isOver275 = market === 'over2.75'
     const isOver225 = market === 'over2.25'
+    const isBTTSYes = market === 'btts-yes'
 
     let selProb, ferO, midOdds
     if (isOU30) {
@@ -940,6 +951,12 @@ export default function App() {
       midOdds = isOver225
         ? midPrice(pf(backOver225) || null, pf(layOver225) || null)
         : midPrice(pf(backUnder225) || null, pf(layUnder225) || null)
+    } else if (isBTTS) {
+      selProb = isBTTSYes ? calc.btts.pBTTS : calc.btts.pNoBTTS
+      ferO    = isBTTSYes ? calc.btts.fairOddsBTTS : calc.btts.fairOddsNoBTTS
+      midOdds = isBTTSYes
+        ? midPrice(pf(backBTTSYes) || null, pf(layBTTSYes) || null) || ferO
+        : midPrice(pf(backBTTSNo)  || null, pf(layBTTSNo)  || null) || ferO
     } else {
       selProb = isOver25 ? calc.pOver : calc.pUnder
       ferO    = isOver25 ? calc.ferOver : calc.ferUnder
@@ -947,9 +964,10 @@ export default function App() {
     }
 
     if (!midOdds) { setSaving(false); return }
-    const myO = isOU275 ? pf(isOver275 ? myOddsOver275 : myOddsUnder275)
-              : isOU225 ? pf(isOver225 ? myOddsOver225 : myOddsUnder225)
-              : isOU30  ? pf(isOver30  ? myOddsOver30  : myOddsUnder30)
+    const myO = isBTTS    ? pf(isBTTSYes ? myOddsBTTSYes : myOddsBTTSNo)
+              : isOU275   ? pf(isOver275 ? myOddsOver275 : myOddsUnder275)
+              : isOU225   ? pf(isOver225 ? myOddsOver225 : myOddsUnder225)
+              : isOU30    ? pf(isOver30  ? myOddsOver30  : myOddsUnder30)
               : pf(isOver25 ? myOddsOver : myOddsUnder)
     const actualOdds = (myO && myO > 1) ? myO : midOdds
     const ev = isOU30
@@ -966,11 +984,12 @@ export default function App() {
     const betTimeNow = new Date().toISOString()
     const hoursToKO = kickoff ? (new Date(kickoff) - new Date(betTimeNow)) / 3600000 : null
     const league = selectedHomeTeam?.leagueName || selectedAwayTeam?.leagueName || null
-    const modelProb = (isOU30 || isOU275 || isOU225) ? selProb : (isOver25 ? calc.pOverCalib : calc.pUnderCalib)
-    const marketProb = (isOU30 || isOU275 || isOU225) ? null : (isOver25 ? calc.pMarketOver : calc.pMarketUnder)
-    const pinnOpen = isOU275 ? pf(isOver275 ? pinnOver275 : pinnUnder275)
-                   : isOU225 ? pf(isOver225 ? pinnOver225 : pinnUnder225)
-                   : isOU30  ? pf(isOver30  ? pinnOver30  : pinnUnder30)
+    const modelProb = (isOU30 || isOU275 || isOU225 || isBTTS) ? selProb : (isOver25 ? calc.pOverCalib : calc.pUnderCalib)
+    const marketProb = (isOU30 || isOU275 || isOU225 || isBTTS) ? null : (isOver25 ? calc.pMarketOver : calc.pMarketUnder)
+    const pinnOpen = isBTTS    ? pf(isBTTSYes ? pinnBTTSYes : pinnBTTSNo)
+                   : isOU275   ? pf(isOver275 ? pinnOver275 : pinnUnder275)
+                   : isOU225   ? pf(isOver225 ? pinnOver225 : pinnUnder225)
+                   : isOU30    ? pf(isOver30  ? pinnOver30  : pinnUnder30)
                    : pf(isOver25 ? pinnOver25 : pinnUnder25)
 
     const { data: inserted, error } = await supabase.from('bets').insert({
@@ -2294,23 +2313,94 @@ export default function App() {
             </div>
 
             {calc?.btts && (
-              <div className="markets-grid" style={{ marginTop: 12 }}>
-                {[
-                  { label: 'BTTS Yes', prob: calc.btts.pBTTS, fer: calc.btts.fairOddsBTTS, color: 'var(--accent2)', borderColor: 'var(--accent)' },
-                  { label: 'BTTS No',  prob: calc.btts.pNoBTTS, fer: calc.btts.fairOddsNoBTTS, color: 'var(--green)', borderColor: 'var(--green)' },
-                ].map(({ label, prob, fer, color, borderColor }) => (
-                  <div key={label} className="market-col" style={{ borderTop: `3px solid ${borderColor}` }}>
-                    <div className="market-title" style={{ color, marginBottom: 10 }}>{label}</div>
-                    <div className="label">FER kurz</div>
-                    <div className="fer-num" style={{ color }}>{fer ? fmt3(fer) : '—'} <span style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 400 }}>({fmtPct(prob * 100)})</span></div>
-                    <div style={{ marginTop: 10, padding: '6px 10px', background: 'var(--bg3)', borderRadius: 6, fontSize: 11, color: 'var(--text3)' }}>
-                      P: <b style={{ color }}>{fmtPct(prob * 100)}</b>
-                      {fer && <span style={{ marginLeft: 10 }}>FER: <b style={{ color }}>{fmt3(fer)}</b></span>}
-                    </div>
-                  </div>
-                ))}
+  <div className="markets-grid" style={{ marginTop: 12 }}>
+    {[
+      { label: 'BTTS Yes', prob: calc.btts.pBTTS, fer: calc.btts.fairOddsBTTS, color: 'var(--accent2)', borderColor: 'var(--accent)', stateKey: 'yes' },
+      { label: 'BTTS No',  prob: calc.btts.pNoBTTS, fer: calc.btts.fairOddsNoBTTS, color: 'var(--green)', borderColor: 'var(--green)', stateKey: 'no' },
+    ].map(({ label, prob, fer, color, borderColor, stateKey }) => {
+      const isYes = stateKey === 'yes'
+      const back = isYes ? backBTTSYes : backBTTSNo
+      const setBack = isYes ? setBackBTTSYes : setBackBTTSNo
+      const lay = isYes ? layBTTSYes : layBTTSNo
+      const setLay = isYes ? setLayBTTSYes : setLayBTTSNo
+      const myOdds = isYes ? myOddsBTTSYes : myOddsBTTSNo
+      const setMyOdds = isYes ? setMyOddsBTTSYes : setMyOddsBTTSNo
+      const pinnOdds = isYes ? pinnBTTSYes : pinnBTTSNo
+      const setPinnOdds = isYes ? setPinnBTTSYes : setPinnBTTSNo
+      const mid = fer
+      const actualOdds = pf(myOdds) > 1 ? pf(myOdds) : mid
+      const comm = calc.comm || 0.05
+      const st = calc.st || 10
+      const evB = actualOdds ? calcBackEV(prob, actualOdds, comm) : null
+      const evL = actualOdds ? calcLayEV(prob, actualOdds, comm) : null
+      const evMinVal = calc?.evMinVal || 0.12
+      const oLow = calc?.oLow || 1.4
+      const oHigh = calc?.oHigh || 3.5
+      const evPassB = evFilter(evB, evMinVal)
+      const evPassL = evFilter(evL, evMinVal)
+      const oddsPass = actualOdds ? oddsBandFilter(actualOdds, oLow, oHigh) : false
+      const usingMyOdds = pf(myOdds) > 1
+      const edge = actualOdds && fer ? (actualOdds / fer - 1) * 100 : null
+      return (
+        <div key={label} className="market-col" style={{ borderTop: `3px solid ${borderColor}` }}>
+          <div className="market-title" style={{ color, marginBottom: 10 }}>{label}</div>
+          {fer && <div style={{ marginBottom: 10 }}><div className="label">FER kurz</div><div className="fer-num" style={{ color }}>{fmt3(fer)} <span style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 400 }}>({fmtPct(prob * 100)})</span></div></div>}
+          <div style={{ marginBottom: 8 }}>
+            <div className="label">Best Back</div>
+            <input className="inp inp-sm" placeholder="napr. 1.85" value={back} onChange={e => setBack(e.target.value)} />
+          </div>
+          <div style={{ marginBottom: 8 }}>
+            <div className="label">Best Lay</div>
+            <input className="inp inp-sm" placeholder="napr. 1.90" value={lay} onChange={e => setLay(e.target.value)} />
+          </div>
+          <div style={{ marginBottom: 8 }}>
+            <div className="label">Môj kurz <span style={{ color: 'var(--accent2)' }}>(opt — ak líši od mid)</span></div>
+            <input className="inp inp-sm" placeholder="napr. 1.85" value={myOdds} onChange={e => setMyOdds(e.target.value)} />
+          </div>
+          <div style={{ marginBottom: 8 }}>
+            <div className="label">Pinnacle kurz <span style={{ color: 'var(--text3)' }}>(opt — uloží sa s betom)</span></div>
+            <input className="inp inp-sm" placeholder="napr. 1.80" value={pinnOdds} onChange={e => setPinnOdds(e.target.value)} />
+            {(() => {
+              const pinnO = pf(pinnOdds)
+              const refOdds = usingMyOdds ? pf(myOdds) : mid
+              if (!pinnO || pinnO <= 1 || !refOdds) return null
+              const clv = (refOdds / pinnO - 1) * 100
+              return <div style={{ marginTop: 4, fontSize: 11, fontWeight: 700, color: clv > 0 ? 'var(--green)' : 'var(--red)' }}>CLV vs Pinnacle: {clv > 0 ? '+' : ''}{clv.toFixed(1)}%</div>
+            })()}
+          </div>
+          {mid && <>
+            <div className="mid-row">
+              <span style={{ color: 'var(--text3)' }}>Mid:</span>
+              <span className="mid-val">{fmt3(mid)}</span>
+              {edge != null && <span className={edge > 0 ? 'pos' : 'neg'} style={{ marginLeft: 'auto', fontSize: 11 }}>Edge {fmtSignPct(edge)}</span>}
+            </div>
+            {evB != null && <>
+              <div>
+                <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 2 }}>▲ Back EV {usingMyOdds && <span style={{ color: 'var(--accent2)' }}>(@{fmt3(actualOdds)})</span>}</div>
+                <div className={`ev-big ${evB > 0 ? 'pos' : 'neg'}`}>{fmtSignPct(evB * 100)}<span className="ev-eur">{fmtSign(evB * st)}€</span></div>
               </div>
-            )}
+              <div style={{ marginTop: 6 }}>
+                <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 2 }}>▼ Lay EV {usingMyOdds && <span style={{ color: 'var(--accent2)' }}>(@{fmt3(actualOdds)})</span>}</div>
+                <div className={`ev-big ${evL > 0 ? 'pos' : 'neg'}`}>{fmtSignPct(evL * 100)}<span className="ev-eur">{fmtSign(evL * st)}€</span></div>
+                <div className="liability-note">Liability: {fmt2(layLiability(mid, st))}€</div>
+              </div>
+              <div style={{ marginTop: 8, fontSize: 10, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <div style={{ color: oddsPass ? 'var(--green)' : 'var(--red)' }}>{oddsPass ? '✓' : '✗'} Kurz {fmt3(actualOdds)} {oddsPass ? `v pásme (${oLow}–${oHigh})` : `mimo pásma (${oLow}–${oHigh})`}</div>
+                <div style={{ color: evPassB ? 'var(--green)' : 'var(--text3)' }}>{evPassB ? '✓' : '✗'} Back EV {evPassB ? 'spĺňa' : 'nespĺňa'} min {fmtPct(evMinVal * 100)}</div>
+                <div style={{ color: evPassL ? 'var(--green)' : 'var(--text3)' }}>{evPassL ? '✓' : '✗'} Lay EV {evPassL ? 'spĺňa' : 'nespĺňa'} min {fmtPct(evMinVal * 100)}</div>
+              </div>
+            </>}
+            <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+              <button className="btn-save-back" style={{ flex: 1 }} onClick={() => handleSave(isYes ? 'btts-yes' : 'btts-no', 'back')}>+ Back</button>
+              <button className="btn-save-lay" style={{ flex: 1 }} onClick={() => handleSave(isYes ? 'btts-yes' : 'btts-no', 'lay')}>+ Lay</button>
+            </div>
+            <div style={{ fontSize: 9, color: 'var(--text3)', textAlign: 'right', marginTop: 2 }}>kom {fmtPct(comm * 100)}</div>
+          </>}
+        </div>
+      )
+    })}
+  </div>
+)}
 
             {calc && <div className="lambda-row">
               <span>λ Home: <b>{fmt2(calc.lH)}</b></span>

@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(npx --yes @babel/parser src/App.jsx)",
+      "Bash(npx eslint:*)",
+      "Bash(npx vite:*)",
+      "Bash(npm run:*)",
+      "Bash(npm install:*)",
+      "Bash(curl:*)",
+      "WebFetch(domain:betsapi.com)",
+      "WebSearch",
+      "WebFetch(domain:b365api.com)",
+      "WebFetch(domain:rapidapi.com)",
+      "WebFetch(domain:github.com)",
+      "Bash(ls C:/Users/olive/xg-calculator/.env*)",
+      "Bash(npx vercel:*)",
+      "Bash(node -e \"const d=require\\(''''fs''''\\).readFileSync\\(''''/dev/stdin'''',''''utf8''''\\); const j=JSON.parse\\(d\\); console.log\\(''''keys:'''', Object.keys\\(j.results?.odds||{}\\)\\); console.log\\(JSON.stringify\\(j.results?.odds,null,2\\).slice\\(0,3000\\)\\)\")"
+    ]
+  }
+}
