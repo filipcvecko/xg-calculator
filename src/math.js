@@ -216,6 +216,13 @@ export function calibrateProb(p, k = 0.95) {
   return 1 / (1 + Math.pow((1 - p) / p, 1 / k))
 }
 
+export function plattCalibrate(p) {
+  const a = 0.921670
+  const b = 0.151545
+  const logit = Math.log(Math.max(1e-7, p) / Math.max(1e-7, 1 - p))
+  return 1 / (1 + Math.exp(-(a * logit + b)))
+}
+
 // EV threshold filter
 export function evFilter(ev, evMin = 0.04) {
   return ev != null && ev >= evMin

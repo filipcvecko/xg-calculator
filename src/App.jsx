@@ -5,7 +5,7 @@ import {
   calcBTTS, dynamicRho,
   buildScoreMatrix, blendLambda, fairOdds, calcCLV,
   brierScore, logLoss, calcMaxDrawdown,
-  marketCalibration, calibrateProb, evFilter, oddsBandFilter,
+  marketCalibration, calibrateProb, plattCalibrate, evFilter, oddsBandFilter,
   timeDecayBlend, extractLastXStats, calcSotAdjustment,
   fmt2, fmt3, fmtPct, fmtSign, fmtSignPct
 } from './math'
@@ -855,8 +855,8 @@ export default function App() {
     const btts  = calcBTTS(lH, lA, rhoVal)
 
     const kVal = pf(calibK) || 0.85
-    const pOverCalib = calibrateProb(pOverRaw, kVal)
-    const pUnderCalib = calibrateProb(pUnderRaw, kVal)
+    const pOverCalib = plattCalibrate(pOverRaw)
+    const pUnderCalib = plattCalibrate(pUnderRaw)
 
     const mw = pf(marketWeight) || 0.50
     const moOver = pf(marketOddsOver)
