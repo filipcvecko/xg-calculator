@@ -542,6 +542,14 @@ export default function App() {
     })
   }, [])
 
+  useEffect(() => {
+    const homeReady = selectedHomeTeam?.stats && !selectedHomeTeam.loading
+    const awayReady = selectedAwayTeam?.stats && !selectedAwayTeam.loading
+    if (homeReady && awayReady && xgH && xgA) {
+      handleCalc()
+    }
+  }, [selectedHomeTeam, selectedAwayTeam, xgH, xgA])
+
   async function loadBets() {
     setLoading(true)
     const { data, error } = await supabase.from('bets').select('*').order('created_at', { ascending: false })
