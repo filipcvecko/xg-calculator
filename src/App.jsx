@@ -1166,7 +1166,7 @@ export default function App() {
   const pinnBets = settled.filter(b => b.pinnacle_clv != null)
   const avgPinnCLV = pinnBets.length > 0 ? pinnBets.reduce((s, b) => s + b.pinnacle_clv, 0) / pinnBets.length : null
   const posPinnCLV = pinnBets.length > 0 ? (pinnBets.filter(b => b.pinnacle_clv > 0).length / pinnBets.length) * 100 : null
-  const MARKET = { 'over2.5': 'Over 2.5', 'under2.5': 'Under 2.5', 'over3.0': 'Over 3.0', 'under3.0': 'Under 3.0', 'over2.75': 'Over 2.75', 'under2.75': 'Under 2.75', 'over2.25': 'Over 2.25', 'under2.25': 'Under 2.25', 'btts-yes': 'BTTS Yes', 'btts-no': 'BTTS No' }
+  const MARKET = { 'over2.5': 'Over 2.5', 'under2.5': 'Under 2.5', 'over3.0': 'Over 3.0', 'under3.0': 'Under 3.0', 'over2.75': 'Over 2.75', 'under2.75': 'Under 2.75', 'over2.25': 'Over 2.25', 'under2.25': 'Under 2.25', 'btts-yes': 'BTTS Yes', 'btts-no': 'BTTS No', 'BTTS Yes': 'BTTS Yes', 'BTTS No': 'BTTS No' }
 
   const clvByTime = (() => {
     const buckets = [
