@@ -2327,7 +2327,7 @@ export default function App() {
       const setMyOdds = isYes ? setMyOddsBTTSYes : setMyOddsBTTSNo
       const pinnOdds = isYes ? pinnBTTSYes : pinnBTTSNo
       const setPinnOdds = isYes ? setPinnBTTSYes : setPinnBTTSNo
-      const mid = fer
+      const mid = midPrice(pf(back) || null, pf(lay) || null) || fer
       const actualOdds = pf(myOdds) > 1 ? pf(myOdds) : mid
       const comm = calc.comm || 0.05
       const st = calc.st || 10
