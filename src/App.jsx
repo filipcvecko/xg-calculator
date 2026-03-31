@@ -992,8 +992,17 @@ export default function App() {
                    : isOU30    ? pf(isOver30  ? pinnOver30  : pinnUnder30)
                    : pf(isOver25 ? pinnOver25 : pinnUnder25)
 
+    const marketLabels = {
+      'over2.5': 'Over 2.5', 'under2.5': 'Under 2.5',
+      'over3.0': 'Over 3.0', 'under3.0': 'Under 3.0',
+      'over2.75': 'Over 2.75', 'under2.75': 'Under 2.75',
+      'over2.25': 'Over 2.25', 'under2.25': 'Under 2.25',
+      'btts-yes': 'BTTS Yes', 'btts-no': 'BTTS No',
+    }
+    const marketLabel = marketLabels[market] || market
+
     const { data: inserted, error } = await supabase.from('bets').insert({
-      match_name: matchName.trim() || calc.matchName || null, market, bet_type: betType,
+      match_name: matchName.trim() || calc.matchName || null, market: marketLabel, bet_type: betType,
       lambda_h: calc.lH, lambda_a: calc.lA,
       p_over: calc.pOver, p_under: calc.pUnder,
       sel_prob: selProb, fer_odds: ferO,
