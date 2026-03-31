@@ -1127,6 +1127,7 @@ export default function App() {
   const OU225_MARKETS = ['over2.25', 'under2.25']
   const OU275_MARKETS = ['over2.75', 'under2.75']
   const OU30_MARKETS  = ['over3.0', 'under3.0']
+  const BTTS_MARKETS  = ['BTTS Yes', 'BTTS No', 'btts-yes', 'btts-no']
   const EXCLUDED_MARKETS = [...OU225_MARKETS, ...OU275_MARKETS]
   const activeBets = bets.filter(b => !b.is_archived)
   const archivedBets = bets.filter(b => b.is_archived)
@@ -1137,6 +1138,7 @@ export default function App() {
     if (statsMarket === 'ou225' && !OU225_MARKETS.includes(b.market)) return false
     if (statsMarket === 'ou275' && !OU275_MARKETS.includes(b.market)) return false
     if (statsMarket === 'ou30'  && !OU30_MARKETS.includes(b.market))  return false
+    if (statsMarket === 'btts'  && !BTTS_MARKETS.includes(b.market))  return false
     return true
   })
   const pending = activeBets.filter(b => b.result == null)
@@ -2600,7 +2602,7 @@ export default function App() {
           <div style={{ padding: '8px 16px 0' }}>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 600, letterSpacing: 1 }}>MARKET:</span>
-              {[['all', 'Všetky'], ['ou25', 'O/U 2.5'], ['ou30', 'O/U 3.0']].map(([id, lbl]) => (
+              {[['all', 'Všetky'], ['ou25', 'O/U 2.5'], ['ou30', 'O/U 3.0'], ['btts', 'BTTS']].map(([id, lbl]) => (
                 <button key={id} onClick={() => setStatsMarket(id)} style={{
                   fontSize: 11, padding: '3px 10px', borderRadius: 6, border: '1px solid',
                   borderColor: statsMarket === id ? 'var(--green)' : 'var(--border)',
@@ -2787,6 +2789,49 @@ export default function App() {
                         return (
                           <div key={mkt} className="card" style={{ padding: 14, borderTop: `3px solid ${isOver ? 'var(--accent)' : 'var(--green)'}` }}>
                             <div className="label" style={{ color: isOver ? 'var(--accent2)' : 'var(--green)', marginBottom: 10 }}>{isOver ? '▲ Over 2.5' : '▼ Under 2.5'}</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 5, fontSize: 12 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text3)' }}>Bety</span><b>{mb.length}</b></div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text3)' }}>Hit Rate</span><b style={{ color: mHR > 50 ? 'var(--green)' : 'var(--text2)' }}>{fmtPct(mHR)}</b></div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text3)' }}>Avg Prob</span><b>{fmtPct(mAvgProb * 100)}</b></div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text3)' }}>Kalibrácia</span><b style={{ color: Math.abs(mCalib) < 5 ? 'var(--green)' : 'var(--red)' }}>{fmtSign(mCalib)}pp</b></div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text3)' }}>Avg CLV</span><b style={{ color: mAvgCLV > 0 ? 'var(--green)' : 'var(--red)' }}>{mAvgCLV != null ? fmtSignPct(mAvgCLV) : '—'}</b></div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border)', paddingTop: 5, marginTop: 2 }}><span style={{ color: 'var(--text3)' }}>ROI</span><b style={{ color: mROI > 0 ? 'var(--green)' : 'var(--red)', fontSize: 14 }}>{mROI != null ? fmtSignPct(mROI) : '—'}</b></div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text3)' }}>PnL</span><b style={{ color: mPnL >= 0 ? 'var(--green)' : 'var(--red)' }}>{fmtSign(mPnL)}€</b></div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )
+                })()}
+              </div>
+
+              <div>
+                <div className="section-title">🎯 BTTS Yes vs BTTS No</div>
+                {(() => {
+                  const mkts = [
+                    { key: ['BTTS Yes', 'btts-yes'], label: '✅ BTTS Yes', color: 'var(--green)' },
+                    { key: ['BTTS No',  'btts-no'],  label: '❌ BTTS No',  color: 'var(--red)' },
+                  ]
+                  const hasBtts = settled.some(b => BTTS_MARKETS.includes(b.market))
+                  if (!hasBtts) return <div style={{ color: 'var(--text3)', fontSize: 12, padding: '8px 0' }}>Žiadne BTTS bety.</div>
+                  return (
+                    <div className="grid2">
+                      {mkts.map(({ key, label, color }) => {
+                        const mb = settled.filter(b => key.includes(b.market))
+                        if (mb.length === 0) return <div key={label} className="card" style={{ padding: 14, opacity: 0.4 }}><div className="label">{label}</div><div style={{ color: 'var(--text3)', fontSize: 12 }}>Žiadne bety</div></div>
+                        const mWins = mb.filter(b => b.result === 1).length
+                        const mHR = mWins / mb.length * 100
+                        const mPnL = mb.reduce((s, b) => s + (b.pnl || 0), 0)
+                        const mStake = mb.reduce((s, b) => s + b.stake, 0)
+                        const mROI = mStake > 0 ? mPnL / mStake * 100 : null
+                        const mCLV = mb.filter(b => b.clv != null)
+                        const mAvgCLV = mCLV.length > 0 ? mCLV.reduce((s, b) => s + b.clv, 0) / mCLV.length : null
+                        const mAvgProb = mb.reduce((s, b) => s + b.sel_prob, 0) / mb.length
+                        const mCalib = (mHR / 100 - mAvgProb) * 100
+                        return (
+                          <div key={label} className="card" style={{ padding: 14, borderTop: `3px solid ${color}` }}>
+                            <div className="label" style={{ color, marginBottom: 10 }}>{label}</div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 5, fontSize: 12 }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text3)' }}>Bety</span><b>{mb.length}</b></div>
                               <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text3)' }}>Hit Rate</span><b style={{ color: mHR > 50 ? 'var(--green)' : 'var(--text2)' }}>{fmtPct(mHR)}</b></div>
