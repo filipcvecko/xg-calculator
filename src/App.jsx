@@ -1394,6 +1394,13 @@ export default function App() {
       }))
       results.push(...chunkResults)
     }
+    // Pre-fetch league averages for all unique season IDs (same as main calculator)
+    const uniqueSeasonIds = [...new Set(results.map(r => r.match.season_id || r.match.competition_id).filter(Boolean))]
+    const leagueAvgCache = {}
+    await Promise.all(uniqueSeasonIds.map(async sid => {
+      const avg = await fetchLeagueAvg(sid)
+      if (avg) leagueAvgCache[sid] = avg
+    }))
     const processed = results.map(({ match, homeStats, awayStats, homeLastX, awayLastX }) => {
       let fer = null
       if (homeStats && awayStats) {
@@ -1419,6 +1426,7 @@ export default function App() {
           } else {
             lH = xgHs; lA = xgAs
           }
+          // Form blend first (same order as main calculator)
           const fw = 0.40
           const homeForm = homeLastX ? extractLastXStats(homeLastX, 5) : null
           const awayForm = awayLastX ? extractLastXStats(awayLastX, 5) : null
@@ -1438,14 +1446,24 @@ export default function App() {
               lA = timeDecayBlend(lA, formLA, fw)
             }
           }
+          // Shrinkage after form blend (same order as main calculator)
+          const seasonId = match.season_id || match.competition_id
+          const leagueAvg = seasonId ? leagueAvgCache[seasonId] : null
+          if (leagueAvg) {
+            const shrinkRes = applyShrinkage(lH, lA, leagueAvg.avgHome, leagueAvg.avgAway, 0.15)
+            lH = shrinkRes.lH; lA = shrinkRes.lA
+          }
           const ou25 = calcOverUnder(lH, lA, -0.10)
           const ou30res = calcOU30(lH, lA)
+          // Apply calibration k=0.85 (same as main calculator)
           fer = {
             lH, lA,
             pOver25: ou25.pOver, pUnder25: ou25.pUnder,
-            ferOver25: fairOdds(ou25.pOver), ferUnder25: fairOdds(ou25.pUnder),
+            ferOver25: fairOdds(calibrateProb(ou25.pOver, 0.85)),
+            ferUnder25: fairOdds(calibrateProb(ou25.pUnder, 0.85)),
             pOver30: ou30res.pOver3, pUnder30: ou30res.pUnder2,
-            ferOver30: ou30res.fairOver, ferUnder30: ou30res.fairUnder,
+            ferOver30: fairOdds(calibrateProb(ou30res.pOver3, 0.85)),
+            ferUnder30: fairOdds(calibrateProb(ou30res.pUnder2, 0.85)),
           }
         }
       }
@@ -1559,10 +1577,7 @@ export default function App() {
         } else {
           lH2 = xgHs; lA2 = xgAs
         }
-        if (sLeagueAvgH > 0 && sLeagueAvgA > 0) {
-          const res = applyShrinkage(lH2, lA2, sLeagueAvgH, sLeagueAvgA, sShrinkage)
-          lH2 = res.lH; lA2 = res.lA
-        }
+        // Form blend first (same order as main calculator)
         const fw = 0.40
         const homeForm = item.homeLastX ? extractLastXStats(item.homeLastX, 5) : null
         const awayForm = item.awayLastX ? extractLastXStats(item.awayLastX, 5) : null
@@ -1582,9 +1597,14 @@ export default function App() {
             lA2 = timeDecayBlend(lA2, formLA, fw)
           }
         }
+        // Shrinkage after form blend (same order as main calculator)
+        if (sLeagueAvgH > 0 && sLeagueAvgA > 0) {
+          const res = applyShrinkage(lH2, lA2, sLeagueAvgH, sLeagueAvgA, sShrinkage)
+          lH2 = res.lH; lA2 = res.lA
+        }
         const ou25r = calcOverUnder(lH2, lA2, -0.10)
         const ou30r = calcOU30(lH2, lA2)
-        fer = { lH: lH2, lA: lA2, pOver25: ou25r.pOver, pUnder25: ou25r.pUnder, ferOver25: fairOdds(ou25r.pOver), ferUnder25: fairOdds(ou25r.pUnder), pOver30: ou30r.pOver3, pUnder30: ou30r.pUnder2, ferOver30: ou30r.fairOver, ferUnder30: ou30r.fairUnder }
+        fer = { lH: lH2, lA: lA2, pOver25: ou25r.pOver, pUnder25: ou25r.pUnder, ferOver25: fairOdds(calibrateProb(ou25r.pOver, 0.85)), ferUnder25: fairOdds(calibrateProb(ou25r.pUnder, 0.85)), pOver30: ou30r.pOver3, pUnder30: ou30r.pUnder2, ferOver30: fairOdds(calibrateProb(ou30r.pOver3, 0.85)), ferUnder30: fairOdds(calibrateProb(ou30r.pUnder2, 0.85)) }
       }
     }
     const isOver25 = market === 'over2.5'
@@ -1659,16 +1679,45 @@ export default function App() {
       const xgA2 = (item.awayStats?.xgA || item.awayStats?.gfA || 0) * sc
       const xgaH2 = (item.homeStats?.xgaH || item.homeStats?.gaH || 0) * sc
       const xgaA2 = (item.awayStats?.xgaA || item.awayStats?.gaA || 0) * sc
-      if (xgH2 && xgA2 && xgaH2 && xgaA2) {
-        let lH2 = Math.sqrt(xgH2 * xgaA2)
-        let lA2 = Math.sqrt(xgA2 * xgaH2)
+      const gfHvW = item.homeStats?.gfH || 0, gaHvW = item.homeStats?.gaH || 0
+      const gfAvW = item.awayStats?.gfA || 0, gaAvW = item.awayStats?.gaA || 0
+      if (xgH2 && xgA2) {
+        const hasGoalsW = gfHvW > 0 && gaHvW > 0 && gfAvW > 0 && gaAvW > 0
+        const hasXGAW = xgaH2 > 0 && xgaA2 > 0
+        let lH2, lA2
+        if (hasGoalsW && hasXGAW) {
+          const r = blendWithGoals(xgH2, xgA2, xgaH2, xgaA2, gfHvW, gaHvW, gfAvW, gaAvW, 0.70)
+          lH2 = r.lH; lA2 = r.lA
+        } else if (hasGoalsW) {
+          const r = blendWithGoals(xgH2, xgA2, xgH2, xgA2, gfHvW, gaHvW, gfAvW, gaAvW, 0.70)
+          lH2 = r.lH; lA2 = r.lA
+        } else if (hasXGAW) {
+          lH2 = Math.sqrt(xgH2 * xgaA2); lA2 = Math.sqrt(xgA2 * xgaH2)
+        } else {
+          lH2 = xgH2; lA2 = xgA2
+        }
+        // Form blend first
+        const fwW = 0.40
+        const homeFormW = item.homeLastX ? extractLastXStats(item.homeLastX, 5) : null
+        const awayFormW = item.awayLastX ? extractLastXStats(item.awayLastX, 5) : null
+        if (homeFormW) {
+          const fxgH = homeFormW.xgH ?? homeFormW.gfH ?? null
+          const fxgaA = awayFormW?.xgaA ?? awayFormW?.gaA ?? null
+          if (fxgH != null) lH2 = timeDecayBlend(lH2, fxgaA != null ? Math.sqrt(fxgH * fxgaA) : fxgH, fwW)
+        }
+        if (awayFormW) {
+          const fxgA = awayFormW.xgA ?? awayFormW.gfA ?? null
+          const fxgaH = homeFormW?.xgaH ?? homeFormW?.gaH ?? null
+          if (fxgA != null) lA2 = timeDecayBlend(lA2, fxgaH != null ? Math.sqrt(fxgA * fxgaH) : fxgA, fwW)
+        }
+        // Shrinkage after form blend
         if (sLeagueAvgH > 0 && sLeagueAvgA > 0) {
           const res = applyShrinkage(lH2, lA2, sLeagueAvgH, sLeagueAvgA, sShrinkage)
           lH2 = res.lH; lA2 = res.lA
         }
         const ou25r = calcOverUnder(lH2, lA2, -0.10)
         const ou30r = calcOU30(lH2, lA2)
-        ferFinal = { lH: lH2, lA: lA2, pOver25: ou25r.pOver, pUnder25: ou25r.pUnder, ferOver25: fairOdds(ou25r.pOver), ferUnder25: fairOdds(ou25r.pUnder), pOver30: ou30r.pOver3, pUnder30: ou30r.pUnder2, ferOver30: ou30r.fairOver, ferUnder30: ou30r.fairUnder }
+        ferFinal = { lH: lH2, lA: lA2, pOver25: ou25r.pOver, pUnder25: ou25r.pUnder, ferOver25: fairOdds(calibrateProb(ou25r.pOver, 0.85)), ferUnder25: fairOdds(calibrateProb(ou25r.pUnder, 0.85)), pOver30: ou30r.pOver3, pUnder30: ou30r.pUnder2, ferOver30: fairOdds(calibrateProb(ou30r.pOver3, 0.85)), ferUnder30: fairOdds(calibrateProb(ou30r.pUnder2, 0.85)) }
       }
     }
 
@@ -2803,10 +2852,7 @@ export default function App() {
                   } else {
                     lH2 = xgHs; lA2 = xgAs
                   }
-                  if (sLeagueAvgH > 0 && sLeagueAvgA > 0) {
-                    const res = applyShrinkage(lH2, lA2, sLeagueAvgH, sLeagueAvgA, sShrinkage)
-                    lH2 = res.lH; lA2 = res.lA
-                  }
+                  // Form blend first (same order as main calculator)
                   const fwD = 0.40
                   const homeFormD = item.homeLastX ? extractLastXStats(item.homeLastX, 5) : null
                   const awayFormD = item.awayLastX ? extractLastXStats(item.awayLastX, 5) : null
@@ -2826,14 +2872,22 @@ export default function App() {
                       lA2 = timeDecayBlend(lA2, formLA, fwD)
                     }
                   }
+                  // Shrinkage after form blend (same order as main calculator)
+                  if (sLeagueAvgH > 0 && sLeagueAvgA > 0) {
+                    const res = applyShrinkage(lH2, lA2, sLeagueAvgH, sLeagueAvgA, sShrinkage)
+                    lH2 = res.lH; lA2 = res.lA
+                  }
                   const ou25r = calcOverUnder(lH2, lA2, -0.10)
                   const ou30r = calcOU30(lH2, lA2)
+                  // Apply calibration k=0.85 (same as main calculator)
                   ferCalc = {
                     lH: lH2, lA: lA2,
                     pOver25: ou25r.pOver, pUnder25: ou25r.pUnder,
-                    ferOver25: fairOdds(ou25r.pOver), ferUnder25: fairOdds(ou25r.pUnder),
+                    ferOver25: fairOdds(calibrateProb(ou25r.pOver, 0.85)),
+                    ferUnder25: fairOdds(calibrateProb(ou25r.pUnder, 0.85)),
                     pOver30: ou30r.pOver3, pUnder30: ou30r.pUnder2,
-                    ferOver30: ou30r.fairOver, ferUnder30: ou30r.fairUnder,
+                    ferOver30: fairOdds(calibrateProb(ou30r.pOver3, 0.85)),
+                    ferUnder30: fairOdds(calibrateProb(ou30r.pUnder2, 0.85)),
                   }
                 }
               }
