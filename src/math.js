@@ -172,8 +172,10 @@ export function calcBTTS(lambdaH, lambdaA, rho = -0.10) {
   return {
     pBTTS,
     pNoBTTS,
-    fairOddsBTTS: fairOdds(calibrateProb(pBTTS, 0.85)),
-    fairOddsNoBTTS: fairOdds(calibrateProb(pNoBTTS, 0.85)),
+    fairOddsBTTS: fairOdds(pBTTS),
+    fairOddsNoBTTS: fairOdds(pNoBTTS),
+    fairOddsBTTSCalib: fairOdds(calibrateProb(pBTTS, 0.85)),
+    fairOddsNoBTTSCalib: fairOdds(calibrateProb(pNoBTTS, 0.85)),
   }
 }
 

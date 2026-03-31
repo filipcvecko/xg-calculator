@@ -2324,9 +2324,9 @@ export default function App() {
             {calc?.btts && (
   <div className="markets-grid" style={{ marginTop: 12 }}>
     {[
-      { label: 'BTTS Yes', prob: calc.btts.pBTTS, fer: calc.btts.fairOddsBTTS, color: 'var(--accent2)', borderColor: 'var(--accent)', stateKey: 'yes' },
-      { label: 'BTTS No',  prob: calc.btts.pNoBTTS, fer: calc.btts.fairOddsNoBTTS, color: 'var(--green)', borderColor: 'var(--green)', stateKey: 'no' },
-    ].map(({ label, prob, fer, color, borderColor, stateKey }) => {
+      { label: 'BTTS Yes', prob: calc.btts.pBTTS, fer: calc.btts.fairOddsBTTS, ferCalib: calc.btts.fairOddsBTTSCalib, color: 'var(--accent2)', borderColor: 'var(--accent)', stateKey: 'yes' },
+      { label: 'BTTS No',  prob: calc.btts.pNoBTTS, fer: calc.btts.fairOddsNoBTTS, ferCalib: calc.btts.fairOddsNoBTTSCalib, color: 'var(--green)', borderColor: 'var(--green)', stateKey: 'no' },
+    ].map(({ label, prob, fer, ferCalib, color, borderColor, stateKey }) => {
       const isYes = stateKey === 'yes'
       const back = isYes ? backBTTSYes : backBTTSNo
       const setBack = isYes ? setBackBTTSYes : setBackBTTSNo
@@ -2353,7 +2353,11 @@ export default function App() {
       return (
         <div key={label} className="market-col" style={{ borderTop: `3px solid ${borderColor}` }}>
           <div className="market-title" style={{ color, marginBottom: 10 }}>{label}</div>
-          {fer && <div style={{ marginBottom: 10 }}><div className="label">FER kurz</div><div className="fer-num" style={{ color }}>{fmt3(fer)} <span style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 400 }}>({fmtPct(prob * 100)})</span></div></div>}
+          {fer && <div style={{ marginBottom: 10 }}>
+            <div className="label">FER kurz (raw)</div>
+            <div className="fer-num" style={{ color }}>{fmt3(fer)} <span style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 400 }}>({fmtPct(prob * 100)})</span></div>
+            {ferCalib && <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 2 }}>FER kurz (kalib): <span style={{ fontWeight: 600 }}>{fmt3(ferCalib)}</span></div>}
+          </div>}
           <div style={{ marginBottom: 8 }}>
             <div className="label">Best Back</div>
             <input className="inp inp-sm" placeholder="napr. 1.85" value={back} onChange={e => setBack(e.target.value)} />
