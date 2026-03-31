@@ -6,6 +6,16 @@ export function poissonPMF(k, lambda) {
   return Math.exp(logP)
 }
 
+// Dynamic rho based on league average goals
+// avgGoals < 2.2 → -0.15, 2.2-2.8 → -0.10, > 2.8 → -0.05
+export function dynamicRho(leagueAvgH, leagueAvgA) {
+  const avg = (leagueAvgH || 0) + (leagueAvgA || 0)
+  if (avg <= 0) return -0.10
+  if (avg < 2.2) return -0.15
+  if (avg <= 2.8) return -0.10
+  return -0.05
+}
+
 // Dixon-Coles τ korekcia pre nízke skóre (0-0, 1-0, 0-1, 1-1)
 // rho ≈ -0.05 až -0.15 (záporné = koreluje nízke skóre)
 export function dixonColesTau(h, a, lambdaH, lambdaA, rho = -0.10) {
@@ -32,7 +42,7 @@ export function calcOverUnder(lambdaH, lambdaA, rho = -0.10) {
 
 // Score matrix — generuje pravdepodobnosti všetkých skóre až do maxG gólov
 // Vracia Map: key = "h-a", value = pravdepodobnosť (normalizovaná na súčet = 1)
-export function buildScoreMatrix(lambdaH, lambdaA, rho = -0.10, maxG = 10) {
+export function buildScoreMatrix(lambdaH, lambdaA, rho = -0.10, maxG = 12) {
   const matrix = new Map()
   for (let h = 0; h <= maxG; h++) {
     for (let a = 0; a <= maxG; a++) {
@@ -146,6 +156,24 @@ export function calcEVOU225(isOver, p0_1, p2, p3plus, odds, comm = 0.05) {
     return p3plus * (odds - 1) * (1 - comm) + p2 * ((odds - 1) * (1 - comm) / 2 - 0.5) - p0_1
   } else {
     return p0_1 * (odds - 1) * (1 - comm) - p2 * 0.5 - p3plus
+  }
+}
+
+// Both Teams To Score
+export function calcBTTS(lambdaH, lambdaA, rho = -0.10) {
+  const matrix = buildScoreMatrix(lambdaH, lambdaA, rho)
+  let pBTTS = 0
+  for (const [key, prob] of matrix.entries()) {
+    const [h, a] = key.split('-').map(Number)
+    if (h > 0 && a > 0) pBTTS += prob
+  }
+  pBTTS = Math.min(1, Math.max(0, pBTTS))
+  const pNoBTTS = 1 - pBTTS
+  return {
+    pBTTS,
+    pNoBTTS,
+    fairOddsBTTS: fairOdds(calibrateProb(pBTTS, 0.85)),
+    fairOddsNoBTTS: fairOdds(calibrateProb(pNoBTTS, 0.85)),
   }
 }
 

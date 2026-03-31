@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import {
   calcOverUnder, calcOU30, calcEVOU30, calcOU275, calcEVOU275, calcOU225, calcEVOU225,
+  calcBTTS, dynamicRho,
   buildScoreMatrix, blendLambda, fairOdds, calcCLV,
   brierScore, logLoss, calcMaxDrawdown,
   marketCalibration, calibrateProb, evFilter, oddsBandFilter,
@@ -837,11 +838,12 @@ export default function App() {
       lA = lA * (1 + awayAdj)
     }
 
-    const rhoVal = pf(rho) || -0.10
+    const rhoVal = (lgH > 0 && lgA > 0) ? dynamicRho(lgH, lgA) : (pf(rho) || -0.10)
     const { pOver: pOverRaw, pUnder: pUnderRaw } = calcOverUnder(lH, lA, rhoVal)
-    const ou30  = calcOU30(lH, lA)
-    const ou275 = calcOU275(lH, lA)
-    const ou225 = calcOU225(lH, lA)
+    const ou30  = calcOU30(lH, lA, rhoVal)
+    const ou275 = calcOU275(lH, lA, rhoVal)
+    const ou225 = calcOU225(lH, lA, rhoVal)
+    const btts  = calcBTTS(lH, lA, rhoVal)
 
     const kVal = pf(calibK) || 0.85
     const pOverCalib = calibrateProb(pOverRaw, kVal)
@@ -904,6 +906,7 @@ export default function App() {
       ou30,
       ou275,
       ou225,
+      btts,
     })
   }
 
@@ -2290,6 +2293,25 @@ export default function App() {
               })()}
             </div>
 
+            {calc?.btts && (
+              <div className="markets-grid" style={{ marginTop: 12 }}>
+                {[
+                  { label: 'BTTS Yes', prob: calc.btts.pBTTS, fer: calc.btts.fairOddsBTTS, color: 'var(--accent2)', borderColor: 'var(--accent)' },
+                  { label: 'BTTS No',  prob: calc.btts.pNoBTTS, fer: calc.btts.fairOddsNoBTTS, color: 'var(--green)', borderColor: 'var(--green)' },
+                ].map(({ label, prob, fer, color, borderColor }) => (
+                  <div key={label} className="market-col" style={{ borderTop: `3px solid ${borderColor}` }}>
+                    <div className="market-title" style={{ color, marginBottom: 10 }}>{label}</div>
+                    <div className="label">FER kurz</div>
+                    <div className="fer-num" style={{ color }}>{fer ? fmt3(fer) : '—'} <span style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 400 }}>({fmtPct(prob * 100)})</span></div>
+                    <div style={{ marginTop: 10, padding: '6px 10px', background: 'var(--bg3)', borderRadius: 6, fontSize: 11, color: 'var(--text3)' }}>
+                      P: <b style={{ color }}>{fmtPct(prob * 100)}</b>
+                      {fer && <span style={{ marginLeft: 10 }}>FER: <b style={{ color }}>{fmt3(fer)}</b></span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {calc && <div className="lambda-row">
               <span>λ Home: <b>{fmt2(calc.lH)}</b></span>
               <span>λ Away: <b>{fmt2(calc.lA)}</b></span>
@@ -2297,7 +2319,7 @@ export default function App() {
               <span style={{ color: 'var(--accent2)' }}>
                 {calc.modelType === 'full' ? `xG+GF/GA (α=${calc.alpha})` : calc.modelType === 'xga' ? 'xG+xGA' : calc.modelType === 'goals' ? `xG+GF/GA (α=${calc.alpha})` : 'xG only'}
               </span>
-              <span style={{ color: 'var(--text3)' }}>ρ={fmt2(calc.rho)}</span>
+              <span style={{ color: 'var(--text3)' }}>ρ={fmt2(calc.rho)}{calc.shrinkInfo ? ' (auto)' : ''}</span>
               <span style={{ color: 'var(--yellow)' }}>k={fmt2(calc.calibK)}</span>
               {calc.xgScaler != null && calc.xgScaler !== 1 && <span style={{ color: 'var(--yellow)' }}>sc={fmt2(calc.xgScaler)}</span>}
               {calc.shrinkInfo && <span style={{ color: 'var(--green)' }}>+ shrink {calc.shrinkInfo.source === 'api' ? '📡' : '✍'} ({calc.shrinkInfo.rawTotal} → {calc.shrinkInfo.shrunkTotal})</span>}
