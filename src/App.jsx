@@ -963,6 +963,7 @@ export default function App() {
       midOdds = isOver25 ? calc.midO : calc.midU
     }
 
+    console.log('BTTS debug:', { market, isBTTS, isBTTSYes, backBTTSYes, backBTTSNo, layBTTSYes, layBTTSNo, ferO, midOdds })
     if (!midOdds) { setSaving(false); return }
     const myO = isBTTS    ? pf(isBTTSYes ? myOddsBTTSYes : myOddsBTTSNo)
               : isOU275   ? pf(isOver275 ? myOddsOver275 : myOddsUnder275)
@@ -1000,6 +1001,7 @@ export default function App() {
       'btts-yes': 'BTTS Yes', 'btts-no': 'BTTS No',
     }
     const marketLabel = marketLabels[market] || market
+    console.log('BTTS insert:', { marketLabel, selProb, midOdds, actualOdds })
 
     const { data: inserted, error } = await supabase.from('bets').insert({
       match_name: matchName.trim() || calc.matchName || null, market: marketLabel, bet_type: betType,
@@ -1023,6 +1025,8 @@ export default function App() {
       is_archived: false,
       stake_pct_bankroll: currentBankroll > 0 ? Math.round((calc.st / currentBankroll) * 1000) / 10 : null,
     }).select()
+    console.log('Supabase result:', { inserted, error })
+    if (error) console.error('Supabase error:', error)
     if (error) {
       console.error('Supabase insert error:', error)
       alert('Chyba pri ukladaní: ' + (error.message || JSON.stringify(error)))
@@ -1162,7 +1166,7 @@ export default function App() {
   const pinnBets = settled.filter(b => b.pinnacle_clv != null)
   const avgPinnCLV = pinnBets.length > 0 ? pinnBets.reduce((s, b) => s + b.pinnacle_clv, 0) / pinnBets.length : null
   const posPinnCLV = pinnBets.length > 0 ? (pinnBets.filter(b => b.pinnacle_clv > 0).length / pinnBets.length) * 100 : null
-  const MARKET = { 'over2.5': 'Over 2.5', 'under2.5': 'Under 2.5', 'over3.0': 'Over 3.0', 'under3.0': 'Under 3.0', 'over2.75': 'Over 2.75', 'under2.75': 'Under 2.75', 'over2.25': 'Over 2.25', 'under2.25': 'Under 2.25' }
+  const MARKET = { 'over2.5': 'Over 2.5', 'under2.5': 'Under 2.5', 'over3.0': 'Over 3.0', 'under3.0': 'Under 3.0', 'over2.75': 'Over 2.75', 'under2.75': 'Under 2.75', 'over2.25': 'Over 2.25', 'under2.25': 'Under 2.25', 'btts-yes': 'BTTS Yes', 'btts-no': 'BTTS No' }
 
   const clvByTime = (() => {
     const buckets = [
