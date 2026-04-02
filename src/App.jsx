@@ -466,6 +466,31 @@ export default function App() {
   }
 
   useEffect(() => {
+    try {
+      const saved = localStorage.getItem('xgcalc_inputs')
+      if (saved) {
+        const d = JSON.parse(saved)
+        if (d.matchName !== undefined) setMatchName(d.matchName)
+        if (d.xgH !== undefined) setXgH(d.xgH)
+        if (d.xgA !== undefined) setXgA(d.xgA)
+        if (d.gfH !== undefined) setGfH(d.gfH)
+        if (d.gaH !== undefined) setGaH(d.gaH)
+        if (d.gfA !== undefined) setGfA(d.gfA)
+        if (d.gaA !== undefined) setGaA(d.gaA)
+        if (d.backOver !== undefined) setBackOver(d.backOver)
+        if (d.layOver !== undefined) setLayOver(d.layOver)
+        if (d.backUnder !== undefined) setBackUnder(d.backUnder)
+        if (d.layUnder !== undefined) setLayUnder(d.layUnder)
+        if (d.myOddsOver !== undefined) setMyOddsOver(d.myOddsOver)
+        if (d.myOddsUnder !== undefined) setMyOddsUnder(d.myOddsUnder)
+        if (d.pinnOver25 !== undefined) setPinnOver25(d.pinnOver25)
+        if (d.pinnUnder25 !== undefined) setPinnUnder25(d.pinnUnder25)
+        if (d.matchTime !== undefined) setMatchTime(d.matchTime)
+        if (d.selectedHomeTeam) setSelectedHomeTeam(d.selectedHomeTeam)
+        if (d.selectedAwayTeam) setSelectedAwayTeam(d.selectedAwayTeam)
+      }
+    } catch {}
+
     loadBets()
 
     try {
@@ -549,6 +574,17 @@ export default function App() {
       handleCalc()
     }
   }, [selectedHomeTeam, selectedAwayTeam, xgH, xgA])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('xgcalc_inputs', JSON.stringify({
+        matchName, xgH, xgA, gfH, gaH, gfA, gaA,
+        backOver, layOver, backUnder, layUnder,
+        myOddsOver, myOddsUnder, pinnOver25, pinnUnder25,
+        matchTime, selectedHomeTeam, selectedAwayTeam,
+      }))
+    } catch {}
+  }, [matchName, xgH, xgA, gfH, gaH, gfA, gaA, backOver, layOver, backUnder, layUnder, myOddsOver, myOddsUnder, pinnOver25, pinnUnder25, matchTime, selectedHomeTeam, selectedAwayTeam])
 
   async function loadBets() {
     setLoading(true)
