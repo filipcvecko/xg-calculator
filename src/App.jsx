@@ -1082,6 +1082,16 @@ export default function App() {
       }
     }
     setSaving(false)
+    setPinnOver25('')
+    setPinnUnder25('')
+    setPinnOver30('')
+    setPinnUnder30('')
+    setPinnOver275('')
+    setPinnUnder275('')
+    setPinnOver225('')
+    setPinnUnder225('')
+    setPinnBTTSYes('')
+    setPinnBTTSNo('')
   }
 
   async function handleSaveCLV(id) {
