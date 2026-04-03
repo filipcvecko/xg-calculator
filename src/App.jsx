@@ -568,14 +568,6 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    const homeReady = selectedHomeTeam?.stats && !selectedHomeTeam.loading
-    const awayReady = selectedAwayTeam?.stats && !selectedAwayTeam.loading
-    if (homeReady && awayReady && xgH && xgA) {
-      handleCalc()
-    }
-  }, [selectedHomeTeam, selectedAwayTeam, xgH, xgA])
-
-  useEffect(() => {
     try {
       localStorage.setItem('xgcalc_inputs', JSON.stringify({
         matchName, xgH, xgA, gfH, gaH, gfA, gaA,
