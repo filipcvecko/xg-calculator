@@ -506,8 +506,6 @@ export default function App() {
           if (data.layOver30)   setLayOver30(String(data.layOver30))
           if (data.backUnder30) setBackUnder30(String(data.backUnder30))
           if (data.layUnder30)  setLayUnder30(String(data.layUnder30))
-          if (data.backOver25)  setMarketOddsOver(String(data.backOver25))
-          if (data.backUnder25) setMarketOddsUnder(String(data.backUnder25))
         }
         localStorage.removeItem('xgcalc_autofill')
       }
