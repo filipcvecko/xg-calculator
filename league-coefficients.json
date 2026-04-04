@@ -1,0 +1,8438 @@
+{
+  "generated_at": "2026-04-04T07:55:15.137Z",
+  "league_count": 146,
+  "leagues": [
+    {
+      "league_name": "USA MLS",
+      "country": "USA",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.752,
+      "avg_goals_away": 1.224,
+      "over25_pct": 58.6,
+      "under25_pct": 41.4,
+      "btts_pct": 58,
+      "home_win_pct": 48,
+      "seasons": [
+        {
+          "seasonId": 16504,
+          "avgHome": 1.93,
+          "avgAway": 1.09,
+          "over25": 59,
+          "btts": 51,
+          "homeWin": 54,
+          "year": 2026
+        },
+        {
+          "seasonId": 13973,
+          "avgHome": 1.66,
+          "avgAway": 1.36,
+          "over25": 59,
+          "btts": 60,
+          "homeWin": 44,
+          "year": 2025
+        },
+        {
+          "seasonId": 10977,
+          "avgHome": 1.73,
+          "avgAway": 1.39,
+          "over25": 61,
+          "btts": 63,
+          "homeWin": 45,
+          "year": 2024
+        },
+        {
+          "seasonId": 8777,
+          "avgHome": 1.69,
+          "avgAway": 1.07,
+          "over25": 55,
+          "btts": 56,
+          "homeWin": 48,
+          "year": 2023
+        },
+        {
+          "seasonId": 6969,
+          "avgHome": 1.75,
+          "avgAway": 1.21,
+          "over25": 59,
+          "btts": 60,
+          "homeWin": 49,
+          "year": 2022
+        }
+      ]
+    },
+    {
+      "league_name": "Scotland Premiership",
+      "country": "Scotland",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.568,
+      "avg_goals_away": 1.188,
+      "over25_pct": 52.8,
+      "under25_pct": 47.2,
+      "btts_pct": 50.6,
+      "home_win_pct": 45.8,
+      "seasons": [
+        {
+          "seasonId": 15000,
+          "avgHome": 1.53,
+          "avgAway": 1.12,
+          "over25": 49,
+          "btts": 50,
+          "homeWin": 44,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12455,
+          "avgHome": 1.69,
+          "avgAway": 1.27,
+          "over25": 61,
+          "btts": 54,
+          "homeWin": 47,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9636,
+          "avgHome": 1.52,
+          "avgAway": 1.24,
+          "over25": 54,
+          "btts": 50,
+          "homeWin": 43,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7494,
+          "avgHome": 1.7,
+          "avgAway": 1.24,
+          "over25": 56,
+          "btts": 50,
+          "homeWin": 52,
+          "year": 20222023
+        },
+        {
+          "seasonId": 5992,
+          "avgHome": 1.4,
+          "avgAway": 1.07,
+          "over25": 44,
+          "btts": 49,
+          "homeWin": 43,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Germany Bundesliga",
+      "country": "Germany",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.764,
+      "avg_goals_away": 1.404,
+      "over25_pct": 60.2,
+      "under25_pct": 39.8,
+      "btts_pct": 59,
+      "home_win_pct": 44.4,
+      "seasons": [
+        {
+          "seasonId": 14968,
+          "avgHome": 1.76,
+          "avgAway": 1.43,
+          "over25": 62,
+          "btts": 57,
+          "homeWin": 45,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12529,
+          "avgHome": 1.63,
+          "avgAway": 1.5,
+          "over25": 60,
+          "btts": 56,
+          "homeWin": 39,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9655,
+          "avgHome": 1.81,
+          "avgAway": 1.41,
+          "over25": 62,
+          "btts": 62,
+          "homeWin": 44,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7664,
+          "avgHome": 1.86,
+          "avgAway": 1.32,
+          "over25": 60,
+          "btts": 59,
+          "homeWin": 47,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6192,
+          "avgHome": 1.76,
+          "avgAway": 1.36,
+          "over25": 57,
+          "btts": 61,
+          "homeWin": 47,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Malaysia Super League",
+      "country": "Malaysia",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.684,
+      "avg_goals_away": 1.39,
+      "over25_pct": 57.6,
+      "under25_pct": 42.4,
+      "btts_pct": 49.8,
+      "home_win_pct": 43.6,
+      "seasons": [
+        {
+          "seasonId": 15210,
+          "avgHome": 1.76,
+          "avgAway": 1.48,
+          "over25": 60,
+          "btts": 46,
+          "homeWin": 41,
+          "year": 20252026
+        },
+        {
+          "seasonId": 11438,
+          "avgHome": 1.64,
+          "avgAway": 1.4,
+          "over25": 56,
+          "btts": 50,
+          "homeWin": 41,
+          "year": 2024
+        },
+        {
+          "seasonId": 8939,
+          "avgHome": 1.82,
+          "avgAway": 1.62,
+          "over25": 62,
+          "btts": 49,
+          "homeWin": 48,
+          "year": 2023
+        },
+        {
+          "seasonId": 7044,
+          "avgHome": 1.76,
+          "avgAway": 1.18,
+          "over25": 57,
+          "btts": 52,
+          "homeWin": 47,
+          "year": 2022
+        },
+        {
+          "seasonId": 5624,
+          "avgHome": 1.44,
+          "avgAway": 1.27,
+          "over25": 53,
+          "btts": 52,
+          "homeWin": 41,
+          "year": 2021
+        }
+      ]
+    },
+    {
+      "league_name": "England Premier League",
+      "country": "England",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.59,
+      "avg_goals_away": 1.334,
+      "over25_pct": 56.2,
+      "under25_pct": 43.8,
+      "btts_pct": 55.2,
+      "home_win_pct": 44,
+      "seasons": [
+        {
+          "seasonId": 15050,
+          "avgHome": 1.5,
+          "avgAway": 1.24,
+          "over25": 53,
+          "btts": 56,
+          "homeWin": 42,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12325,
+          "avgHome": 1.51,
+          "avgAway": 1.42,
+          "over25": 56,
+          "btts": 56,
+          "homeWin": 41,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9660,
+          "avgHome": 1.8,
+          "avgAway": 1.48,
+          "over25": 65,
+          "btts": 62,
+          "homeWin": 46,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7704,
+          "avgHome": 1.63,
+          "avgAway": 1.22,
+          "over25": 53,
+          "btts": 52,
+          "homeWin": 48,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6135,
+          "avgHome": 1.51,
+          "avgAway": 1.31,
+          "over25": 54,
+          "btts": 50,
+          "homeWin": 43,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Portugal Liga NOS",
+      "country": "Portugal",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.47,
+      "avg_goals_away": 1.188,
+      "over25_pct": 51.4,
+      "under25_pct": 48.6,
+      "btts_pct": 49,
+      "home_win_pct": 43.2,
+      "seasons": [
+        {
+          "seasonId": 15115,
+          "avgHome": 1.52,
+          "avgAway": 1.2,
+          "over25": 56,
+          "btts": 46,
+          "homeWin": 41,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12931,
+          "avgHome": 1.4,
+          "avgAway": 1.17,
+          "over25": 49,
+          "btts": 49,
+          "homeWin": 43,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9984,
+          "avgHome": 1.58,
+          "avgAway": 1.28,
+          "over25": 55,
+          "btts": 54,
+          "homeWin": 43,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7731,
+          "avgHome": 1.42,
+          "avgAway": 1.08,
+          "over25": 48,
+          "btts": 43,
+          "homeWin": 49,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6117,
+          "avgHome": 1.43,
+          "avgAway": 1.21,
+          "over25": 49,
+          "btts": 53,
+          "homeWin": 40,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Turkey Süper Lig",
+      "country": "Turkey",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.568,
+      "avg_goals_away": 1.262,
+      "over25_pct": 54.4,
+      "under25_pct": 45.6,
+      "btts_pct": 55,
+      "home_win_pct": 45.2,
+      "seasons": [
+        {
+          "seasonId": 14972,
+          "avgHome": 1.35,
+          "avgAway": 1.23,
+          "over25": 50,
+          "btts": 54,
+          "homeWin": 39,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12641,
+          "avgHome": 1.66,
+          "avgAway": 1.27,
+          "over25": 55,
+          "btts": 56,
+          "homeWin": 49,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9913,
+          "avgHome": 1.58,
+          "avgAway": 1.22,
+          "over25": 51,
+          "btts": 55,
+          "homeWin": 46,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7768,
+          "avgHome": 1.66,
+          "avgAway": 1.38,
+          "over25": 62,
+          "btts": 53,
+          "homeWin": 45,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6125,
+          "avgHome": 1.59,
+          "avgAway": 1.21,
+          "over25": 54,
+          "btts": 57,
+          "homeWin": 47,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "England Championship",
+      "country": "England",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.402,
+      "avg_goals_away": 1.112,
+      "over25_pct": 47.2,
+      "under25_pct": 52.8,
+      "btts_pct": 51.4,
+      "home_win_pct": 43.4,
+      "seasons": [
+        {
+          "seasonId": 14930,
+          "avgHome": 1.39,
+          "avgAway": 1.2,
+          "over25": 50,
+          "btts": 56,
+          "homeWin": 42,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12451,
+          "avgHome": 1.43,
+          "avgAway": 1.02,
+          "over25": 45,
+          "btts": 50,
+          "homeWin": 46,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9663,
+          "avgHome": 1.48,
+          "avgAway": 1.19,
+          "over25": 52,
+          "btts": 52,
+          "homeWin": 45,
+          "year": 20232024
+        },
+        {
+          "seasonId": 8031,
+          "avgHome": 1.39,
+          "avgAway": 1.05,
+          "over25": 45,
+          "btts": 51,
+          "homeWin": 43,
+          "year": 20082009
+        },
+        {
+          "seasonId": 7593,
+          "avgHome": 1.32,
+          "avgAway": 1.1,
+          "over25": 44,
+          "btts": 48,
+          "homeWin": 41,
+          "year": 20222023
+        }
+      ]
+    },
+    {
+      "league_name": "England EFL League One",
+      "country": "England",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.446,
+      "avg_goals_away": 1.156,
+      "over25_pct": 49.2,
+      "under25_pct": 50.8,
+      "btts_pct": 50.6,
+      "home_win_pct": 44.4,
+      "seasons": [
+        {
+          "seasonId": 14934,
+          "avgHome": 1.5,
+          "avgAway": 1.09,
+          "over25": 50,
+          "btts": 51,
+          "homeWin": 48,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12446,
+          "avgHome": 1.4,
+          "avgAway": 1.18,
+          "over25": 50,
+          "btts": 52,
+          "homeWin": 43,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9582,
+          "avgHome": 1.41,
+          "avgAway": 1.18,
+          "over25": 50,
+          "btts": 51,
+          "homeWin": 42,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7570,
+          "avgHome": 1.42,
+          "avgAway": 1.14,
+          "over25": 47,
+          "btts": 47,
+          "homeWin": 44,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6017,
+          "avgHome": 1.5,
+          "avgAway": 1.19,
+          "over25": 49,
+          "btts": 52,
+          "homeWin": 45,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "England EFL League Two",
+      "country": "England",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.396,
+      "avg_goals_away": 1.166,
+      "over25_pct": 46.6,
+      "under25_pct": 53.4,
+      "btts_pct": 51.2,
+      "home_win_pct": 42.6,
+      "seasons": [
+        {
+          "seasonId": 14935,
+          "avgHome": 1.34,
+          "avgAway": 1.19,
+          "over25": 46,
+          "btts": 51,
+          "homeWin": 42,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12422,
+          "avgHome": 1.37,
+          "avgAway": 1.12,
+          "over25": 45,
+          "btts": 49,
+          "homeWin": 42,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9581,
+          "avgHome": 1.63,
+          "avgAway": 1.35,
+          "over25": 56,
+          "btts": 59,
+          "homeWin": 45,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7574,
+          "avgHome": 1.29,
+          "avgAway": 1.06,
+          "over25": 41,
+          "btts": 48,
+          "homeWin": 42,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6015,
+          "avgHome": 1.35,
+          "avgAway": 1.11,
+          "over25": 45,
+          "btts": 49,
+          "homeWin": 42,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Spain La Liga",
+      "country": "Spain",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.476,
+      "avg_goals_away": 1.118,
+      "over25_pct": 47.6,
+      "under25_pct": 52.4,
+      "btts_pct": 51.6,
+      "home_win_pct": 45.4,
+      "seasons": [
+        {
+          "seasonId": 14956,
+          "avgHome": 1.57,
+          "avgAway": 1.12,
+          "over25": 51,
+          "btts": 56,
+          "homeWin": 48,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12316,
+          "avgHome": 1.45,
+          "avgAway": 1.17,
+          "over25": 49,
+          "btts": 54,
+          "homeWin": 44,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9665,
+          "avgHome": 1.48,
+          "avgAway": 1.16,
+          "over25": 46,
+          "btts": 49,
+          "homeWin": 44,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7665,
+          "avgHome": 1.46,
+          "avgAway": 1.06,
+          "over25": 48,
+          "btts": 50,
+          "homeWin": 48,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6211,
+          "avgHome": 1.42,
+          "avgAway": 1.08,
+          "over25": 44,
+          "btts": 49,
+          "homeWin": 43,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Spain Segunda División",
+      "country": "Spain",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.35,
+      "avg_goals_away": 1.008,
+      "over25_pct": 42.6,
+      "under25_pct": 57.4,
+      "btts_pct": 49.4,
+      "home_win_pct": 44.8,
+      "seasons": [
+        {
+          "seasonId": 15066,
+          "avgHome": 1.42,
+          "avgAway": 1.17,
+          "over25": 49,
+          "btts": 55,
+          "homeWin": 44,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12467,
+          "avgHome": 1.45,
+          "avgAway": 1.08,
+          "over25": 48,
+          "btts": 53,
+          "homeWin": 47,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9675,
+          "avgHome": 1.32,
+          "avgAway": 0.91,
+          "over25": 37,
+          "btts": 43,
+          "homeWin": 46,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7592,
+          "avgHome": 1.18,
+          "avgAway": 0.84,
+          "over25": 35,
+          "btts": 44,
+          "homeWin": 44,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6120,
+          "avgHome": 1.38,
+          "avgAway": 1.04,
+          "over25": 44,
+          "btts": 52,
+          "homeWin": 43,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Norway Eliteserien",
+      "country": "Norway",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.756,
+      "avg_goals_away": 1.324,
+      "over25_pct": 59.6,
+      "under25_pct": 40.4,
+      "btts_pct": 56.4,
+      "home_win_pct": 49.8,
+      "seasons": [
+        {
+          "seasonId": 16558,
+          "avgHome": 1.85,
+          "avgAway": 1.15,
+          "over25": 54,
+          "btts": 54,
+          "homeWin": 62,
+          "year": 2026
+        },
+        {
+          "seasonId": 16260,
+          "avgHome": 1.81,
+          "avgAway": 1.38,
+          "over25": 63,
+          "btts": 56,
+          "homeWin": 49,
+          "year": 2025
+        },
+        {
+          "seasonId": 10976,
+          "avgHome": 1.51,
+          "avgAway": 1.33,
+          "over25": 55,
+          "btts": 53,
+          "homeWin": 42,
+          "year": 2024
+        },
+        {
+          "seasonId": 8739,
+          "avgHome": 1.79,
+          "avgAway": 1.33,
+          "over25": 60,
+          "btts": 56,
+          "homeWin": 51,
+          "year": 2023
+        },
+        {
+          "seasonId": 7048,
+          "avgHome": 1.82,
+          "avgAway": 1.43,
+          "over25": 66,
+          "btts": 63,
+          "homeWin": 45,
+          "year": 2022
+        }
+      ]
+    },
+    {
+      "league_name": "Turkey 1. Lig",
+      "country": "Turkey",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.462,
+      "avg_goals_away": 1.188,
+      "over25_pct": 49.6,
+      "under25_pct": 50.4,
+      "btts_pct": 48,
+      "home_win_pct": 45.2,
+      "seasons": [
+        {
+          "seasonId": 15199,
+          "avgHome": 1.65,
+          "avgAway": 1.26,
+          "over25": 54,
+          "btts": 49,
+          "homeWin": 45,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12928,
+          "avgHome": 1.51,
+          "avgAway": 1.16,
+          "over25": 49,
+          "btts": 44,
+          "homeWin": 46,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9914,
+          "avgHome": 1.27,
+          "avgAway": 1.09,
+          "over25": 42,
+          "btts": 44,
+          "homeWin": 42,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7770,
+          "avgHome": 1.42,
+          "avgAway": 1.25,
+          "over25": 53,
+          "btts": 50,
+          "homeWin": 44,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6126,
+          "avgHome": 1.46,
+          "avgAway": 1.18,
+          "over25": 50,
+          "btts": 53,
+          "homeWin": 49,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Netherlands Eredivisie",
+      "country": "Netherlands",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.72,
+      "avg_goals_away": 1.354,
+      "over25_pct": 59.6,
+      "under25_pct": 40.4,
+      "btts_pct": 56.8,
+      "home_win_pct": 44.6,
+      "seasons": [
+        {
+          "seasonId": 14936,
+          "avgHome": 1.8,
+          "avgAway": 1.4,
+          "over25": 63,
+          "btts": 64,
+          "homeWin": 45,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12322,
+          "avgHome": 1.71,
+          "avgAway": 1.29,
+          "over25": 56,
+          "btts": 56,
+          "homeWin": 46,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9653,
+          "avgHome": 1.77,
+          "avgAway": 1.48,
+          "over25": 64,
+          "btts": 56,
+          "homeWin": 43,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7482,
+          "avgHome": 1.72,
+          "avgAway": 1.32,
+          "over25": 59,
+          "btts": 53,
+          "homeWin": 45,
+          "year": 20222023
+        },
+        {
+          "seasonId": 5951,
+          "avgHome": 1.6,
+          "avgAway": 1.28,
+          "over25": 56,
+          "btts": 55,
+          "homeWin": 44,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Netherlands Eerste Divisie",
+      "country": "Netherlands",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.698,
+      "avg_goals_away": 1.386,
+      "over25_pct": 60.6,
+      "under25_pct": 39.4,
+      "btts_pct": 57.6,
+      "home_win_pct": 44.8,
+      "seasons": [
+        {
+          "seasonId": 14987,
+          "avgHome": 1.71,
+          "avgAway": 1.5,
+          "over25": 64,
+          "btts": 62,
+          "homeWin": 42,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12317,
+          "avgHome": 1.7,
+          "avgAway": 1.32,
+          "over25": 60,
+          "btts": 54,
+          "homeWin": 46,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9654,
+          "avgHome": 1.69,
+          "avgAway": 1.36,
+          "over25": 60,
+          "btts": 60,
+          "homeWin": 46,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7484,
+          "avgHome": 1.76,
+          "avgAway": 1.31,
+          "over25": 59,
+          "btts": 56,
+          "homeWin": 47,
+          "year": 20222023
+        },
+        {
+          "seasonId": 5950,
+          "avgHome": 1.63,
+          "avgAway": 1.44,
+          "over25": 60,
+          "btts": 56,
+          "homeWin": 43,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Finland Veikkausliiga",
+      "country": "Finland",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.236,
+      "avg_goals_away": 1.11,
+      "over25_pct": 46.8,
+      "under25_pct": 53.2,
+      "btts_pct": 45.6,
+      "home_win_pct": 34.6,
+      "seasons": [
+        {
+          "seasonId": 16572,
+          "avgHome": 0,
+          "avgAway": 0,
+          "over25": 0,
+          "btts": 0,
+          "homeWin": 0,
+          "year": 2026
+        },
+        {
+          "seasonId": 14089,
+          "avgHome": 1.66,
+          "avgAway": 1.63,
+          "over25": 67,
+          "btts": 65,
+          "homeWin": 41,
+          "year": 2025
+        },
+        {
+          "seasonId": 11120,
+          "avgHome": 1.66,
+          "avgAway": 1.28,
+          "over25": 61,
+          "btts": 56,
+          "homeWin": 47,
+          "year": 2024
+        },
+        {
+          "seasonId": 8935,
+          "avgHome": 1.35,
+          "avgAway": 1.21,
+          "over25": 50,
+          "btts": 51,
+          "homeWin": 42,
+          "year": 2023
+        },
+        {
+          "seasonId": 7120,
+          "avgHome": 1.51,
+          "avgAway": 1.43,
+          "over25": 56,
+          "btts": 56,
+          "homeWin": 43,
+          "year": 2022
+        }
+      ]
+    },
+    {
+      "league_name": "France Ligue 1",
+      "country": "France",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.544,
+      "avg_goals_away": 1.272,
+      "over25_pct": 53.2,
+      "under25_pct": 46.8,
+      "btts_pct": 54,
+      "home_win_pct": 44,
+      "seasons": [
+        {
+          "seasonId": 14932,
+          "avgHome": 1.59,
+          "avgAway": 1.19,
+          "over25": 51,
+          "btts": 48,
+          "homeWin": 48,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12337,
+          "avgHome": 1.61,
+          "avgAway": 1.37,
+          "over25": 56,
+          "btts": 56,
+          "homeWin": 47,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9674,
+          "avgHome": 1.45,
+          "avgAway": 1.25,
+          "over25": 53,
+          "btts": 54,
+          "homeWin": 39,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7500,
+          "avgHome": 1.49,
+          "avgAway": 1.32,
+          "over25": 56,
+          "btts": 57,
+          "homeWin": 43,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6019,
+          "avgHome": 1.58,
+          "avgAway": 1.23,
+          "over25": 50,
+          "btts": 55,
+          "homeWin": 43,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Italy Serie A",
+      "country": "Italy",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.382,
+      "avg_goals_away": 1.156,
+      "over25_pct": 47,
+      "under25_pct": 53,
+      "btts_pct": 50.2,
+      "home_win_pct": 42.2,
+      "seasons": [
+        {
+          "seasonId": 15068,
+          "avgHome": 1.3,
+          "avgAway": 1.15,
+          "over25": 47,
+          "btts": 47,
+          "homeWin": 40,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12530,
+          "avgHome": 1.34,
+          "avgAway": 1.22,
+          "over25": 48,
+          "btts": 52,
+          "homeWin": 40,
+          "year": 20242025
+        },
+        {
+          "seasonId": 11181,
+          "avgHome": 1.43,
+          "avgAway": 1.08,
+          "over25": 45,
+          "btts": 50,
+          "homeWin": 47,
+          "year": 20102011
+        },
+        {
+          "seasonId": 9697,
+          "avgHome": 1.43,
+          "avgAway": 1.18,
+          "over25": 49,
+          "btts": 52,
+          "homeWin": 42,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7608,
+          "avgHome": 1.41,
+          "avgAway": 1.15,
+          "over25": 46,
+          "btts": 50,
+          "homeWin": 42,
+          "year": 20222023
+        }
+      ]
+    },
+    {
+      "league_name": "France Ligue 2",
+      "country": "France",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.334,
+      "avg_goals_away": 1.1,
+      "over25_pct": 45.2,
+      "under25_pct": 54.8,
+      "btts_pct": 48.2,
+      "home_win_pct": 42.2,
+      "seasons": [
+        {
+          "seasonId": 14954,
+          "avgHome": 1.27,
+          "avgAway": 1.19,
+          "over25": 46,
+          "btts": 50,
+          "homeWin": 37,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12338,
+          "avgHome": 1.5,
+          "avgAway": 1.06,
+          "over25": 48,
+          "btts": 48,
+          "homeWin": 49,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9621,
+          "avgHome": 1.33,
+          "avgAway": 1.13,
+          "over25": 47,
+          "btts": 49,
+          "homeWin": 40,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7501,
+          "avgHome": 1.32,
+          "avgAway": 1.09,
+          "over25": 44,
+          "btts": 48,
+          "homeWin": 44,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6018,
+          "avgHome": 1.25,
+          "avgAway": 1.03,
+          "over25": 41,
+          "btts": 46,
+          "homeWin": 41,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Italy Serie B",
+      "country": "Italy",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.368,
+      "avg_goals_away": 1.102,
+      "over25_pct": 45.4,
+      "under25_pct": 54.6,
+      "btts_pct": 53.2,
+      "home_win_pct": 40.8,
+      "seasons": [
+        {
+          "seasonId": 15632,
+          "avgHome": 1.47,
+          "avgAway": 1.09,
+          "over25": 50,
+          "btts": 55,
+          "homeWin": 44,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12621,
+          "avgHome": 1.35,
+          "avgAway": 1.1,
+          "over25": 46,
+          "btts": 54,
+          "homeWin": 41,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9808,
+          "avgHome": 1.35,
+          "avgAway": 1.18,
+          "over25": 49,
+          "btts": 56,
+          "homeWin": 37,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7864,
+          "avgHome": 1.29,
+          "avgAway": 1.04,
+          "over25": 40,
+          "btts": 49,
+          "homeWin": 41,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6205,
+          "avgHome": 1.38,
+          "avgAway": 1.1,
+          "over25": 42,
+          "btts": 52,
+          "homeWin": 41,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Belgium Pro League",
+      "country": "Belgium",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.548,
+      "avg_goals_away": 1.284,
+      "over25_pct": 53.4,
+      "under25_pct": 46.6,
+      "btts_pct": 54,
+      "home_win_pct": 43,
+      "seasons": [
+        {
+          "seasonId": 14937,
+          "avgHome": 1.39,
+          "avgAway": 1.23,
+          "over25": 47,
+          "btts": 54,
+          "homeWin": 41,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12137,
+          "avgHome": 1.59,
+          "avgAway": 1.17,
+          "over25": 52,
+          "btts": 53,
+          "homeWin": 44,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9577,
+          "avgHome": 1.58,
+          "avgAway": 1.24,
+          "over25": 55,
+          "btts": 55,
+          "homeWin": 44,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7544,
+          "avgHome": 1.65,
+          "avgAway": 1.4,
+          "over25": 59,
+          "btts": 56,
+          "homeWin": 44,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6079,
+          "avgHome": 1.53,
+          "avgAway": 1.38,
+          "over25": 54,
+          "btts": 52,
+          "homeWin": 42,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Germany 2. Bundesliga",
+      "country": "Germany",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.628,
+      "avg_goals_away": 1.36,
+      "over25_pct": 59,
+      "under25_pct": 41,
+      "btts_pct": 58.4,
+      "home_win_pct": 43.4,
+      "seasons": [
+        {
+          "seasonId": 14931,
+          "avgHome": 1.59,
+          "avgAway": 1.35,
+          "over25": 59,
+          "btts": 60,
+          "homeWin": 45,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12528,
+          "avgHome": 1.64,
+          "avgAway": 1.39,
+          "over25": 59,
+          "btts": 60,
+          "homeWin": 41,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9656,
+          "avgHome": 1.72,
+          "avgAway": 1.38,
+          "over25": 61,
+          "btts": 59,
+          "homeWin": 46,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7499,
+          "avgHome": 1.64,
+          "avgAway": 1.31,
+          "over25": 57,
+          "btts": 56,
+          "homeWin": 46,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6020,
+          "avgHome": 1.55,
+          "avgAway": 1.37,
+          "over25": 59,
+          "btts": 57,
+          "homeWin": 39,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Germany 3. Liga",
+      "country": "Germany",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.586,
+      "avg_goals_away": 1.324,
+      "over25_pct": 55.4,
+      "under25_pct": 44.6,
+      "btts_pct": 57.6,
+      "home_win_pct": 44.4,
+      "seasons": [
+        {
+          "seasonId": 14977,
+          "avgHome": 1.71,
+          "avgAway": 1.43,
+          "over25": 64,
+          "btts": 64,
+          "homeWin": 46,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12623,
+          "avgHome": 1.57,
+          "avgAway": 1.33,
+          "over25": 56,
+          "btts": 59,
+          "homeWin": 45,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9741,
+          "avgHome": 1.58,
+          "avgAway": 1.23,
+          "over25": 52,
+          "btts": 56,
+          "homeWin": 46,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7591,
+          "avgHome": 1.6,
+          "avgAway": 1.32,
+          "over25": 56,
+          "btts": 57,
+          "homeWin": 45,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6041,
+          "avgHome": 1.47,
+          "avgAway": 1.31,
+          "over25": 49,
+          "btts": 52,
+          "homeWin": 40,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Austria Bundesliga",
+      "country": "Austria",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.484,
+      "avg_goals_away": 1.292,
+      "over25_pct": 53,
+      "under25_pct": 47,
+      "btts_pct": 56,
+      "home_win_pct": 39.4,
+      "seasons": [
+        {
+          "seasonId": 14923,
+          "avgHome": 1.41,
+          "avgAway": 1.3,
+          "over25": 51,
+          "btts": 56,
+          "homeWin": 42,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12472,
+          "avgHome": 1.57,
+          "avgAway": 1.18,
+          "over25": 55,
+          "btts": 56,
+          "homeWin": 43,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9954,
+          "avgHome": 1.34,
+          "avgAway": 1.24,
+          "over25": 46,
+          "btts": 46,
+          "homeWin": 36,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7890,
+          "avgHome": 1.53,
+          "avgAway": 1.43,
+          "over25": 57,
+          "btts": 61,
+          "homeWin": 38,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6008,
+          "avgHome": 1.57,
+          "avgAway": 1.31,
+          "over25": 56,
+          "btts": 61,
+          "homeWin": 38,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Austria 2. Liga",
+      "country": "Austria",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.554,
+      "avg_goals_away": 1.374,
+      "over25_pct": 56.2,
+      "under25_pct": 43.8,
+      "btts_pct": 54.6,
+      "home_win_pct": 43,
+      "seasons": [
+        {
+          "seasonId": 14958,
+          "avgHome": 1.41,
+          "avgAway": 1.32,
+          "over25": 51,
+          "btts": 53,
+          "homeWin": 39,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12478,
+          "avgHome": 1.58,
+          "avgAway": 1.37,
+          "over25": 57,
+          "btts": 56,
+          "homeWin": 43,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9641,
+          "avgHome": 1.57,
+          "avgAway": 1.42,
+          "over25": 57,
+          "btts": 55,
+          "homeWin": 44,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7584,
+          "avgHome": 1.53,
+          "avgAway": 1.38,
+          "over25": 56,
+          "btts": 53,
+          "homeWin": 44,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6007,
+          "avgHome": 1.68,
+          "avgAway": 1.38,
+          "over25": 60,
+          "btts": 56,
+          "homeWin": 45,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Australia A-League",
+      "country": "Australia",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.658,
+      "avg_goals_away": 1.412,
+      "over25_pct": 59.4,
+      "under25_pct": 40.6,
+      "btts_pct": 60.4,
+      "home_win_pct": 41.6,
+      "seasons": [
+        {
+          "seasonId": 16036,
+          "avgHome": 1.49,
+          "avgAway": 1.36,
+          "over25": 56,
+          "btts": 60,
+          "homeWin": 38,
+          "year": 20252026
+        },
+        {
+          "seasonId": 13703,
+          "avgHome": 1.63,
+          "avgAway": 1.63,
+          "over25": 61,
+          "btts": 61,
+          "homeWin": 35,
+          "year": 20242025
+        },
+        {
+          "seasonId": 10505,
+          "avgHome": 1.85,
+          "avgAway": 1.44,
+          "over25": 62,
+          "btts": 62,
+          "homeWin": 43,
+          "year": 20232024
+        },
+        {
+          "seasonId": 8008,
+          "avgHome": 1.72,
+          "avgAway": 1.34,
+          "over25": 61,
+          "btts": 63,
+          "homeWin": 45,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6639,
+          "avgHome": 1.6,
+          "avgAway": 1.29,
+          "over25": 57,
+          "btts": 56,
+          "homeWin": 47,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Brazil Serie A",
+      "country": "Brazil",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.48,
+      "avg_goals_away": 1.028,
+      "over25_pct": 45.8,
+      "under25_pct": 54.2,
+      "btts_pct": 50.8,
+      "home_win_pct": 48,
+      "seasons": [
+        {
+          "seasonId": 16544,
+          "avgHome": 1.63,
+          "avgAway": 1.06,
+          "over25": 48,
+          "btts": 56,
+          "homeWin": 52,
+          "year": 2026
+        },
+        {
+          "seasonId": 14231,
+          "avgHome": 1.53,
+          "avgAway": 1,
+          "over25": 46,
+          "btts": 47,
+          "homeWin": 50,
+          "year": 2025
+        },
+        {
+          "seasonId": 11321,
+          "avgHome": 1.41,
+          "avgAway": 1.03,
+          "over25": 47,
+          "btts": 53,
+          "homeWin": 47,
+          "year": 2024
+        },
+        {
+          "seasonId": 9035,
+          "avgHome": 1.42,
+          "avgAway": 1.07,
+          "over25": 45,
+          "btts": 48,
+          "homeWin": 47,
+          "year": 2023
+        },
+        {
+          "seasonId": 7097,
+          "avgHome": 1.41,
+          "avgAway": 0.98,
+          "over25": 43,
+          "btts": 50,
+          "homeWin": 44,
+          "year": 2022
+        }
+      ]
+    },
+    {
+      "league_name": "Brazil Serie B",
+      "country": "Brazil",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.27,
+      "avg_goals_away": 0.884,
+      "over25_pct": 38.4,
+      "under25_pct": 61.6,
+      "btts_pct": 47.6,
+      "home_win_pct": 43.8,
+      "seasons": [
+        {
+          "seasonId": 16783,
+          "avgHome": 1.2,
+          "avgAway": 1.05,
+          "over25": 45,
+          "btts": 60,
+          "homeWin": 25,
+          "year": 2026
+        },
+        {
+          "seasonId": 14305,
+          "avgHome": 1.29,
+          "avgAway": 0.93,
+          "over25": 40,
+          "btts": 49,
+          "homeWin": 46,
+          "year": 2025
+        },
+        {
+          "seasonId": 11351,
+          "avgHome": 1.32,
+          "avgAway": 0.87,
+          "over25": 37,
+          "btts": 44,
+          "homeWin": 52,
+          "year": 2024
+        },
+        {
+          "seasonId": 9042,
+          "avgHome": 1.26,
+          "avgAway": 0.84,
+          "over25": 37,
+          "btts": 41,
+          "homeWin": 46,
+          "year": 2023
+        },
+        {
+          "seasonId": 7107,
+          "avgHome": 1.28,
+          "avgAway": 0.73,
+          "over25": 33,
+          "btts": 44,
+          "homeWin": 50,
+          "year": 2022
+        }
+      ]
+    },
+    {
+      "league_name": "Sweden Allsvenskan",
+      "country": "Sweden",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.23,
+      "avg_goals_away": 1.014,
+      "over25_pct": 42.8,
+      "under25_pct": 57.2,
+      "btts_pct": 42.2,
+      "home_win_pct": 35.2,
+      "seasons": [
+        {
+          "seasonId": 16576,
+          "avgHome": 0,
+          "avgAway": 0,
+          "over25": 0,
+          "btts": 0,
+          "homeWin": 0,
+          "year": 2026
+        },
+        {
+          "seasonId": 16263,
+          "avgHome": 1.48,
+          "avgAway": 1.37,
+          "over25": 52,
+          "btts": 53,
+          "homeWin": 40,
+          "year": 2025
+        },
+        {
+          "seasonId": 10969,
+          "avgHome": 1.57,
+          "avgAway": 1.27,
+          "over25": 55,
+          "btts": 55,
+          "homeWin": 45,
+          "year": 2024
+        },
+        {
+          "seasonId": 8737,
+          "avgHome": 1.55,
+          "avgAway": 1.22,
+          "over25": 55,
+          "btts": 50,
+          "homeWin": 47,
+          "year": 2023
+        },
+        {
+          "seasonId": 7064,
+          "avgHome": 1.55,
+          "avgAway": 1.21,
+          "over25": 52,
+          "btts": 53,
+          "homeWin": 44,
+          "year": 2022
+        }
+      ]
+    },
+    {
+      "league_name": "Sweden Superettan",
+      "country": "Sweden",
+      "seasons_fetched": 5,
+      "avg_goals_home": 2.068,
+      "avg_goals_away": 1.176,
+      "over25_pct": 63.8,
+      "under25_pct": 36.2,
+      "btts_pct": 64.6,
+      "home_win_pct": 55.2,
+      "seasons": [
+        {
+          "seasonId": 16575,
+          "avgHome": 4,
+          "avgAway": 1,
+          "over25": 100,
+          "btts": 100,
+          "homeWin": 100,
+          "year": 2026
+        },
+        {
+          "seasonId": 13975,
+          "avgHome": 1.6,
+          "avgAway": 1.26,
+          "over25": 56,
+          "btts": 55,
+          "homeWin": 42,
+          "year": 2025
+        },
+        {
+          "seasonId": 10987,
+          "avgHome": 1.49,
+          "avgAway": 1.15,
+          "over25": 51,
+          "btts": 54,
+          "homeWin": 45,
+          "year": 2024
+        },
+        {
+          "seasonId": 8738,
+          "avgHome": 1.63,
+          "avgAway": 1.18,
+          "over25": 56,
+          "btts": 54,
+          "homeWin": 46,
+          "year": 2023
+        },
+        {
+          "seasonId": 7065,
+          "avgHome": 1.62,
+          "avgAway": 1.29,
+          "over25": 56,
+          "btts": 60,
+          "homeWin": 43,
+          "year": 2022
+        }
+      ]
+    },
+    {
+      "league_name": "Argentina Primera División",
+      "country": "Argentina",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.192,
+      "avg_goals_away": 0.878,
+      "over25_pct": 34.2,
+      "under25_pct": 65.8,
+      "btts_pct": 43,
+      "home_win_pct": 43.4,
+      "seasons": [
+        {
+          "seasonId": 16571,
+          "avgHome": 1.17,
+          "avgAway": 0.84,
+          "over25": 32,
+          "btts": 44,
+          "homeWin": 43,
+          "year": 2026
+        },
+        {
+          "seasonId": 15746,
+          "avgHome": 1.1,
+          "avgAway": 0.85,
+          "over25": 32,
+          "btts": 38,
+          "homeWin": 41,
+          "year": 2025
+        },
+        {
+          "seasonId": 11212,
+          "avgHome": 1.21,
+          "avgAway": 0.84,
+          "over25": 30,
+          "btts": 42,
+          "homeWin": 45,
+          "year": 2024
+        },
+        {
+          "seasonId": 8595,
+          "avgHome": 1.19,
+          "avgAway": 0.83,
+          "over25": 34,
+          "btts": 41,
+          "homeWin": 45,
+          "year": 2023
+        },
+        {
+          "seasonId": 7892,
+          "avgHome": 1.29,
+          "avgAway": 1.03,
+          "over25": 43,
+          "btts": 50,
+          "homeWin": 43,
+          "year": 2022
+        }
+      ]
+    },
+    {
+      "league_name": "Argentina Prim B Nacional",
+      "country": "Argentina",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.15,
+      "avg_goals_away": 0.762,
+      "over25_pct": 30.8,
+      "under25_pct": 69.2,
+      "btts_pct": 39.2,
+      "home_win_pct": 44.6,
+      "seasons": [
+        {
+          "seasonId": 16580,
+          "avgHome": 1.06,
+          "avgAway": 0.77,
+          "over25": 31,
+          "btts": 40,
+          "homeWin": 42,
+          "year": 2026
+        },
+        {
+          "seasonId": 14008,
+          "avgHome": 1.11,
+          "avgAway": 0.68,
+          "over25": 27,
+          "btts": 35,
+          "homeWin": 46,
+          "year": 2025
+        },
+        {
+          "seasonId": 11047,
+          "avgHome": 1.06,
+          "avgAway": 0.73,
+          "over25": 28,
+          "btts": 34,
+          "homeWin": 44,
+          "year": 2024
+        },
+        {
+          "seasonId": 8836,
+          "avgHome": 1.28,
+          "avgAway": 0.83,
+          "over25": 35,
+          "btts": 45,
+          "homeWin": 48,
+          "year": 2023
+        },
+        {
+          "seasonId": 7032,
+          "avgHome": 1.24,
+          "avgAway": 0.8,
+          "over25": 33,
+          "btts": 42,
+          "homeWin": 43,
+          "year": 2022
+        }
+      ]
+    },
+    {
+      "league_name": "Poland 1. Liga",
+      "country": "Poland",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.462,
+      "avg_goals_away": 1.238,
+      "over25_pct": 52,
+      "under25_pct": 48,
+      "btts_pct": 54.8,
+      "home_win_pct": 39.8,
+      "seasons": [
+        {
+          "seasonId": 14877,
+          "avgHome": 1.65,
+          "avgAway": 1.34,
+          "over25": 61,
+          "btts": 67,
+          "homeWin": 41,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12156,
+          "avgHome": 1.41,
+          "avgAway": 1.29,
+          "over25": 54,
+          "btts": 53,
+          "homeWin": 38,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9596,
+          "avgHome": 1.48,
+          "avgAway": 1.18,
+          "over25": 49,
+          "btts": 52,
+          "homeWin": 42,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7472,
+          "avgHome": 1.44,
+          "avgAway": 1.22,
+          "over25": 50,
+          "btts": 54,
+          "homeWin": 40,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6110,
+          "avgHome": 1.33,
+          "avgAway": 1.16,
+          "over25": 46,
+          "btts": 48,
+          "homeWin": 38,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Poland 2. Liga",
+      "country": "Poland",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.508,
+      "avg_goals_away": 1.244,
+      "over25_pct": 52.4,
+      "under25_pct": 47.6,
+      "btts_pct": 53.6,
+      "home_win_pct": 43.4,
+      "seasons": [
+        {
+          "seasonId": 16152,
+          "avgHome": 1.53,
+          "avgAway": 1.4,
+          "over25": 56,
+          "btts": 60,
+          "homeWin": 37,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12820,
+          "avgHome": 1.52,
+          "avgAway": 1.26,
+          "over25": 50,
+          "btts": 52,
+          "homeWin": 45,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9619,
+          "avgHome": 1.43,
+          "avgAway": 1.14,
+          "over25": 51,
+          "btts": 56,
+          "homeWin": 44,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7962,
+          "avgHome": 1.52,
+          "avgAway": 1.22,
+          "over25": 52,
+          "btts": 54,
+          "homeWin": 44,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6297,
+          "avgHome": 1.54,
+          "avgAway": 1.2,
+          "over25": 53,
+          "btts": 46,
+          "homeWin": 47,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "China Chinese Super League",
+      "country": "China",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.778,
+      "avg_goals_away": 1.25,
+      "over25_pct": 56.6,
+      "under25_pct": 43.4,
+      "btts_pct": 55.8,
+      "home_win_pct": 49.4,
+      "seasons": [
+        {
+          "seasonId": 16789,
+          "avgHome": 2.2,
+          "avgAway": 0.96,
+          "over25": 56,
+          "btts": 56,
+          "homeWin": 68,
+          "year": 2026
+        },
+        {
+          "seasonId": 14153,
+          "avgHome": 1.8,
+          "avgAway": 1.41,
+          "over25": 62,
+          "btts": 63,
+          "homeWin": 47,
+          "year": 2025
+        },
+        {
+          "seasonId": 11217,
+          "avgHome": 1.8,
+          "avgAway": 1.33,
+          "over25": 57,
+          "btts": 56,
+          "homeWin": 46,
+          "year": 2024
+        },
+        {
+          "seasonId": 9186,
+          "avgHome": 1.55,
+          "avgAway": 1.23,
+          "over25": 52,
+          "btts": 57,
+          "homeWin": 44,
+          "year": 2023
+        },
+        {
+          "seasonId": 7356,
+          "avgHome": 1.54,
+          "avgAway": 1.32,
+          "over25": 56,
+          "btts": 47,
+          "homeWin": 42,
+          "year": 2022
+        }
+      ]
+    },
+    {
+      "league_name": "Japan J2 League",
+      "country": "Japan",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.298,
+      "avg_goals_away": 1.176,
+      "over25_pct": 45.6,
+      "under25_pct": 54.4,
+      "btts_pct": 50.2,
+      "home_win_pct": 37.8,
+      "seasons": [
+        {
+          "seasonId": 16239,
+          "avgHome": 1.29,
+          "avgAway": 1.18,
+          "over25": 45,
+          "btts": 51,
+          "homeWin": 38,
+          "year": 2025
+        },
+        {
+          "seasonId": 10995,
+          "avgHome": 1.37,
+          "avgAway": 1.13,
+          "over25": 48,
+          "btts": 48,
+          "homeWin": 41,
+          "year": 2024
+        },
+        {
+          "seasonId": 8811,
+          "avgHome": 1.33,
+          "avgAway": 1.22,
+          "over25": 47,
+          "btts": 51,
+          "homeWin": 39,
+          "year": 2023
+        },
+        {
+          "seasonId": 6936,
+          "avgHome": 1.28,
+          "avgAway": 1.18,
+          "over25": 44,
+          "btts": 51,
+          "homeWin": 36,
+          "year": 2022
+        },
+        {
+          "seasonId": 5495,
+          "avgHome": 1.22,
+          "avgAway": 1.17,
+          "over25": 44,
+          "btts": 50,
+          "homeWin": 35,
+          "year": 2021
+        }
+      ]
+    },
+    {
+      "league_name": "Armenia Armenian Premier League",
+      "country": "Armenia",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.434,
+      "avg_goals_away": 1.234,
+      "over25_pct": 49.6,
+      "under25_pct": 50.4,
+      "btts_pct": 45.6,
+      "home_win_pct": 42.6,
+      "seasons": [
+        {
+          "seasonId": 15373,
+          "avgHome": 1.49,
+          "avgAway": 1.02,
+          "over25": 49,
+          "btts": 45,
+          "homeWin": 44,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12638,
+          "avgHome": 1.7,
+          "avgAway": 1.44,
+          "over25": 62,
+          "btts": 46,
+          "homeWin": 45,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9703,
+          "avgHome": 1.48,
+          "avgAway": 1.32,
+          "over25": 51,
+          "btts": 52,
+          "homeWin": 45,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7863,
+          "avgHome": 1.21,
+          "avgAway": 1.26,
+          "over25": 46,
+          "btts": 39,
+          "homeWin": 39,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6151,
+          "avgHome": 1.29,
+          "avgAway": 1.13,
+          "over25": 40,
+          "btts": 46,
+          "homeWin": 40,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Switzerland Super League",
+      "country": "Switzerland",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.71,
+      "avg_goals_away": 1.35,
+      "over25_pct": 58.6,
+      "under25_pct": 41.4,
+      "btts_pct": 63,
+      "home_win_pct": 43.6,
+      "seasons": [
+        {
+          "seasonId": 15047,
+          "avgHome": 1.8,
+          "avgAway": 1.47,
+          "over25": 67,
+          "btts": 68,
+          "homeWin": 40,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12326,
+          "avgHome": 1.72,
+          "avgAway": 1.26,
+          "over25": 55,
+          "btts": 61,
+          "homeWin": 48,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9580,
+          "avgHome": 1.62,
+          "avgAway": 1.21,
+          "over25": 55,
+          "btts": 57,
+          "homeWin": 49,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7504,
+          "avgHome": 1.65,
+          "avgAway": 1.32,
+          "over25": 54,
+          "btts": 64,
+          "homeWin": 39,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6044,
+          "avgHome": 1.76,
+          "avgAway": 1.49,
+          "over25": 62,
+          "btts": 65,
+          "homeWin": 42,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Switzerland Challenge League",
+      "country": "Switzerland",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.626,
+      "avg_goals_away": 1.39,
+      "over25_pct": 58.2,
+      "under25_pct": 41.8,
+      "btts_pct": 57.8,
+      "home_win_pct": 43.8,
+      "seasons": [
+        {
+          "seasonId": 14974,
+          "avgHome": 1.5,
+          "avgAway": 1.32,
+          "over25": 55,
+          "btts": 52,
+          "homeWin": 46,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12277,
+          "avgHome": 1.57,
+          "avgAway": 1.43,
+          "over25": 62,
+          "btts": 63,
+          "homeWin": 41,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9569,
+          "avgHome": 1.57,
+          "avgAway": 1.31,
+          "over25": 53,
+          "btts": 53,
+          "homeWin": 42,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7496,
+          "avgHome": 1.69,
+          "avgAway": 1.44,
+          "over25": 57,
+          "btts": 62,
+          "homeWin": 41,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6034,
+          "avgHome": 1.8,
+          "avgAway": 1.45,
+          "over25": 64,
+          "btts": 59,
+          "homeWin": 49,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Azerbaijan Premyer Liqası",
+      "country": "Azerbaijan",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.368,
+      "avg_goals_away": 1.19,
+      "over25_pct": 47.2,
+      "under25_pct": 52.8,
+      "btts_pct": 44.6,
+      "home_win_pct": 40.8,
+      "seasons": [
+        {
+          "seasonId": 15377,
+          "avgHome": 1.28,
+          "avgAway": 1.27,
+          "over25": 47,
+          "btts": 44,
+          "homeWin": 36,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12740,
+          "avgHome": 1.31,
+          "avgAway": 1.1,
+          "over25": 41,
+          "btts": 44,
+          "homeWin": 41,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9903,
+          "avgHome": 1.44,
+          "avgAway": 1.18,
+          "over25": 48,
+          "btts": 47,
+          "homeWin": 44,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7850,
+          "avgHome": 1.34,
+          "avgAway": 1.29,
+          "over25": 52,
+          "btts": 47,
+          "homeWin": 40,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6221,
+          "avgHome": 1.47,
+          "avgAway": 1.11,
+          "over25": 48,
+          "btts": 41,
+          "homeWin": 43,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Japan J1 League",
+      "country": "Japan",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.362,
+      "avg_goals_away": 1.148,
+      "over25_pct": 46.2,
+      "under25_pct": 53.8,
+      "btts_pct": 49.6,
+      "home_win_pct": 41.2,
+      "seasons": [
+        {
+          "seasonId": 16242,
+          "avgHome": 1.32,
+          "avgAway": 1.08,
+          "over25": 45,
+          "btts": 47,
+          "homeWin": 44,
+          "year": 2025
+        },
+        {
+          "seasonId": 10994,
+          "avgHome": 1.42,
+          "avgAway": 1.24,
+          "over25": 50,
+          "btts": 53,
+          "homeWin": 38,
+          "year": 2024
+        },
+        {
+          "seasonId": 8810,
+          "avgHome": 1.37,
+          "avgAway": 1.17,
+          "over25": 48,
+          "btts": 53,
+          "homeWin": 42,
+          "year": 2023
+        },
+        {
+          "seasonId": 6935,
+          "avgHome": 1.39,
+          "avgAway": 1.13,
+          "over25": 45,
+          "btts": 49,
+          "homeWin": 40,
+          "year": 2022
+        },
+        {
+          "seasonId": 5434,
+          "avgHome": 1.31,
+          "avgAway": 1.12,
+          "over25": 43,
+          "btts": 46,
+          "homeWin": 42,
+          "year": 2021
+        }
+      ]
+    },
+    {
+      "league_name": "Portugal LigaPro",
+      "country": "Portugal",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.332,
+      "avg_goals_away": 1.176,
+      "over25_pct": 46.4,
+      "under25_pct": 53.6,
+      "btts_pct": 52.8,
+      "home_win_pct": 40.2,
+      "seasons": [
+        {
+          "seasonId": 15717,
+          "avgHome": 1.26,
+          "avgAway": 1.19,
+          "over25": 44,
+          "btts": 47,
+          "homeWin": 41,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12585,
+          "avgHome": 1.33,
+          "avgAway": 1.18,
+          "over25": 48,
+          "btts": 54,
+          "homeWin": 39,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9704,
+          "avgHome": 1.3,
+          "avgAway": 1.15,
+          "over25": 44,
+          "btts": 53,
+          "homeWin": 40,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7732,
+          "avgHome": 1.42,
+          "avgAway": 1.22,
+          "over25": 49,
+          "btts": 56,
+          "homeWin": 39,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6116,
+          "avgHome": 1.35,
+          "avgAway": 1.14,
+          "over25": 47,
+          "btts": 54,
+          "homeWin": 42,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Latvia Virsliga",
+      "country": "Latvia",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.554,
+      "avg_goals_away": 1.338,
+      "over25_pct": 53.4,
+      "under25_pct": 46.6,
+      "btts_pct": 51,
+      "home_win_pct": 43,
+      "seasons": [
+        {
+          "seasonId": 16771,
+          "avgHome": 1.35,
+          "avgAway": 1.18,
+          "over25": 47,
+          "btts": 59,
+          "homeWin": 41,
+          "year": 2026
+        },
+        {
+          "seasonId": 14275,
+          "avgHome": 1.68,
+          "avgAway": 1.29,
+          "over25": 53,
+          "btts": 55,
+          "homeWin": 46,
+          "year": 2025
+        },
+        {
+          "seasonId": 11280,
+          "avgHome": 1.7,
+          "avgAway": 1.38,
+          "over25": 61,
+          "btts": 47,
+          "homeWin": 43,
+          "year": 2024
+        },
+        {
+          "seasonId": 9043,
+          "avgHome": 1.49,
+          "avgAway": 1.42,
+          "over25": 50,
+          "btts": 46,
+          "homeWin": 43,
+          "year": 2023
+        },
+        {
+          "seasonId": 7132,
+          "avgHome": 1.55,
+          "avgAway": 1.42,
+          "over25": 56,
+          "btts": 48,
+          "homeWin": 42,
+          "year": 2022
+        }
+      ]
+    },
+    {
+      "league_name": "Greece Super League",
+      "country": "Greece",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.392,
+      "avg_goals_away": 1.144,
+      "over25_pct": 48.2,
+      "under25_pct": 51.8,
+      "btts_pct": 46.2,
+      "home_win_pct": 42.2,
+      "seasons": [
+        {
+          "seasonId": 15163,
+          "avgHome": 1.42,
+          "avgAway": 1.13,
+          "over25": 49,
+          "btts": 45,
+          "homeWin": 42,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12734,
+          "avgHome": 1.3,
+          "avgAway": 1.15,
+          "over25": 47,
+          "btts": 48,
+          "homeWin": 41,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9889,
+          "avgHome": 1.65,
+          "avgAway": 1.3,
+          "over25": 59,
+          "btts": 53,
+          "homeWin": 45,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7954,
+          "avgHome": 1.28,
+          "avgAway": 1.07,
+          "over25": 41,
+          "btts": 41,
+          "homeWin": 40,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6282,
+          "avgHome": 1.31,
+          "avgAway": 1.07,
+          "over25": 45,
+          "btts": 44,
+          "homeWin": 43,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Egypt Egyptian Premier League",
+      "country": "Egypt",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.146,
+      "avg_goals_away": 1.03,
+      "over25_pct": 38,
+      "under25_pct": 62,
+      "btts_pct": 44.6,
+      "home_win_pct": 36.4,
+      "seasons": [
+        {
+          "seasonId": 15544,
+          "avgHome": 1.03,
+          "avgAway": 0.97,
+          "over25": 33,
+          "btts": 47,
+          "homeWin": 34,
+          "year": 20252026
+        },
+        {
+          "seasonId": 13704,
+          "avgHome": 1.11,
+          "avgAway": 1.04,
+          "over25": 36,
+          "btts": 40,
+          "homeWin": 34,
+          "year": 20242025
+        },
+        {
+          "seasonId": 10652,
+          "avgHome": 1.27,
+          "avgAway": 1.11,
+          "over25": 43,
+          "btts": 50,
+          "homeWin": 38,
+          "year": 20232024
+        },
+        {
+          "seasonId": 8520,
+          "avgHome": 1.16,
+          "avgAway": 0.99,
+          "over25": 41,
+          "btts": 44,
+          "homeWin": 39,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6752,
+          "avgHome": 1.16,
+          "avgAway": 1.04,
+          "over25": 37,
+          "btts": 42,
+          "homeWin": 37,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Scotland Championship",
+      "country": "Scotland",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.398,
+      "avg_goals_away": 1.182,
+      "over25_pct": 48.4,
+      "under25_pct": 51.6,
+      "btts_pct": 49,
+      "home_win_pct": 39.8,
+      "seasons": [
+        {
+          "seasonId": 15061,
+          "avgHome": 1.33,
+          "avgAway": 1.07,
+          "over25": 44,
+          "btts": 48,
+          "homeWin": 38,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12456,
+          "avgHome": 1.43,
+          "avgAway": 1.08,
+          "over25": 47,
+          "btts": 43,
+          "homeWin": 48,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9637,
+          "avgHome": 1.43,
+          "avgAway": 1.36,
+          "over25": 56,
+          "btts": 55,
+          "homeWin": 37,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7498,
+          "avgHome": 1.55,
+          "avgAway": 1.25,
+          "over25": 51,
+          "btts": 53,
+          "homeWin": 39,
+          "year": 20222023
+        },
+        {
+          "seasonId": 5991,
+          "avgHome": 1.25,
+          "avgAway": 1.15,
+          "over25": 44,
+          "btts": 46,
+          "homeWin": 37,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Thailand Thai League T1",
+      "country": "Thailand",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.636,
+      "avg_goals_away": 1.18,
+      "over25_pct": 52.2,
+      "under25_pct": 47.8,
+      "btts_pct": 56.6,
+      "home_win_pct": 46.4,
+      "seasons": [
+        {
+          "seasonId": 15140,
+          "avgHome": 1.57,
+          "avgAway": 1.13,
+          "over25": 47,
+          "btts": 56,
+          "homeWin": 42,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12475,
+          "avgHome": 1.8,
+          "avgAway": 1.25,
+          "over25": 56,
+          "btts": 56,
+          "homeWin": 49,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9702,
+          "avgHome": 1.85,
+          "avgAway": 1.22,
+          "over25": 60,
+          "btts": 61,
+          "homeWin": 47,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7636,
+          "avgHome": 1.55,
+          "avgAway": 1.15,
+          "over25": 49,
+          "btts": 55,
+          "homeWin": 49,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6340,
+          "avgHome": 1.41,
+          "avgAway": 1.15,
+          "over25": 49,
+          "btts": 55,
+          "homeWin": 45,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Poland Ekstraklasa",
+      "country": "Poland",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.506,
+      "avg_goals_away": 1.156,
+      "over25_pct": 49.2,
+      "under25_pct": 50.8,
+      "btts_pct": 53.8,
+      "home_win_pct": 44,
+      "seasons": [
+        {
+          "seasonId": 15031,
+          "avgHome": 1.58,
+          "avgAway": 1.15,
+          "over25": 53,
+          "btts": 57,
+          "homeWin": 46,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12120,
+          "avgHome": 1.54,
+          "avgAway": 1.21,
+          "over25": 50,
+          "btts": 56,
+          "homeWin": 45,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9553,
+          "avgHome": 1.55,
+          "avgAway": 1.14,
+          "over25": 49,
+          "btts": 54,
+          "homeWin": 43,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7428,
+          "avgHome": 1.36,
+          "avgAway": 1.11,
+          "over25": 44,
+          "btts": 48,
+          "homeWin": 42,
+          "year": 20222023
+        },
+        {
+          "seasonId": 5948,
+          "avgHome": 1.5,
+          "avgAway": 1.17,
+          "over25": 50,
+          "btts": 54,
+          "homeWin": 44,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Lithuania A Lyga",
+      "country": "Lithuania",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.318,
+      "avg_goals_away": 1.14,
+      "over25_pct": 45,
+      "under25_pct": 55,
+      "btts_pct": 43.4,
+      "home_win_pct": 38.6,
+      "seasons": [
+        {
+          "seasonId": 16799,
+          "avgHome": 1.29,
+          "avgAway": 1,
+          "over25": 39,
+          "btts": 39,
+          "homeWin": 32,
+          "year": 2026
+        },
+        {
+          "seasonId": 14291,
+          "avgHome": 1.43,
+          "avgAway": 1.22,
+          "over25": 52,
+          "btts": 51,
+          "homeWin": 41,
+          "year": 2025
+        },
+        {
+          "seasonId": 11246,
+          "avgHome": 1.19,
+          "avgAway": 1.16,
+          "over25": 44,
+          "btts": 44,
+          "homeWin": 37,
+          "year": 2024
+        },
+        {
+          "seasonId": 8960,
+          "avgHome": 1.27,
+          "avgAway": 1.11,
+          "over25": 40,
+          "btts": 38,
+          "homeWin": 41,
+          "year": 2023
+        },
+        {
+          "seasonId": 7133,
+          "avgHome": 1.41,
+          "avgAway": 1.21,
+          "over25": 50,
+          "btts": 45,
+          "homeWin": 42,
+          "year": 2022
+        }
+      ]
+    },
+    {
+      "league_name": "South Africa Premier Soccer League",
+      "country": "South Africa",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.14,
+      "avg_goals_away": 0.88,
+      "over25_pct": 32.6,
+      "under25_pct": 67.4,
+      "btts_pct": 40,
+      "home_win_pct": 41.8,
+      "seasons": [
+        {
+          "seasonId": 15587,
+          "avgHome": 1.1,
+          "avgAway": 0.86,
+          "over25": 30,
+          "btts": 37,
+          "homeWin": 45,
+          "year": 20252026
+        },
+        {
+          "seasonId": 13284,
+          "avgHome": 1.16,
+          "avgAway": 0.86,
+          "over25": 31,
+          "btts": 38,
+          "homeWin": 45,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9814,
+          "avgHome": 1.15,
+          "avgAway": 0.88,
+          "over25": 34,
+          "btts": 40,
+          "homeWin": 41,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7851,
+          "avgHome": 1.19,
+          "avgAway": 0.9,
+          "over25": 34,
+          "btts": 44,
+          "homeWin": 41,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6311,
+          "avgHome": 1.1,
+          "avgAway": 0.9,
+          "over25": 34,
+          "btts": 41,
+          "homeWin": 37,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Algeria Ligue 1",
+      "country": "Algeria",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.326,
+      "avg_goals_away": 0.834,
+      "over25_pct": 37.4,
+      "under25_pct": 62.6,
+      "btts_pct": 42,
+      "home_win_pct": 50.4,
+      "seasons": [
+        {
+          "seasonId": 15593,
+          "avgHome": 1.23,
+          "avgAway": 0.89,
+          "over25": 34,
+          "btts": 46,
+          "homeWin": 48,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12665,
+          "avgHome": 1.19,
+          "avgAway": 0.75,
+          "over25": 35,
+          "btts": 40,
+          "homeWin": 48,
+          "year": 20242025
+        },
+        {
+          "seasonId": 10521,
+          "avgHome": 1.4,
+          "avgAway": 0.92,
+          "over25": 42,
+          "btts": 44,
+          "homeWin": 51,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7919,
+          "avgHome": 1.43,
+          "avgAway": 0.72,
+          "over25": 38,
+          "btts": 40,
+          "homeWin": 57,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6733,
+          "avgHome": 1.38,
+          "avgAway": 0.89,
+          "over25": 38,
+          "btts": 40,
+          "homeWin": 48,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Hong Kong Hong Kong Premier League",
+      "country": "Hong Kong",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.842,
+      "avg_goals_away": 1.686,
+      "over25_pct": 69.6,
+      "under25_pct": 30.4,
+      "btts_pct": 49.4,
+      "home_win_pct": 43.6,
+      "seasons": [
+        {
+          "seasonId": 16274,
+          "avgHome": 1.9,
+          "avgAway": 1.72,
+          "over25": 69,
+          "btts": 65,
+          "homeWin": 43,
+          "year": 20242025
+        },
+        {
+          "seasonId": 15841,
+          "avgHome": 1.63,
+          "avgAway": 1.47,
+          "over25": 59,
+          "btts": 53,
+          "homeWin": 43,
+          "year": 20252026
+        },
+        {
+          "seasonId": 10413,
+          "avgHome": 1.74,
+          "avgAway": 1.68,
+          "over25": 69,
+          "btts": 45,
+          "homeWin": 42,
+          "year": 20232024
+        },
+        {
+          "seasonId": 8205,
+          "avgHome": 1.54,
+          "avgAway": 1.63,
+          "over25": 64,
+          "btts": 37,
+          "homeWin": 43,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6718,
+          "avgHome": 2.4,
+          "avgAway": 1.93,
+          "over25": 87,
+          "btts": 47,
+          "homeWin": 47,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Japan J3 League",
+      "country": "Japan",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.346,
+      "avg_goals_away": 1.204,
+      "over25_pct": 47.6,
+      "under25_pct": 52.4,
+      "btts_pct": 51.4,
+      "home_win_pct": 42,
+      "seasons": [
+        {
+          "seasonId": 13956,
+          "avgHome": 1.42,
+          "avgAway": 1.15,
+          "over25": 46,
+          "btts": 52,
+          "homeWin": 47,
+          "year": 2025
+        },
+        {
+          "seasonId": 10996,
+          "avgHome": 1.4,
+          "avgAway": 1.19,
+          "over25": 47,
+          "btts": 55,
+          "homeWin": 40,
+          "year": 2024
+        },
+        {
+          "seasonId": 8812,
+          "avgHome": 1.22,
+          "avgAway": 1.23,
+          "over25": 45,
+          "btts": 50,
+          "homeWin": 36,
+          "year": 2023
+        },
+        {
+          "seasonId": 6938,
+          "avgHome": 1.4,
+          "avgAway": 1.2,
+          "over25": 52,
+          "btts": 49,
+          "homeWin": 47,
+          "year": 2022
+        },
+        {
+          "seasonId": 5508,
+          "avgHome": 1.29,
+          "avgAway": 1.25,
+          "over25": 48,
+          "btts": 51,
+          "homeWin": 40,
+          "year": 2021
+        }
+      ]
+    },
+    {
+      "league_name": "Albania Superliga",
+      "country": "Albania",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.21,
+      "avg_goals_away": 0.994,
+      "over25_pct": 37.6,
+      "under25_pct": 62.4,
+      "btts_pct": 46.4,
+      "home_win_pct": 40,
+      "seasons": [
+        {
+          "seasonId": 15365,
+          "avgHome": 1.14,
+          "avgAway": 0.92,
+          "over25": 33,
+          "btts": 45,
+          "homeWin": 39,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12699,
+          "avgHome": 1.23,
+          "avgAway": 0.99,
+          "over25": 41,
+          "btts": 51,
+          "homeWin": 41,
+          "year": 20242025
+        },
+        {
+          "seasonId": 10214,
+          "avgHome": 1.18,
+          "avgAway": 1.09,
+          "over25": 39,
+          "btts": 45,
+          "homeWin": 39,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7862,
+          "avgHome": 1.23,
+          "avgAway": 0.98,
+          "over25": 38,
+          "btts": 46,
+          "homeWin": 40,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6220,
+          "avgHome": 1.27,
+          "avgAway": 0.99,
+          "over25": 37,
+          "btts": 45,
+          "homeWin": 41,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "France National",
+      "country": "France",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.348,
+      "avg_goals_away": 1.116,
+      "over25_pct": 44.6,
+      "under25_pct": 55.4,
+      "btts_pct": 51.6,
+      "home_win_pct": 41.2,
+      "seasons": [
+        {
+          "seasonId": 15361,
+          "avgHome": 1.25,
+          "avgAway": 1.14,
+          "over25": 47,
+          "btts": 54,
+          "homeWin": 37,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12777,
+          "avgHome": 1.32,
+          "avgAway": 1.08,
+          "over25": 40,
+          "btts": 49,
+          "homeWin": 41,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9810,
+          "avgHome": 1.43,
+          "avgAway": 1.1,
+          "over25": 45,
+          "btts": 53,
+          "homeWin": 45,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7849,
+          "avgHome": 1.34,
+          "avgAway": 1.17,
+          "over25": 44,
+          "btts": 53,
+          "homeWin": 39,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6172,
+          "avgHome": 1.4,
+          "avgAway": 1.09,
+          "over25": 47,
+          "btts": 49,
+          "homeWin": 44,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Mexico Liga MX",
+      "country": "Mexico",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.548,
+      "avg_goals_away": 1.19,
+      "over25_pct": 52.6,
+      "under25_pct": 47.4,
+      "btts_pct": 55,
+      "home_win_pct": 45.2,
+      "seasons": [
+        {
+          "seasonId": 15234,
+          "avgHome": 1.69,
+          "avgAway": 1.22,
+          "over25": 56,
+          "btts": 57,
+          "homeWin": 48,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12136,
+          "avgHome": 1.59,
+          "avgAway": 1.15,
+          "over25": 55,
+          "btts": 55,
+          "homeWin": 49,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9525,
+          "avgHome": 1.61,
+          "avgAway": 1.24,
+          "over25": 54,
+          "btts": 56,
+          "homeWin": 46,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7425,
+          "avgHome": 1.55,
+          "avgAway": 1.26,
+          "over25": 54,
+          "btts": 57,
+          "homeWin": 43,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6038,
+          "avgHome": 1.3,
+          "avgAway": 1.08,
+          "over25": 44,
+          "btts": 50,
+          "homeWin": 40,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Mexico Ascenso MX",
+      "country": "Mexico",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.582,
+      "avg_goals_away": 1.086,
+      "over25_pct": 49.2,
+      "under25_pct": 50.8,
+      "btts_pct": 52.2,
+      "home_win_pct": 47.6,
+      "seasons": [
+        {
+          "seasonId": 15253,
+          "avgHome": 1.74,
+          "avgAway": 1.17,
+          "over25": 53,
+          "btts": 56,
+          "homeWin": 48,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12643,
+          "avgHome": 1.81,
+          "avgAway": 1.04,
+          "over25": 52,
+          "btts": 56,
+          "homeWin": 53,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9701,
+          "avgHome": 1.66,
+          "avgAway": 1.17,
+          "over25": 54,
+          "btts": 52,
+          "homeWin": 49,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7489,
+          "avgHome": 1.44,
+          "avgAway": 1.04,
+          "over25": 45,
+          "btts": 49,
+          "homeWin": 46,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6104,
+          "avgHome": 1.26,
+          "avgAway": 1.01,
+          "over25": 42,
+          "btts": 48,
+          "homeWin": 42,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Singapore S.League",
+      "country": "Singapore",
+      "seasons_fetched": 5,
+      "avg_goals_home": 2.05,
+      "avg_goals_away": 2.068,
+      "over25_pct": 77.2,
+      "under25_pct": 22.8,
+      "btts_pct": 67,
+      "home_win_pct": 40.8,
+      "seasons": [
+        {
+          "seasonId": 15327,
+          "avgHome": 1.67,
+          "avgAway": 1.98,
+          "over25": 75,
+          "btts": 53,
+          "homeWin": 38,
+          "year": 2025
+        },
+        {
+          "seasonId": 11495,
+          "avgHome": 2.12,
+          "avgAway": 2.14,
+          "over25": 78,
+          "btts": 69,
+          "homeWin": 39,
+          "year": 2024
+        },
+        {
+          "seasonId": 8944,
+          "avgHome": 2.06,
+          "avgAway": 2.13,
+          "over25": 77,
+          "btts": 67,
+          "homeWin": 43,
+          "year": 2023
+        },
+        {
+          "seasonId": 7059,
+          "avgHome": 2.39,
+          "avgAway": 2.13,
+          "over25": 77,
+          "btts": 71,
+          "homeWin": 45,
+          "year": 2022
+        },
+        {
+          "seasonId": 5621,
+          "avgHome": 2.01,
+          "avgAway": 1.96,
+          "over25": 79,
+          "btts": 75,
+          "homeWin": 39,
+          "year": 2021
+        }
+      ]
+    },
+    {
+      "league_name": "Indonesia Liga 1",
+      "country": "Indonesia",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.478,
+      "avg_goals_away": 1.194,
+      "over25_pct": 51,
+      "under25_pct": 49,
+      "btts_pct": 55.6,
+      "home_win_pct": 42.8,
+      "seasons": [
+        {
+          "seasonId": 15283,
+          "avgHome": 1.53,
+          "avgAway": 1.17,
+          "over25": 52,
+          "btts": 55,
+          "homeWin": 44,
+          "year": 20252026
+        },
+        {
+          "seasonId": 13046,
+          "avgHome": 1.4,
+          "avgAway": 1.21,
+          "over25": 49,
+          "btts": 55,
+          "homeWin": 42,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9486,
+          "avgHome": 1.61,
+          "avgAway": 1.14,
+          "over25": 52,
+          "btts": 56,
+          "homeWin": 48,
+          "year": 20222023
+        },
+        {
+          "seasonId": 9418,
+          "avgHome": 1.67,
+          "avgAway": 1.21,
+          "over25": 56,
+          "btts": 62,
+          "homeWin": 47,
+          "year": 20232024
+        },
+        {
+          "seasonId": 5969,
+          "avgHome": 1.18,
+          "avgAway": 1.24,
+          "over25": 46,
+          "btts": 50,
+          "homeWin": 33,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Ghana Ghana Premier League",
+      "country": "Ghana",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.324,
+      "avg_goals_away": 0.666,
+      "over25_pct": 32.4,
+      "under25_pct": 67.6,
+      "btts_pct": 36.4,
+      "home_win_pct": 56.2,
+      "seasons": [
+        {
+          "seasonId": 15618,
+          "avgHome": 1.26,
+          "avgAway": 0.61,
+          "over25": 31,
+          "btts": 33,
+          "homeWin": 55,
+          "year": 20252026
+        },
+        {
+          "seasonId": 13050,
+          "avgHome": 1.23,
+          "avgAway": 0.65,
+          "over25": 31,
+          "btts": 33,
+          "homeWin": 55,
+          "year": 20242025
+        },
+        {
+          "seasonId": 10158,
+          "avgHome": 1.38,
+          "avgAway": 0.68,
+          "over25": 34,
+          "btts": 37,
+          "homeWin": 58,
+          "year": 20232024
+        },
+        {
+          "seasonId": 8194,
+          "avgHome": 1.41,
+          "avgAway": 0.69,
+          "over25": 35,
+          "btts": 39,
+          "homeWin": 59,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6737,
+          "avgHome": 1.34,
+          "avgAway": 0.7,
+          "over25": 31,
+          "btts": 40,
+          "homeWin": 54,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Estonia Meistriliiga",
+      "country": "Estonia",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.688,
+      "avg_goals_away": 1.32,
+      "over25_pct": 58.6,
+      "under25_pct": 41.4,
+      "btts_pct": 51.6,
+      "home_win_pct": 46.6,
+      "seasons": [
+        {
+          "seasonId": 16748,
+          "avgHome": 2.11,
+          "avgAway": 1.17,
+          "over25": 67,
+          "btts": 56,
+          "homeWin": 61,
+          "year": 2026
+        },
+        {
+          "seasonId": 14165,
+          "avgHome": 1.73,
+          "avgAway": 1.43,
+          "over25": 68,
+          "btts": 54,
+          "homeWin": 47,
+          "year": 2025
+        },
+        {
+          "seasonId": 11119,
+          "avgHome": 1.53,
+          "avgAway": 1.47,
+          "over25": 57,
+          "btts": 50,
+          "homeWin": 42,
+          "year": 2024
+        },
+        {
+          "seasonId": 8898,
+          "avgHome": 1.36,
+          "avgAway": 1.19,
+          "over25": 47,
+          "btts": 47,
+          "homeWin": 37,
+          "year": 2023
+        },
+        {
+          "seasonId": 7073,
+          "avgHome": 1.71,
+          "avgAway": 1.34,
+          "over25": 54,
+          "btts": 51,
+          "homeWin": 46,
+          "year": 2022
+        }
+      ]
+    },
+    {
+      "league_name": "Ukraine Ukrainian Premier League",
+      "country": "Ukraine",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.304,
+      "avg_goals_away": 1.184,
+      "over25_pct": 45,
+      "under25_pct": 55,
+      "btts_pct": 44.4,
+      "home_win_pct": 40,
+      "seasons": [
+        {
+          "seasonId": 16213,
+          "avgHome": 1.3,
+          "avgAway": 1.28,
+          "over25": 47,
+          "btts": 42,
+          "homeWin": 38,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12483,
+          "avgHome": 1.24,
+          "avgAway": 1.02,
+          "over25": 40,
+          "btts": 43,
+          "homeWin": 40,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9699,
+          "avgHome": 1.27,
+          "avgAway": 1.21,
+          "over25": 44,
+          "btts": 48,
+          "homeWin": 39,
+          "year": 20232024
+        },
+        {
+          "seasonId": 8222,
+          "avgHome": 1.24,
+          "avgAway": 1.21,
+          "over25": 46,
+          "btts": 44,
+          "homeWin": 39,
+          "year": 20222023
+        },
+        {
+          "seasonId": 5943,
+          "avgHome": 1.47,
+          "avgAway": 1.2,
+          "over25": 48,
+          "btts": 45,
+          "homeWin": 44,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "England National League",
+      "country": "England",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.552,
+      "avg_goals_away": 1.278,
+      "over25_pct": 52.8,
+      "under25_pct": 47.2,
+      "btts_pct": 55.2,
+      "home_win_pct": 43,
+      "seasons": [
+        {
+          "seasonId": 15657,
+          "avgHome": 1.59,
+          "avgAway": 1.35,
+          "over25": 56,
+          "btts": 56,
+          "homeWin": 43,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12622,
+          "avgHome": 1.5,
+          "avgAway": 1.21,
+          "over25": 51,
+          "btts": 54,
+          "homeWin": 42,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9700,
+          "avgHome": 1.63,
+          "avgAway": 1.32,
+          "over25": 56,
+          "btts": 59,
+          "homeWin": 42,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7729,
+          "avgHome": 1.54,
+          "avgAway": 1.25,
+          "over25": 51,
+          "btts": 56,
+          "homeWin": 44,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6088,
+          "avgHome": 1.5,
+          "avgAway": 1.26,
+          "over25": 50,
+          "btts": 51,
+          "homeWin": 44,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Croatia Prva HNL",
+      "country": "Croatia",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.446,
+      "avg_goals_away": 1.15,
+      "over25_pct": 49.8,
+      "under25_pct": 50.2,
+      "btts_pct": 49.6,
+      "home_win_pct": 44,
+      "seasons": [
+        {
+          "seasonId": 15053,
+          "avgHome": 1.49,
+          "avgAway": 1.21,
+          "over25": 51,
+          "btts": 56,
+          "homeWin": 46,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12121,
+          "avgHome": 1.39,
+          "avgAway": 0.96,
+          "over25": 45,
+          "btts": 46,
+          "homeWin": 45,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9542,
+          "avgHome": 1.48,
+          "avgAway": 1.18,
+          "over25": 51,
+          "btts": 44,
+          "homeWin": 43,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7457,
+          "avgHome": 1.36,
+          "avgAway": 1.11,
+          "over25": 47,
+          "btts": 48,
+          "homeWin": 43,
+          "year": 20222023
+        },
+        {
+          "seasonId": 5956,
+          "avgHome": 1.51,
+          "avgAway": 1.29,
+          "over25": 55,
+          "btts": 54,
+          "homeWin": 43,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Serbia SuperLiga",
+      "country": "Serbia",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.462,
+      "avg_goals_away": 1.204,
+      "over25_pct": 50.8,
+      "under25_pct": 49.2,
+      "btts_pct": 50.4,
+      "home_win_pct": 44.4,
+      "seasons": [
+        {
+          "seasonId": 15065,
+          "avgHome": 1.51,
+          "avgAway": 1.18,
+          "over25": 49,
+          "btts": 53,
+          "homeWin": 44,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12138,
+          "avgHome": 1.53,
+          "avgAway": 1.35,
+          "over25": 56,
+          "btts": 56,
+          "homeWin": 42,
+          "year": 20242025
+        },
+        {
+          "seasonId": 10070,
+          "avgHome": 1.55,
+          "avgAway": 1.23,
+          "over25": 54,
+          "btts": 51,
+          "homeWin": 48,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7492,
+          "avgHome": 1.34,
+          "avgAway": 1.08,
+          "over25": 45,
+          "btts": 44,
+          "homeWin": 44,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6046,
+          "avgHome": 1.38,
+          "avgAway": 1.18,
+          "over25": 50,
+          "btts": 48,
+          "homeWin": 44,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Serbia Prva Liga",
+      "country": "Serbia",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.318,
+      "avg_goals_away": 0.93,
+      "over25_pct": 39,
+      "under25_pct": 61,
+      "btts_pct": 43.8,
+      "home_win_pct": 44.4,
+      "seasons": [
+        {
+          "seasonId": 15523,
+          "avgHome": 1.29,
+          "avgAway": 0.93,
+          "over25": 40,
+          "btts": 45,
+          "homeWin": 42,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12140,
+          "avgHome": 1.25,
+          "avgAway": 0.89,
+          "over25": 35,
+          "btts": 41,
+          "homeWin": 43,
+          "year": 20242025
+        },
+        {
+          "seasonId": 10071,
+          "avgHome": 1.25,
+          "avgAway": 0.91,
+          "over25": 36,
+          "btts": 44,
+          "homeWin": 45,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7493,
+          "avgHome": 1.44,
+          "avgAway": 0.95,
+          "over25": 42,
+          "btts": 49,
+          "homeWin": 47,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6047,
+          "avgHome": 1.36,
+          "avgAway": 0.97,
+          "over25": 42,
+          "btts": 40,
+          "homeWin": 45,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Slovenia PrvaLiga",
+      "country": "Slovenia",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.468,
+      "avg_goals_away": 1.292,
+      "over25_pct": 51,
+      "under25_pct": 49,
+      "btts_pct": 53.4,
+      "home_win_pct": 41.4,
+      "seasons": [
+        {
+          "seasonId": 15063,
+          "avgHome": 1.72,
+          "avgAway": 1.43,
+          "over25": 65,
+          "btts": 61,
+          "homeWin": 48,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12476,
+          "avgHome": 1.56,
+          "avgAway": 1.21,
+          "over25": 50,
+          "btts": 51,
+          "homeWin": 43,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9579,
+          "avgHome": 1.45,
+          "avgAway": 1.35,
+          "over25": 52,
+          "btts": 57,
+          "homeWin": 38,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7526,
+          "avgHome": 1.3,
+          "avgAway": 1.24,
+          "over25": 44,
+          "btts": 49,
+          "homeWin": 39,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6048,
+          "avgHome": 1.31,
+          "avgAway": 1.23,
+          "over25": 44,
+          "btts": 49,
+          "homeWin": 39,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Slovakia Super Liga",
+      "country": "Slovakia",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.49,
+      "avg_goals_away": 1.268,
+      "over25_pct": 52,
+      "under25_pct": 48,
+      "btts_pct": 53,
+      "home_win_pct": 43,
+      "seasons": [
+        {
+          "seasonId": 16214,
+          "avgHome": 1.5,
+          "avgAway": 1.36,
+          "over25": 55,
+          "btts": 54,
+          "homeWin": 42,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12944,
+          "avgHome": 1.48,
+          "avgAway": 1.32,
+          "over25": 54,
+          "btts": 59,
+          "homeWin": 41,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9671,
+          "avgHome": 1.47,
+          "avgAway": 1.25,
+          "over25": 52,
+          "btts": 49,
+          "homeWin": 45,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7958,
+          "avgHome": 1.54,
+          "avgAway": 1.24,
+          "over25": 50,
+          "btts": 53,
+          "homeWin": 44,
+          "year": 20222023
+        },
+        {
+          "seasonId": 5944,
+          "avgHome": 1.46,
+          "avgAway": 1.17,
+          "over25": 49,
+          "btts": 50,
+          "homeWin": 43,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Slovakia 2. Liga",
+      "country": "Slovakia",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.67,
+      "avg_goals_away": 1.244,
+      "over25_pct": 55.6,
+      "under25_pct": 44.4,
+      "btts_pct": 53.6,
+      "home_win_pct": 48,
+      "seasons": [
+        {
+          "seasonId": 15104,
+          "avgHome": 1.71,
+          "avgAway": 1.28,
+          "over25": 55,
+          "btts": 62,
+          "homeWin": 48,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12701,
+          "avgHome": 1.57,
+          "avgAway": 1.12,
+          "over25": 53,
+          "btts": 51,
+          "homeWin": 51,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9722,
+          "avgHome": 1.74,
+          "avgAway": 1.31,
+          "over25": 56,
+          "btts": 52,
+          "homeWin": 48,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7754,
+          "avgHome": 1.59,
+          "avgAway": 1.28,
+          "over25": 59,
+          "btts": 54,
+          "homeWin": 45,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6112,
+          "avgHome": 1.74,
+          "avgAway": 1.23,
+          "over25": 55,
+          "btts": 49,
+          "homeWin": 48,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Republic of Ireland Premier Division",
+      "country": "Republic of Ireland",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.402,
+      "avg_goals_away": 1.062,
+      "over25_pct": 45.4,
+      "under25_pct": 54.6,
+      "btts_pct": 49.2,
+      "home_win_pct": 42.8,
+      "seasons": [
+        {
+          "seasonId": 16537,
+          "avgHome": 1.44,
+          "avgAway": 1.07,
+          "over25": 42,
+          "btts": 49,
+          "homeWin": 40,
+          "year": 2026
+        },
+        {
+          "seasonId": 13952,
+          "avgHome": 1.38,
+          "avgAway": 1.06,
+          "over25": 46,
+          "btts": 54,
+          "homeWin": 43,
+          "year": 2025
+        },
+        {
+          "seasonId": 10946,
+          "avgHome": 1.27,
+          "avgAway": 0.99,
+          "over25": 42,
+          "btts": 48,
+          "homeWin": 42,
+          "year": 2024
+        },
+        {
+          "seasonId": 8741,
+          "avgHome": 1.5,
+          "avgAway": 1.11,
+          "over25": 49,
+          "btts": 46,
+          "homeWin": 45,
+          "year": 2023
+        },
+        {
+          "seasonId": 6967,
+          "avgHome": 1.42,
+          "avgAway": 1.08,
+          "over25": 48,
+          "btts": 49,
+          "homeWin": 44,
+          "year": 2022
+        }
+      ]
+    },
+    {
+      "league_name": "Northern Ireland NIFL Premiership",
+      "country": "Northern Ireland",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.534,
+      "avg_goals_away": 1.282,
+      "over25_pct": 54,
+      "under25_pct": 46,
+      "btts_pct": 46.2,
+      "home_win_pct": 45.6,
+      "seasons": [
+        {
+          "seasonId": 15067,
+          "avgHome": 1.56,
+          "avgAway": 1.29,
+          "over25": 54,
+          "btts": 50,
+          "homeWin": 49,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12417,
+          "avgHome": 1.32,
+          "avgAway": 1.21,
+          "over25": 47,
+          "btts": 45,
+          "homeWin": 44,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9670,
+          "avgHome": 1.72,
+          "avgAway": 1.39,
+          "over25": 61,
+          "btts": 50,
+          "homeWin": 42,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7520,
+          "avgHome": 1.65,
+          "avgAway": 1.2,
+          "over25": 55,
+          "btts": 40,
+          "homeWin": 50,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6115,
+          "avgHome": 1.42,
+          "avgAway": 1.32,
+          "over25": 53,
+          "btts": 46,
+          "homeWin": 43,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Philippines PFL",
+      "country": "Philippines",
+      "seasons_fetched": 5,
+      "avg_goals_home": 2.104,
+      "avg_goals_away": 1.968,
+      "over25_pct": 64.4,
+      "under25_pct": 35.6,
+      "btts_pct": 40.8,
+      "home_win_pct": 44.8,
+      "seasons": [
+        {
+          "seasonId": 15953,
+          "avgHome": 2.9,
+          "avgAway": 2.22,
+          "over25": 71,
+          "btts": 41,
+          "homeWin": 50,
+          "year": 20252026
+        },
+        {
+          "seasonId": 13668,
+          "avgHome": 1.57,
+          "avgAway": 1.77,
+          "over25": 60,
+          "btts": 44,
+          "homeWin": 37,
+          "year": 20242025
+        },
+        {
+          "seasonId": 11412,
+          "avgHome": 3.23,
+          "avgAway": 2.17,
+          "over25": 82,
+          "btts": 48,
+          "homeWin": 57,
+          "year": 2024
+        },
+        {
+          "seasonId": 8120,
+          "avgHome": 1.82,
+          "avgAway": 1.61,
+          "over25": 69,
+          "btts": 44,
+          "homeWin": 47,
+          "year": 20222023
+        },
+        {
+          "seasonId": 5254,
+          "avgHome": 1,
+          "avgAway": 2.07,
+          "over25": 40,
+          "btts": 27,
+          "homeWin": 33,
+          "year": 2020
+        }
+      ]
+    },
+    {
+      "league_name": "Wales Welsh Premier League",
+      "country": "Wales",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.592,
+      "avg_goals_away": 1.376,
+      "over25_pct": 55.2,
+      "under25_pct": 44.8,
+      "btts_pct": 51.2,
+      "home_win_pct": 43,
+      "seasons": [
+        {
+          "seasonId": 15226,
+          "avgHome": 1.47,
+          "avgAway": 1.42,
+          "over25": 54,
+          "btts": 51,
+          "homeWin": 36,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12339,
+          "avgHome": 1.64,
+          "avgAway": 1.37,
+          "over25": 60,
+          "btts": 57,
+          "homeWin": 45,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9565,
+          "avgHome": 1.61,
+          "avgAway": 1.35,
+          "over25": 55,
+          "btts": 50,
+          "homeWin": 42,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7620,
+          "avgHome": 1.65,
+          "avgAway": 1.41,
+          "over25": 57,
+          "btts": 52,
+          "homeWin": 50,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6043,
+          "avgHome": 1.59,
+          "avgAway": 1.33,
+          "over25": 50,
+          "btts": 46,
+          "homeWin": 42,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Colombia Categoria Primera A",
+      "country": "Colombia",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.358,
+      "avg_goals_away": 0.932,
+      "over25_pct": 41,
+      "under25_pct": 59,
+      "btts_pct": 48.2,
+      "home_win_pct": 46.8,
+      "seasons": [
+        {
+          "seasonId": 16614,
+          "avgHome": 1.48,
+          "avgAway": 0.99,
+          "over25": 47,
+          "btts": 55,
+          "homeWin": 46,
+          "year": 2026
+        },
+        {
+          "seasonId": 14086,
+          "avgHome": 1.33,
+          "avgAway": 0.97,
+          "over25": 43,
+          "btts": 46,
+          "homeWin": 46,
+          "year": 2025
+        },
+        {
+          "seasonId": 10997,
+          "avgHome": 1.28,
+          "avgAway": 0.89,
+          "over25": 38,
+          "btts": 43,
+          "homeWin": 47,
+          "year": 2024
+        },
+        {
+          "seasonId": 8936,
+          "avgHome": 1.38,
+          "avgAway": 0.88,
+          "over25": 39,
+          "btts": 49,
+          "homeWin": 48,
+          "year": 2023
+        },
+        {
+          "seasonId": 6905,
+          "avgHome": 1.32,
+          "avgAway": 0.93,
+          "over25": 38,
+          "btts": 48,
+          "homeWin": 47,
+          "year": 2022
+        }
+      ]
+    },
+    {
+      "league_name": "Taiwan Taiwan Football Premier League",
+      "country": "Taiwan",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.472,
+      "avg_goals_away": 1.46,
+      "over25_pct": 58.2,
+      "under25_pct": 41.8,
+      "btts_pct": 48,
+      "home_win_pct": 39.2,
+      "seasons": [
+        {
+          "seasonId": 15671,
+          "avgHome": 1.67,
+          "avgAway": 1.28,
+          "over25": 65,
+          "btts": 54,
+          "homeWin": 41,
+          "year": 20252026
+        },
+        {
+          "seasonId": 11418,
+          "avgHome": 1.56,
+          "avgAway": 1.63,
+          "over25": 62,
+          "btts": 49,
+          "homeWin": 39,
+          "year": 2024
+        },
+        {
+          "seasonId": 9216,
+          "avgHome": 1.59,
+          "avgAway": 1.32,
+          "over25": 56,
+          "btts": 43,
+          "homeWin": 50,
+          "year": 2023
+        },
+        {
+          "seasonId": 7308,
+          "avgHome": 1.41,
+          "avgAway": 1.48,
+          "over25": 56,
+          "btts": 51,
+          "homeWin": 32,
+          "year": 2022
+        },
+        {
+          "seasonId": 5691,
+          "avgHome": 1.13,
+          "avgAway": 1.59,
+          "over25": 52,
+          "btts": 43,
+          "homeWin": 34,
+          "year": 2021
+        }
+      ]
+    },
+    {
+      "league_name": "Chile Primera División",
+      "country": "Chile",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.52,
+      "avg_goals_away": 1.15,
+      "over25_pct": 51.6,
+      "under25_pct": 48.4,
+      "btts_pct": 52,
+      "home_win_pct": 47.6,
+      "seasons": [
+        {
+          "seasonId": 16615,
+          "avgHome": 1.59,
+          "avgAway": 1.05,
+          "over25": 51,
+          "btts": 47,
+          "homeWin": 54,
+          "year": 2026
+        },
+        {
+          "seasonId": 14116,
+          "avgHome": 1.55,
+          "avgAway": 1.1,
+          "over25": 51,
+          "btts": 52,
+          "homeWin": 51,
+          "year": 2025
+        },
+        {
+          "seasonId": 11103,
+          "avgHome": 1.54,
+          "avgAway": 1.23,
+          "over25": 55,
+          "btts": 51,
+          "homeWin": 46,
+          "year": 2024
+        },
+        {
+          "seasonId": 8833,
+          "avgHome": 1.43,
+          "avgAway": 1.29,
+          "over25": 53,
+          "btts": 59,
+          "homeWin": 41,
+          "year": 2023
+        },
+        {
+          "seasonId": 7036,
+          "avgHome": 1.49,
+          "avgAway": 1.08,
+          "over25": 48,
+          "btts": 51,
+          "homeWin": 46,
+          "year": 2022
+        }
+      ]
+    },
+    {
+      "league_name": "Chile Primera B",
+      "country": "Chile",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.448,
+      "avg_goals_away": 1.074,
+      "over25_pct": 46.2,
+      "under25_pct": 53.8,
+      "btts_pct": 53.4,
+      "home_win_pct": 43.6,
+      "seasons": [
+        {
+          "seasonId": 16743,
+          "avgHome": 1.67,
+          "avgAway": 1.1,
+          "over25": 42,
+          "btts": 60,
+          "homeWin": 46,
+          "year": 2026
+        },
+        {
+          "seasonId": 14164,
+          "avgHome": 1.38,
+          "avgAway": 0.98,
+          "over25": 46,
+          "btts": 48,
+          "homeWin": 42,
+          "year": 2025
+        },
+        {
+          "seasonId": 11172,
+          "avgHome": 1.35,
+          "avgAway": 1.19,
+          "over25": 50,
+          "btts": 53,
+          "homeWin": 38,
+          "year": 2024
+        },
+        {
+          "seasonId": 8875,
+          "avgHome": 1.46,
+          "avgAway": 1.12,
+          "over25": 50,
+          "btts": 57,
+          "homeWin": 46,
+          "year": 2023
+        },
+        {
+          "seasonId": 7114,
+          "avgHome": 1.38,
+          "avgAway": 0.98,
+          "over25": 43,
+          "btts": 49,
+          "homeWin": 46,
+          "year": 2022
+        }
+      ]
+    },
+    {
+      "league_name": "Bolivia LFPB",
+      "country": "Bolivia",
+      "seasons_fetched": 5,
+      "avg_goals_home": 2.166,
+      "avg_goals_away": 1.264,
+      "over25_pct": 65.8,
+      "under25_pct": 34.2,
+      "btts_pct": 51.6,
+      "home_win_pct": 56.2,
+      "seasons": [
+        {
+          "seasonId": 16927,
+          "avgHome": 3.33,
+          "avgAway": 1.67,
+          "over25": 100,
+          "btts": 33,
+          "homeWin": 67,
+          "year": 2026
+        },
+        {
+          "seasonId": 16307,
+          "avgHome": 2.26,
+          "avgAway": 1.36,
+          "over25": 66,
+          "btts": 64,
+          "homeWin": 56,
+          "year": 2025
+        },
+        {
+          "seasonId": 11072,
+          "avgHome": 1.78,
+          "avgAway": 1.2,
+          "over25": 56,
+          "btts": 56,
+          "homeWin": 51,
+          "year": 2024
+        },
+        {
+          "seasonId": 8926,
+          "avgHome": 1.75,
+          "avgAway": 1,
+          "over25": 51,
+          "btts": 50,
+          "homeWin": 54,
+          "year": 2023
+        },
+        {
+          "seasonId": 7033,
+          "avgHome": 1.71,
+          "avgAway": 1.09,
+          "over25": 56,
+          "btts": 55,
+          "homeWin": 53,
+          "year": 2022
+        }
+      ]
+    },
+    {
+      "league_name": "Bolivia Liga Nacional B",
+      "country": "Bolivia",
+      "seasons_fetched": 5,
+      "avg_goals_home": 2.106,
+      "avg_goals_away": 1.278,
+      "over25_pct": 62.2,
+      "under25_pct": 37.8,
+      "btts_pct": 58,
+      "home_win_pct": 53,
+      "seasons": [
+        {
+          "seasonId": 15970,
+          "avgHome": 2.29,
+          "avgAway": 1.26,
+          "over25": 61,
+          "btts": 57,
+          "homeWin": 58,
+          "year": 2025
+        },
+        {
+          "seasonId": 13099,
+          "avgHome": 2.32,
+          "avgAway": 1.37,
+          "over25": 73,
+          "btts": 56,
+          "homeWin": 54,
+          "year": 2024
+        },
+        {
+          "seasonId": 10749,
+          "avgHome": 2.14,
+          "avgAway": 1.15,
+          "over25": 59,
+          "btts": 56,
+          "homeWin": 59,
+          "year": 2023
+        },
+        {
+          "seasonId": 8350,
+          "avgHome": 1.97,
+          "avgAway": 1.12,
+          "over25": 57,
+          "btts": 61,
+          "homeWin": 47,
+          "year": 2022
+        },
+        {
+          "seasonId": 6647,
+          "avgHome": 1.81,
+          "avgAway": 1.49,
+          "over25": 61,
+          "btts": 60,
+          "homeWin": 47,
+          "year": 2021
+        }
+      ]
+    },
+    {
+      "league_name": "Italy Serie C",
+      "country": "Italy",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.314,
+      "avg_goals_away": 0.982,
+      "over25_pct": 40.4,
+      "under25_pct": 59.6,
+      "btts_pct": 48.2,
+      "home_win_pct": 43.4,
+      "seasons": [
+        {
+          "seasonId": 4978,
+          "avgHome": 1.29,
+          "avgAway": 1.07,
+          "over25": 41,
+          "btts": 47,
+          "homeWin": 40,
+          "year": 20202021
+        },
+        {
+          "seasonId": 3958,
+          "avgHome": 1.25,
+          "avgAway": 0.99,
+          "over25": 40,
+          "btts": 47,
+          "homeWin": 42,
+          "year": 20112012
+        },
+        {
+          "seasonId": 3957,
+          "avgHome": 1.31,
+          "avgAway": 0.92,
+          "over25": 38,
+          "btts": 48,
+          "homeWin": 47,
+          "year": 20102011
+        },
+        {
+          "seasonId": 3956,
+          "avgHome": 1.31,
+          "avgAway": 0.95,
+          "over25": 38,
+          "btts": 49,
+          "homeWin": 44,
+          "year": 20092010
+        },
+        {
+          "seasonId": 3953,
+          "avgHome": 1.41,
+          "avgAway": 0.98,
+          "over25": 45,
+          "btts": 50,
+          "homeWin": 44,
+          "year": 20122013
+        }
+      ]
+    },
+    {
+      "league_name": "Israel Israeli Premier League",
+      "country": "Israel",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.464,
+      "avg_goals_away": 1.368,
+      "over25_pct": 53,
+      "under25_pct": 47,
+      "btts_pct": 54.4,
+      "home_win_pct": 39.6,
+      "seasons": [
+        {
+          "seasonId": 16363,
+          "avgHome": 1.58,
+          "avgAway": 1.51,
+          "over25": 59,
+          "btts": 59,
+          "homeWin": 39,
+          "year": 20252026
+        },
+        {
+          "seasonId": 16353,
+          "avgHome": 1.59,
+          "avgAway": 1.5,
+          "over25": 59,
+          "btts": 59,
+          "homeWin": 40,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12377,
+          "avgHome": 1.47,
+          "avgAway": 1.33,
+          "over25": 53,
+          "btts": 53,
+          "homeWin": 40,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9564,
+          "avgHome": 1.31,
+          "avgAway": 1.23,
+          "over25": 46,
+          "btts": 48,
+          "homeWin": 42,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7448,
+          "avgHome": 1.37,
+          "avgAway": 1.27,
+          "over25": 48,
+          "btts": 53,
+          "homeWin": 37,
+          "year": 20222023
+        }
+      ]
+    },
+    {
+      "league_name": "Israel Liga Leumit",
+      "country": "Israel",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.378,
+      "avg_goals_away": 1.23,
+      "over25_pct": 46.8,
+      "under25_pct": 53.2,
+      "btts_pct": 51.2,
+      "home_win_pct": 40.2,
+      "seasons": [
+        {
+          "seasonId": 16356,
+          "avgHome": 1.31,
+          "avgAway": 1.35,
+          "over25": 48,
+          "btts": 55,
+          "homeWin": 36,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12406,
+          "avgHome": 1.44,
+          "avgAway": 1.21,
+          "over25": 48,
+          "btts": 48,
+          "homeWin": 44,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9566,
+          "avgHome": 1.46,
+          "avgAway": 1.33,
+          "over25": 50,
+          "btts": 55,
+          "homeWin": 39,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7451,
+          "avgHome": 1.39,
+          "avgAway": 1.21,
+          "over25": 45,
+          "btts": 46,
+          "homeWin": 43,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6028,
+          "avgHome": 1.29,
+          "avgAway": 1.05,
+          "over25": 43,
+          "btts": 52,
+          "homeWin": 39,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Czech Republic First League",
+      "country": "Czech Republic",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.552,
+      "avg_goals_away": 1.216,
+      "over25_pct": 52.8,
+      "under25_pct": 47.2,
+      "btts_pct": 52.4,
+      "home_win_pct": 44.6,
+      "seasons": [
+        {
+          "seasonId": 14973,
+          "avgHome": 1.38,
+          "avgAway": 1.19,
+          "over25": 45,
+          "btts": 49,
+          "homeWin": 41,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12336,
+          "avgHome": 1.47,
+          "avgAway": 1.18,
+          "over25": 53,
+          "btts": 47,
+          "homeWin": 47,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9592,
+          "avgHome": 1.64,
+          "avgAway": 1.22,
+          "over25": 52,
+          "btts": 55,
+          "homeWin": 45,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7586,
+          "avgHome": 1.65,
+          "avgAway": 1.32,
+          "over25": 61,
+          "btts": 57,
+          "homeWin": 43,
+          "year": 20222023
+        },
+        {
+          "seasonId": 5938,
+          "avgHome": 1.62,
+          "avgAway": 1.17,
+          "over25": 53,
+          "btts": 54,
+          "homeWin": 47,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Denmark Superliga",
+      "country": "Denmark",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.52,
+      "avg_goals_away": 1.36,
+      "over25_pct": 54.6,
+      "under25_pct": 45.4,
+      "btts_pct": 58.8,
+      "home_win_pct": 41.2,
+      "seasons": [
+        {
+          "seasonId": 15055,
+          "avgHome": 1.6,
+          "avgAway": 1.45,
+          "over25": 59,
+          "btts": 59,
+          "homeWin": 42,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12132,
+          "avgHome": 1.69,
+          "avgAway": 1.45,
+          "over25": 61,
+          "btts": 64,
+          "homeWin": 45,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9545,
+          "avgHome": 1.5,
+          "avgAway": 1.32,
+          "over25": 56,
+          "btts": 59,
+          "homeWin": 40,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7426,
+          "avgHome": 1.39,
+          "avgAway": 1.35,
+          "over25": 50,
+          "btts": 56,
+          "homeWin": 40,
+          "year": 20222023
+        },
+        {
+          "seasonId": 5961,
+          "avgHome": 1.42,
+          "avgAway": 1.23,
+          "over25": 47,
+          "btts": 56,
+          "homeWin": 39,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Morocco Botola Pro",
+      "country": "Morocco",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.192,
+      "avg_goals_away": 1,
+      "over25_pct": 39.2,
+      "under25_pct": 60.8,
+      "btts_pct": 46.2,
+      "home_win_pct": 41.2,
+      "seasons": [
+        {
+          "seasonId": 15434,
+          "avgHome": 1.13,
+          "avgAway": 1,
+          "over25": 36,
+          "btts": 46,
+          "homeWin": 40,
+          "year": 20252026
+        },
+        {
+          "seasonId": 13286,
+          "avgHome": 1.24,
+          "avgAway": 1.06,
+          "over25": 41,
+          "btts": 44,
+          "homeWin": 43,
+          "year": 20242025
+        },
+        {
+          "seasonId": 10412,
+          "avgHome": 1.22,
+          "avgAway": 1.01,
+          "over25": 40,
+          "btts": 48,
+          "homeWin": 41,
+          "year": 20232024
+        },
+        {
+          "seasonId": 8287,
+          "avgHome": 1.19,
+          "avgAway": 0.95,
+          "over25": 41,
+          "btts": 47,
+          "homeWin": 41,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6582,
+          "avgHome": 1.18,
+          "avgAway": 0.98,
+          "over25": 38,
+          "btts": 46,
+          "homeWin": 41,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Brazil Paulista A1",
+      "country": "Brazil",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.362,
+      "avg_goals_away": 0.944,
+      "over25_pct": 41.6,
+      "under25_pct": 58.4,
+      "btts_pct": 45,
+      "home_win_pct": 45.4,
+      "seasons": [
+        {
+          "seasonId": 16503,
+          "avgHome": 1.49,
+          "avgAway": 0.85,
+          "over25": 40,
+          "btts": 42,
+          "homeWin": 47,
+          "year": 2026
+        },
+        {
+          "seasonId": 13857,
+          "avgHome": 1.38,
+          "avgAway": 1.07,
+          "over25": 49,
+          "btts": 56,
+          "homeWin": 40,
+          "year": 2025
+        },
+        {
+          "seasonId": 10911,
+          "avgHome": 1.3,
+          "avgAway": 0.91,
+          "over25": 34,
+          "btts": 42,
+          "homeWin": 48,
+          "year": 2024
+        },
+        {
+          "seasonId": 8639,
+          "avgHome": 1.22,
+          "avgAway": 0.94,
+          "over25": 39,
+          "btts": 39,
+          "homeWin": 44,
+          "year": 2023
+        },
+        {
+          "seasonId": 6885,
+          "avgHome": 1.42,
+          "avgAway": 0.95,
+          "over25": 46,
+          "btts": 46,
+          "homeWin": 48,
+          "year": 2022
+        }
+      ]
+    },
+    {
+      "league_name": "Peru Primera División",
+      "country": "Peru",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.618,
+      "avg_goals_away": 1.008,
+      "over25_pct": 49.4,
+      "under25_pct": 50.6,
+      "btts_pct": 50.6,
+      "home_win_pct": 51.4,
+      "seasons": [
+        {
+          "seasonId": 16905,
+          "avgHome": 1.64,
+          "avgAway": 0.97,
+          "over25": 51,
+          "btts": 56,
+          "homeWin": 52,
+          "year": 2026
+        },
+        {
+          "seasonId": 14912,
+          "avgHome": 1.58,
+          "avgAway": 1.05,
+          "over25": 51,
+          "btts": 51,
+          "homeWin": 48,
+          "year": 2025
+        },
+        {
+          "seasonId": 11062,
+          "avgHome": 1.64,
+          "avgAway": 1.02,
+          "over25": 49,
+          "btts": 49,
+          "homeWin": 53,
+          "year": 2024
+        },
+        {
+          "seasonId": 8837,
+          "avgHome": 1.57,
+          "avgAway": 0.95,
+          "over25": 46,
+          "btts": 46,
+          "homeWin": 51,
+          "year": 2023
+        },
+        {
+          "seasonId": 6966,
+          "avgHome": 1.66,
+          "avgAway": 1.05,
+          "over25": 50,
+          "btts": 51,
+          "homeWin": 53,
+          "year": 2022
+        }
+      ]
+    },
+    {
+      "league_name": "Peru Segunda División",
+      "country": "Peru",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.654,
+      "avg_goals_away": 1.064,
+      "over25_pct": 50.4,
+      "under25_pct": 49.6,
+      "btts_pct": 50,
+      "home_win_pct": 48.4,
+      "seasons": [
+        {
+          "seasonId": 16890,
+          "avgHome": 1.56,
+          "avgAway": 1.22,
+          "over25": 44,
+          "btts": 56,
+          "homeWin": 33,
+          "year": 2026
+        },
+        {
+          "seasonId": 16183,
+          "avgHome": 1.64,
+          "avgAway": 0.93,
+          "over25": 48,
+          "btts": 49,
+          "homeWin": 55,
+          "year": 2025
+        },
+        {
+          "seasonId": 11400,
+          "avgHome": 1.51,
+          "avgAway": 1.23,
+          "over25": 56,
+          "btts": 44,
+          "homeWin": 44,
+          "year": 2024
+        },
+        {
+          "seasonId": 9134,
+          "avgHome": 1.71,
+          "avgAway": 1.02,
+          "over25": 50,
+          "btts": 48,
+          "homeWin": 53,
+          "year": 2023
+        },
+        {
+          "seasonId": 7299,
+          "avgHome": 1.85,
+          "avgAway": 0.92,
+          "over25": 54,
+          "btts": 53,
+          "homeWin": 57,
+          "year": 2022
+        }
+      ]
+    },
+    {
+      "league_name": "Venezuela Primera División",
+      "country": "Venezuela",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.338,
+      "avg_goals_away": 1.062,
+      "over25_pct": 42.4,
+      "under25_pct": 57.6,
+      "btts_pct": 50,
+      "home_win_pct": 41.6,
+      "seasons": [
+        {
+          "seasonId": 16617,
+          "avgHome": 1.27,
+          "avgAway": 1.12,
+          "over25": 41,
+          "btts": 48,
+          "homeWin": 38,
+          "year": 2026
+        },
+        {
+          "seasonId": 15850,
+          "avgHome": 1.35,
+          "avgAway": 1.04,
+          "over25": 43,
+          "btts": 47,
+          "homeWin": 46,
+          "year": 2025
+        },
+        {
+          "seasonId": 11063,
+          "avgHome": 1.34,
+          "avgAway": 1.07,
+          "over25": 46,
+          "btts": 54,
+          "homeWin": 42,
+          "year": 2024
+        },
+        {
+          "seasonId": 8952,
+          "avgHome": 1.41,
+          "avgAway": 1.04,
+          "over25": 42,
+          "btts": 52,
+          "homeWin": 43,
+          "year": 2023
+        },
+        {
+          "seasonId": 7166,
+          "avgHome": 1.32,
+          "avgAway": 1.04,
+          "over25": 40,
+          "btts": 49,
+          "homeWin": 39,
+          "year": 2022
+        }
+      ]
+    },
+    {
+      "league_name": "Venezuela Segunda División",
+      "country": "Venezuela",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.33,
+      "avg_goals_away": 1.056,
+      "over25_pct": 45,
+      "under25_pct": 55,
+      "btts_pct": 48.8,
+      "home_win_pct": 41.8,
+      "seasons": [
+        {
+          "seasonId": 16811,
+          "avgHome": 1.15,
+          "avgAway": 1.13,
+          "over25": 48,
+          "btts": 57,
+          "homeWin": 40,
+          "year": 2026
+        },
+        {
+          "seasonId": 14536,
+          "avgHome": 1.46,
+          "avgAway": 0.89,
+          "over25": 45,
+          "btts": 46,
+          "homeWin": 48,
+          "year": 2025
+        },
+        {
+          "seasonId": 11372,
+          "avgHome": 1.42,
+          "avgAway": 1.03,
+          "over25": 42,
+          "btts": 47,
+          "homeWin": 43,
+          "year": 2024
+        },
+        {
+          "seasonId": 10578,
+          "avgHome": 1.32,
+          "avgAway": 0.94,
+          "over25": 41,
+          "btts": 47,
+          "homeWin": 42,
+          "year": 2023
+        },
+        {
+          "seasonId": 7897,
+          "avgHome": 1.3,
+          "avgAway": 1.29,
+          "over25": 49,
+          "btts": 47,
+          "homeWin": 36,
+          "year": 2020
+        }
+      ]
+    },
+    {
+      "league_name": "Bosnia and Herzegovina Premier League of Bosnia",
+      "country": "Bosnia and Herzegovina",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.458,
+      "avg_goals_away": 1,
+      "over25_pct": 43.2,
+      "under25_pct": 56.8,
+      "btts_pct": 43,
+      "home_win_pct": 49.4,
+      "seasons": [
+        {
+          "seasonId": 15001,
+          "avgHome": 1.27,
+          "avgAway": 0.85,
+          "over25": 36,
+          "btts": 37,
+          "homeWin": 49,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12932,
+          "avgHome": 1.44,
+          "avgAway": 1.21,
+          "over25": 49,
+          "btts": 43,
+          "homeWin": 46,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9968,
+          "avgHome": 1.69,
+          "avgAway": 1.1,
+          "over25": 51,
+          "btts": 46,
+          "homeWin": 55,
+          "year": 20232024
+        },
+        {
+          "seasonId": 8112,
+          "avgHome": 1.52,
+          "avgAway": 0.95,
+          "over25": 44,
+          "btts": 44,
+          "homeWin": 52,
+          "year": 20222023
+        },
+        {
+          "seasonId": 5955,
+          "avgHome": 1.37,
+          "avgAway": 0.89,
+          "over25": 36,
+          "btts": 45,
+          "homeWin": 45,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Bulgaria First League",
+      "country": "Bulgaria",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.342,
+      "avg_goals_away": 1.058,
+      "over25_pct": 43.8,
+      "under25_pct": 56.2,
+      "btts_pct": 43,
+      "home_win_pct": 45.4,
+      "seasons": [
+        {
+          "seasonId": 15056,
+          "avgHome": 1.26,
+          "avgAway": 1.08,
+          "over25": 45,
+          "btts": 44,
+          "homeWin": 42,
+          "year": 20252026
+        },
+        {
+          "seasonId": 13863,
+          "avgHome": 1.31,
+          "avgAway": 1.15,
+          "over25": 44,
+          "btts": 43,
+          "homeWin": 43,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9551,
+          "avgHome": 1.39,
+          "avgAway": 1.01,
+          "over25": 46,
+          "btts": 40,
+          "homeWin": 46,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7483,
+          "avgHome": 1.32,
+          "avgAway": 1.04,
+          "over25": 41,
+          "btts": 42,
+          "homeWin": 47,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6012,
+          "avgHome": 1.43,
+          "avgAway": 1.01,
+          "over25": 43,
+          "btts": 46,
+          "homeWin": 49,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Bulgaria Second League",
+      "country": "Bulgaria",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.38,
+      "avg_goals_away": 0.964,
+      "over25_pct": 41.2,
+      "under25_pct": 58.8,
+      "btts_pct": 42.6,
+      "home_win_pct": 46.2,
+      "seasons": [
+        {
+          "seasonId": 15052,
+          "avgHome": 1.38,
+          "avgAway": 1.08,
+          "over25": 43,
+          "btts": 45,
+          "homeWin": 40,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12157,
+          "avgHome": 1.34,
+          "avgAway": 0.94,
+          "over25": 38,
+          "btts": 37,
+          "homeWin": 46,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9587,
+          "avgHome": 1.3,
+          "avgAway": 0.87,
+          "over25": 35,
+          "btts": 40,
+          "homeWin": 48,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7585,
+          "avgHome": 1.35,
+          "avgAway": 0.91,
+          "over25": 41,
+          "btts": 42,
+          "homeWin": 48,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6002,
+          "avgHome": 1.53,
+          "avgAway": 1.02,
+          "over25": 49,
+          "btts": 49,
+          "homeWin": 49,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Hungary NB I",
+      "country": "Hungary",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.558,
+      "avg_goals_away": 1.306,
+      "over25_pct": 55.4,
+      "under25_pct": 44.6,
+      "btts_pct": 57.6,
+      "home_win_pct": 42,
+      "seasons": [
+        {
+          "seasonId": 14963,
+          "avgHome": 1.49,
+          "avgAway": 1.47,
+          "over25": 57,
+          "btts": 62,
+          "homeWin": 36,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12334,
+          "avgHome": 1.56,
+          "avgAway": 1.23,
+          "over25": 53,
+          "btts": 56,
+          "homeWin": 43,
+          "year": 20242025
+        },
+        {
+          "seasonId": 10007,
+          "avgHome": 1.74,
+          "avgAway": 1.31,
+          "over25": 60,
+          "btts": 57,
+          "homeWin": 48,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7967,
+          "avgHome": 1.51,
+          "avgAway": 1.17,
+          "over25": 51,
+          "btts": 56,
+          "homeWin": 43,
+          "year": 20222023
+        },
+        {
+          "seasonId": 5936,
+          "avgHome": 1.49,
+          "avgAway": 1.35,
+          "over25": 56,
+          "btts": 57,
+          "homeWin": 40,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Hungary NB II",
+      "country": "Hungary",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.412,
+      "avg_goals_away": 1.16,
+      "over25_pct": 45.8,
+      "under25_pct": 54.2,
+      "btts_pct": 51.8,
+      "home_win_pct": 43,
+      "seasons": [
+        {
+          "seasonId": 15108,
+          "avgHome": 1.38,
+          "avgAway": 1.15,
+          "over25": 43,
+          "btts": 48,
+          "homeWin": 45,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12590,
+          "avgHome": 1.53,
+          "avgAway": 1.2,
+          "over25": 51,
+          "btts": 59,
+          "homeWin": 44,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9688,
+          "avgHome": 1.34,
+          "avgAway": 1.12,
+          "over25": 43,
+          "btts": 49,
+          "homeWin": 42,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7776,
+          "avgHome": 1.37,
+          "avgAway": 1.19,
+          "over25": 46,
+          "btts": 54,
+          "homeWin": 42,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6027,
+          "avgHome": 1.44,
+          "avgAway": 1.14,
+          "over25": 46,
+          "btts": 49,
+          "homeWin": 42,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Iceland Úrvalsdeild",
+      "country": "Iceland",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.546,
+      "avg_goals_away": 1.224,
+      "over25_pct": 52.6,
+      "under25_pct": 47.4,
+      "btts_pct": 50.2,
+      "home_win_pct": 38.2,
+      "seasons": [
+        {
+          "seasonId": 16696,
+          "avgHome": 0,
+          "avgAway": 0,
+          "over25": 0,
+          "btts": 0,
+          "homeWin": 0,
+          "year": 2026
+        },
+        {
+          "seasonId": 14017,
+          "avgHome": 1.9,
+          "avgAway": 1.42,
+          "over25": 60,
+          "btts": 64,
+          "homeWin": 51,
+          "year": 2025
+        },
+        {
+          "seasonId": 10975,
+          "avgHome": 1.99,
+          "avgAway": 1.56,
+          "over25": 67,
+          "btts": 65,
+          "homeWin": 46,
+          "year": 2024
+        },
+        {
+          "seasonId": 8784,
+          "avgHome": 1.97,
+          "avgAway": 1.49,
+          "over25": 64,
+          "btts": 62,
+          "homeWin": 50,
+          "year": 2023
+        },
+        {
+          "seasonId": 7105,
+          "avgHome": 1.87,
+          "avgAway": 1.65,
+          "over25": 72,
+          "btts": 60,
+          "homeWin": 44,
+          "year": 2022
+        }
+      ]
+    },
+    {
+      "league_name": "South Korea K League 1",
+      "country": "South Korea",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.32,
+      "avg_goals_away": 1.146,
+      "over25_pct": 44,
+      "under25_pct": 56,
+      "btts_pct": 54.8,
+      "home_win_pct": 38,
+      "seasons": [
+        {
+          "seasonId": 16627,
+          "avgHome": 1.1,
+          "avgAway": 1,
+          "over25": 32,
+          "btts": 57,
+          "homeWin": 26,
+          "year": 2026
+        },
+        {
+          "seasonId": 16243,
+          "avgHome": 1.36,
+          "avgAway": 1.17,
+          "over25": 48,
+          "btts": 55,
+          "homeWin": 42,
+          "year": 2025
+        },
+        {
+          "seasonId": 11102,
+          "avgHome": 1.45,
+          "avgAway": 1.17,
+          "over25": 49,
+          "btts": 53,
+          "homeWin": 45,
+          "year": 2024
+        },
+        {
+          "seasonId": 8899,
+          "avgHome": 1.34,
+          "avgAway": 1.15,
+          "over25": 42,
+          "btts": 53,
+          "homeWin": 39,
+          "year": 2023
+        },
+        {
+          "seasonId": 7061,
+          "avgHome": 1.35,
+          "avgAway": 1.24,
+          "over25": 49,
+          "btts": 56,
+          "homeWin": 38,
+          "year": 2022
+        }
+      ]
+    },
+    {
+      "league_name": "South Korea K League 2",
+      "country": "South Korea",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.346,
+      "avg_goals_away": 1.266,
+      "over25_pct": 50.6,
+      "under25_pct": 49.4,
+      "btts_pct": 53.4,
+      "home_win_pct": 38,
+      "seasons": [
+        {
+          "seasonId": 16792,
+          "avgHome": 1.4,
+          "avgAway": 1.45,
+          "over25": 60,
+          "btts": 62,
+          "homeWin": 38,
+          "year": 2026
+        },
+        {
+          "seasonId": 16241,
+          "avgHome": 1.31,
+          "avgAway": 1.19,
+          "over25": 45,
+          "btts": 49,
+          "homeWin": 35,
+          "year": 2025
+        },
+        {
+          "seasonId": 11156,
+          "avgHome": 1.29,
+          "avgAway": 1.34,
+          "over25": 51,
+          "btts": 56,
+          "homeWin": 33,
+          "year": 2024
+        },
+        {
+          "seasonId": 8938,
+          "avgHome": 1.36,
+          "avgAway": 1.2,
+          "over25": 48,
+          "btts": 49,
+          "homeWin": 42,
+          "year": 2023
+        },
+        {
+          "seasonId": 7062,
+          "avgHome": 1.37,
+          "avgAway": 1.15,
+          "over25": 49,
+          "btts": 51,
+          "homeWin": 42,
+          "year": 2022
+        }
+      ]
+    },
+    {
+      "league_name": "South Korea K3 League",
+      "country": "South Korea",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.28,
+      "avg_goals_away": 1.15,
+      "over25_pct": 45.8,
+      "under25_pct": 54.2,
+      "btts_pct": 52.2,
+      "home_win_pct": 40.2,
+      "seasons": [
+        {
+          "seasonId": 16756,
+          "avgHome": 1.48,
+          "avgAway": 1.23,
+          "over25": 52,
+          "btts": 68,
+          "homeWin": 42,
+          "year": 2026
+        },
+        {
+          "seasonId": 14301,
+          "avgHome": 1.21,
+          "avgAway": 1.17,
+          "over25": 47,
+          "btts": 47,
+          "homeWin": 41,
+          "year": 2025
+        },
+        {
+          "seasonId": 11281,
+          "avgHome": 1.31,
+          "avgAway": 1.24,
+          "over25": 48,
+          "btts": 50,
+          "homeWin": 39,
+          "year": 2024
+        },
+        {
+          "seasonId": 7137,
+          "avgHome": 1.19,
+          "avgAway": 1.06,
+          "over25": 43,
+          "btts": 48,
+          "homeWin": 40,
+          "year": 2022
+        },
+        {
+          "seasonId": 5860,
+          "avgHome": 1.21,
+          "avgAway": 1.05,
+          "over25": 39,
+          "btts": 48,
+          "homeWin": 39,
+          "year": 2021
+        }
+      ]
+    },
+    {
+      "league_name": "Vietnam V.League 1",
+      "country": "Vietnam",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.398,
+      "avg_goals_away": 1.124,
+      "over25_pct": 46.4,
+      "under25_pct": 53.6,
+      "btts_pct": 54.2,
+      "home_win_pct": 41.6,
+      "seasons": [
+        {
+          "seasonId": 15243,
+          "avgHome": 1.41,
+          "avgAway": 1.22,
+          "over25": 54,
+          "btts": 60,
+          "homeWin": 41,
+          "year": 20252026
+        },
+        {
+          "seasonId": 13152,
+          "avgHome": 1.33,
+          "avgAway": 1.14,
+          "over25": 45,
+          "btts": 53,
+          "homeWin": 40,
+          "year": 20242025
+        },
+        {
+          "seasonId": 10721,
+          "avgHome": 1.52,
+          "avgAway": 1.18,
+          "over25": 45,
+          "btts": 55,
+          "homeWin": 46,
+          "year": 20232024
+        },
+        {
+          "seasonId": 8831,
+          "avgHome": 1.33,
+          "avgAway": 1.04,
+          "over25": 42,
+          "btts": 51,
+          "homeWin": 37,
+          "year": 2023
+        },
+        {
+          "seasonId": 6972,
+          "avgHome": 1.4,
+          "avgAway": 1.04,
+          "over25": 46,
+          "btts": 52,
+          "homeWin": 44,
+          "year": 2022
+        }
+      ]
+    },
+    {
+      "league_name": "Tunisia Ligue 1",
+      "country": "Tunisia",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.12,
+      "avg_goals_away": 0.768,
+      "over25_pct": 31.4,
+      "under25_pct": 68.6,
+      "btts_pct": 33,
+      "home_win_pct": 46,
+      "seasons": [
+        {
+          "seasonId": 15480,
+          "avgHome": 1.02,
+          "avgAway": 0.74,
+          "over25": 28,
+          "btts": 26,
+          "homeWin": 46,
+          "year": 20252026
+        },
+        {
+          "seasonId": 13307,
+          "avgHome": 1.18,
+          "avgAway": 0.85,
+          "over25": 34,
+          "btts": 38,
+          "homeWin": 44,
+          "year": 20242025
+        },
+        {
+          "seasonId": 10156,
+          "avgHome": 1.16,
+          "avgAway": 0.73,
+          "over25": 35,
+          "btts": 34,
+          "homeWin": 48,
+          "year": 20232024
+        },
+        {
+          "seasonId": 8428,
+          "avgHome": 1.22,
+          "avgAway": 0.84,
+          "over25": 32,
+          "btts": 34,
+          "homeWin": 46,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6726,
+          "avgHome": 1.02,
+          "avgAway": 0.68,
+          "over25": 28,
+          "btts": 33,
+          "homeWin": 46,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Qatar Stars League",
+      "country": "Qatar",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.656,
+      "avg_goals_away": 1.656,
+      "over25_pct": 63.8,
+      "under25_pct": 36.2,
+      "btts_pct": 59.2,
+      "home_win_pct": 40.2,
+      "seasons": [
+        {
+          "seasonId": 15038,
+          "avgHome": 1.61,
+          "avgAway": 1.7,
+          "over25": 63,
+          "btts": 59,
+          "homeWin": 42,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12587,
+          "avgHome": 1.72,
+          "avgAway": 1.63,
+          "over25": 67,
+          "btts": 57,
+          "homeWin": 45,
+          "year": 20242025
+        },
+        {
+          "seasonId": 10154,
+          "avgHome": 1.85,
+          "avgAway": 1.8,
+          "over25": 70,
+          "btts": 65,
+          "homeWin": 39,
+          "year": 20232024
+        },
+        {
+          "seasonId": 9213,
+          "avgHome": 1.55,
+          "avgAway": 1.49,
+          "over25": 63,
+          "btts": 59,
+          "homeWin": 39,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6312,
+          "avgHome": 1.55,
+          "avgAway": 1.66,
+          "over25": 56,
+          "btts": 56,
+          "homeWin": 36,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Ecuador Primera Categoría Serie A",
+      "country": "Ecuador",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.396,
+      "avg_goals_away": 0.978,
+      "over25_pct": 41.4,
+      "under25_pct": 58.6,
+      "btts_pct": 48.8,
+      "home_win_pct": 45,
+      "seasons": [
+        {
+          "seasonId": 16714,
+          "avgHome": 1.02,
+          "avgAway": 0.79,
+          "over25": 23,
+          "btts": 44,
+          "homeWin": 40,
+          "year": 2026
+        },
+        {
+          "seasonId": 15842,
+          "avgHome": 1.41,
+          "avgAway": 1.14,
+          "over25": 46,
+          "btts": 52,
+          "homeWin": 42,
+          "year": 2025
+        },
+        {
+          "seasonId": 11157,
+          "avgHome": 1.57,
+          "avgAway": 1.05,
+          "over25": 50,
+          "btts": 50,
+          "homeWin": 47,
+          "year": 2024
+        },
+        {
+          "seasonId": 8934,
+          "avgHome": 1.54,
+          "avgAway": 0.93,
+          "over25": 46,
+          "btts": 48,
+          "homeWin": 50,
+          "year": 2023
+        },
+        {
+          "seasonId": 7038,
+          "avgHome": 1.44,
+          "avgAway": 0.98,
+          "over25": 42,
+          "btts": 50,
+          "homeWin": 46,
+          "year": 2022
+        }
+      ]
+    },
+    {
+      "league_name": "Uruguay Primera División",
+      "country": "Uruguay",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.244,
+      "avg_goals_away": 1.084,
+      "over25_pct": 42.2,
+      "under25_pct": 57.8,
+      "btts_pct": 47,
+      "home_win_pct": 39.6,
+      "seasons": [
+        {
+          "seasonId": 16708,
+          "avgHome": 1.31,
+          "avgAway": 1.09,
+          "over25": 47,
+          "btts": 49,
+          "homeWin": 41,
+          "year": 2026
+        },
+        {
+          "seasonId": 14626,
+          "avgHome": 1.27,
+          "avgAway": 1.06,
+          "over25": 43,
+          "btts": 49,
+          "homeWin": 41,
+          "year": 2025
+        },
+        {
+          "seasonId": 11209,
+          "avgHome": 1.3,
+          "avgAway": 1.13,
+          "over25": 43,
+          "btts": 48,
+          "homeWin": 40,
+          "year": 2024
+        },
+        {
+          "seasonId": 8937,
+          "avgHome": 1.27,
+          "avgAway": 1.02,
+          "over25": 40,
+          "btts": 46,
+          "homeWin": 40,
+          "year": 2023
+        },
+        {
+          "seasonId": 7067,
+          "avgHome": 1.07,
+          "avgAway": 1.12,
+          "over25": 38,
+          "btts": 43,
+          "homeWin": 36,
+          "year": 2022
+        }
+      ]
+    },
+    {
+      "league_name": "Uruguay Segunda División",
+      "country": "Uruguay",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.108,
+      "avg_goals_away": 1.032,
+      "over25_pct": 34.6,
+      "under25_pct": 65.4,
+      "btts_pct": 45.6,
+      "home_win_pct": 34.2,
+      "seasons": [
+        {
+          "seasonId": 16871,
+          "avgHome": 1,
+          "avgAway": 1.06,
+          "over25": 28,
+          "btts": 56,
+          "homeWin": 17,
+          "year": 2026
+        },
+        {
+          "seasonId": 16157,
+          "avgHome": 1.02,
+          "avgAway": 0.93,
+          "over25": 33,
+          "btts": 39,
+          "homeWin": 34,
+          "year": 2025
+        },
+        {
+          "seasonId": 11491,
+          "avgHome": 1.17,
+          "avgAway": 0.96,
+          "over25": 34,
+          "btts": 40,
+          "homeWin": 42,
+          "year": 2024
+        },
+        {
+          "seasonId": 9288,
+          "avgHome": 1.26,
+          "avgAway": 1.14,
+          "over25": 41,
+          "btts": 47,
+          "homeWin": 40,
+          "year": 2023
+        },
+        {
+          "seasonId": 7173,
+          "avgHome": 1.09,
+          "avgAway": 1.07,
+          "over25": 37,
+          "btts": 46,
+          "homeWin": 38,
+          "year": 2022
+        }
+      ]
+    },
+    {
+      "league_name": "UAE Arabian Gulf League",
+      "country": "UAE",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.594,
+      "avg_goals_away": 1.446,
+      "over25_pct": 58.2,
+      "under25_pct": 41.8,
+      "btts_pct": 57.6,
+      "home_win_pct": 40.6,
+      "seasons": [
+        {
+          "seasonId": 15360,
+          "avgHome": 1.38,
+          "avgAway": 1.33,
+          "over25": 49,
+          "btts": 51,
+          "homeWin": 37,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12584,
+          "avgHome": 1.73,
+          "avgAway": 1.47,
+          "over25": 64,
+          "btts": 60,
+          "homeWin": 43,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9578,
+          "avgHome": 1.69,
+          "avgAway": 1.74,
+          "over25": 66,
+          "btts": 67,
+          "homeWin": 37,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7865,
+          "avgHome": 1.6,
+          "avgAway": 1.42,
+          "over25": 56,
+          "btts": 55,
+          "homeWin": 40,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6042,
+          "avgHome": 1.57,
+          "avgAway": 1.27,
+          "over25": 56,
+          "btts": 55,
+          "homeWin": 46,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Spain Segunda División B",
+      "country": "Spain",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.346,
+      "avg_goals_away": 0.976,
+      "over25_pct": 41.6,
+      "under25_pct": 58.4,
+      "btts_pct": 45.8,
+      "home_win_pct": 45.6,
+      "seasons": [
+        {
+          "seasonId": 8146,
+          "avgHome": 1.27,
+          "avgAway": 0.94,
+          "over25": 38,
+          "btts": 46,
+          "homeWin": 44,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6213,
+          "avgHome": 1.38,
+          "avgAway": 1.02,
+          "over25": 44,
+          "btts": 44,
+          "homeWin": 47,
+          "year": 20212022
+        },
+        {
+          "seasonId": 4282,
+          "avgHome": 1.41,
+          "avgAway": 0.99,
+          "over25": 44,
+          "btts": 48,
+          "homeWin": 47,
+          "year": 20092010
+        },
+        {
+          "seasonId": 4274,
+          "avgHome": 1.3,
+          "avgAway": 0.91,
+          "over25": 38,
+          "btts": 44,
+          "homeWin": 45,
+          "year": 20102011
+        },
+        {
+          "seasonId": 4248,
+          "avgHome": 1.37,
+          "avgAway": 1.02,
+          "over25": 44,
+          "btts": 47,
+          "homeWin": 45,
+          "year": 20112012
+        }
+      ]
+    },
+    {
+      "league_name": "Kenya Kenyan Premier League",
+      "country": "Kenya",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.08,
+      "avg_goals_away": 1.01,
+      "over25_pct": 34.6,
+      "under25_pct": 65.4,
+      "btts_pct": 43.2,
+      "home_win_pct": 35.2,
+      "seasons": [
+        {
+          "seasonId": 16423,
+          "avgHome": 1.03,
+          "avgAway": 0.99,
+          "over25": 33,
+          "btts": 45,
+          "homeWin": 33,
+          "year": 20252026
+        },
+        {
+          "seasonId": 13115,
+          "avgHome": 1.12,
+          "avgAway": 0.86,
+          "over25": 30,
+          "btts": 43,
+          "homeWin": 38,
+          "year": 20242025
+        },
+        {
+          "seasonId": 10166,
+          "avgHome": 1.06,
+          "avgAway": 0.99,
+          "over25": 34,
+          "btts": 40,
+          "homeWin": 36,
+          "year": 20232024
+        },
+        {
+          "seasonId": 8472,
+          "avgHome": 1.09,
+          "avgAway": 1.1,
+          "over25": 40,
+          "btts": 42,
+          "homeWin": 37,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6687,
+          "avgHome": 1.1,
+          "avgAway": 1.11,
+          "over25": 36,
+          "btts": 46,
+          "homeWin": 32,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Saudi Arabia Professional League",
+      "country": "Saudi Arabia",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.538,
+      "avg_goals_away": 1.328,
+      "over25_pct": 54.2,
+      "under25_pct": 45.8,
+      "btts_pct": 53.8,
+      "home_win_pct": 44,
+      "seasons": [
+        {
+          "seasonId": 15741,
+          "avgHome": 1.59,
+          "avgAway": 1.45,
+          "over25": 56,
+          "btts": 59,
+          "homeWin": 43,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12772,
+          "avgHome": 1.57,
+          "avgAway": 1.38,
+          "over25": 56,
+          "btts": 56,
+          "homeWin": 44,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9883,
+          "avgHome": 1.58,
+          "avgAway": 1.4,
+          "over25": 56,
+          "btts": 56,
+          "homeWin": 42,
+          "year": 20232024
+        },
+        {
+          "seasonId": 8089,
+          "avgHome": 1.45,
+          "avgAway": 1.25,
+          "over25": 55,
+          "btts": 48,
+          "homeWin": 46,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6212,
+          "avgHome": 1.5,
+          "avgAway": 1.16,
+          "over25": 48,
+          "btts": 50,
+          "homeWin": 45,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "India Indian Super League",
+      "country": "India",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.512,
+      "avg_goals_away": 1.316,
+      "over25_pct": 52,
+      "under25_pct": 48,
+      "btts_pct": 55.8,
+      "home_win_pct": 43,
+      "seasons": [
+        {
+          "seasonId": 16812,
+          "avgHome": 1.43,
+          "avgAway": 1.03,
+          "over25": 38,
+          "btts": 55,
+          "homeWin": 38,
+          "year": 20252026
+        },
+        {
+          "seasonId": 13386,
+          "avgHome": 1.52,
+          "avgAway": 1.36,
+          "over25": 56,
+          "btts": 53,
+          "homeWin": 44,
+          "year": 20242025
+        },
+        {
+          "seasonId": 10625,
+          "avgHome": 1.5,
+          "avgAway": 1.27,
+          "over25": 54,
+          "btts": 55,
+          "homeWin": 47,
+          "year": 20232024
+        },
+        {
+          "seasonId": 8342,
+          "avgHome": 1.54,
+          "avgAway": 1.41,
+          "over25": 56,
+          "btts": 53,
+          "homeWin": 46,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6659,
+          "avgHome": 1.57,
+          "avgAway": 1.51,
+          "over25": 56,
+          "btts": 63,
+          "homeWin": 40,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "India I-League",
+      "country": "India",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.58,
+      "avg_goals_away": 1.298,
+      "over25_pct": 51.8,
+      "under25_pct": 48.2,
+      "btts_pct": 58.8,
+      "home_win_pct": 41.2,
+      "seasons": [
+        {
+          "seasonId": 16815,
+          "avgHome": 1.4,
+          "avgAway": 1.17,
+          "over25": 43,
+          "btts": 67,
+          "homeWin": 37,
+          "year": 20252026
+        },
+        {
+          "seasonId": 14392,
+          "avgHome": 1.83,
+          "avgAway": 1.36,
+          "over25": 56,
+          "btts": 59,
+          "homeWin": 42,
+          "year": 20242025
+        },
+        {
+          "seasonId": 10753,
+          "avgHome": 1.79,
+          "avgAway": 1.55,
+          "over25": 61,
+          "btts": 63,
+          "homeWin": 40,
+          "year": 20232024
+        },
+        {
+          "seasonId": 8590,
+          "avgHome": 1.59,
+          "avgAway": 1.12,
+          "over25": 51,
+          "btts": 51,
+          "homeWin": 52,
+          "year": 20222023
+        },
+        {
+          "seasonId": 7046,
+          "avgHome": 1.29,
+          "avgAway": 1.29,
+          "over25": 48,
+          "btts": 54,
+          "homeWin": 35,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "England Professional Development League",
+      "country": "England",
+      "seasons_fetched": 5,
+      "avg_goals_home": 2.05,
+      "avg_goals_away": 1.638,
+      "over25_pct": 70.4,
+      "under25_pct": 29.6,
+      "btts_pct": 62.2,
+      "home_win_pct": 46.4,
+      "seasons": [
+        {
+          "seasonId": 15543,
+          "avgHome": 2.15,
+          "avgAway": 1.73,
+          "over25": 74,
+          "btts": 68,
+          "homeWin": 45,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12851,
+          "avgHome": 2.21,
+          "avgAway": 1.62,
+          "over25": 72,
+          "btts": 61,
+          "homeWin": 50,
+          "year": 20242025
+        },
+        {
+          "seasonId": 10249,
+          "avgHome": 2.09,
+          "avgAway": 1.74,
+          "over25": 73,
+          "btts": 61,
+          "homeWin": 46,
+          "year": 20232024
+        },
+        {
+          "seasonId": 8101,
+          "avgHome": 1.97,
+          "avgAway": 1.57,
+          "over25": 69,
+          "btts": 62,
+          "homeWin": 46,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6635,
+          "avgHome": 1.83,
+          "avgAway": 1.53,
+          "over25": 64,
+          "btts": 59,
+          "homeWin": 45,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Georgia Erovnuli Liga",
+      "country": "Georgia",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.444,
+      "avg_goals_away": 1.19,
+      "over25_pct": 51.6,
+      "under25_pct": 48.4,
+      "btts_pct": 49.6,
+      "home_win_pct": 41.2,
+      "seasons": [
+        {
+          "seasonId": 16629,
+          "avgHome": 1.09,
+          "avgAway": 0.91,
+          "over25": 45,
+          "btts": 45,
+          "homeWin": 36,
+          "year": 2026
+        },
+        {
+          "seasonId": 16047,
+          "avgHome": 1.44,
+          "avgAway": 1.26,
+          "over25": 50,
+          "btts": 52,
+          "homeWin": 40,
+          "year": 2025
+        },
+        {
+          "seasonId": 11233,
+          "avgHome": 1.42,
+          "avgAway": 1.16,
+          "over25": 49,
+          "btts": 52,
+          "homeWin": 43,
+          "year": 2024
+        },
+        {
+          "seasonId": 8989,
+          "avgHome": 1.69,
+          "avgAway": 1.46,
+          "over25": 63,
+          "btts": 54,
+          "homeWin": 41,
+          "year": 2023
+        },
+        {
+          "seasonId": 7029,
+          "avgHome": 1.58,
+          "avgAway": 1.16,
+          "over25": 51,
+          "btts": 45,
+          "homeWin": 46,
+          "year": 2022
+        }
+      ]
+    },
+    {
+      "league_name": "Romania Liga I",
+      "country": "Romania",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.366,
+      "avg_goals_away": 1.072,
+      "over25_pct": 43,
+      "under25_pct": 57,
+      "btts_pct": 48.4,
+      "home_win_pct": 43.2,
+      "seasons": [
+        {
+          "seasonId": 15015,
+          "avgHome": 1.42,
+          "avgAway": 1.13,
+          "over25": 47,
+          "btts": 51,
+          "homeWin": 44,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12495,
+          "avgHome": 1.29,
+          "avgAway": 1.04,
+          "over25": 39,
+          "btts": 48,
+          "homeWin": 41,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9622,
+          "avgHome": 1.44,
+          "avgAway": 1.16,
+          "over25": 48,
+          "btts": 55,
+          "homeWin": 42,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7663,
+          "avgHome": 1.38,
+          "avgAway": 1.01,
+          "over25": 42,
+          "btts": 50,
+          "homeWin": 44,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6037,
+          "avgHome": 1.3,
+          "avgAway": 1.02,
+          "over25": 39,
+          "btts": 38,
+          "homeWin": 45,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Romania Liga II",
+      "country": "Romania",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.394,
+      "avg_goals_away": 1.112,
+      "over25_pct": 45.6,
+      "under25_pct": 54.4,
+      "btts_pct": 44.6,
+      "home_win_pct": 44.6,
+      "seasons": [
+        {
+          "seasonId": 15431,
+          "avgHome": 1.61,
+          "avgAway": 1.11,
+          "over25": 50,
+          "btts": 49,
+          "homeWin": 49,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12782,
+          "avgHome": 1.3,
+          "avgAway": 1.13,
+          "over25": 45,
+          "btts": 43,
+          "homeWin": 43,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9923,
+          "avgHome": 1.29,
+          "avgAway": 0.98,
+          "over25": 38,
+          "btts": 42,
+          "homeWin": 44,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7910,
+          "avgHome": 1.39,
+          "avgAway": 1.08,
+          "over25": 47,
+          "btts": 47,
+          "homeWin": 44,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6156,
+          "avgHome": 1.38,
+          "avgAway": 1.26,
+          "over25": 48,
+          "btts": 42,
+          "homeWin": 43,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Paraguay Division Profesional",
+      "country": "Paraguay",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.26,
+      "avg_goals_away": 1.156,
+      "over25_pct": 42.2,
+      "under25_pct": 57.8,
+      "btts_pct": 48.8,
+      "home_win_pct": 38.8,
+      "seasons": [
+        {
+          "seasonId": 16533,
+          "avgHome": 1.21,
+          "avgAway": 1.12,
+          "over25": 35,
+          "btts": 49,
+          "homeWin": 38,
+          "year": 2026
+        },
+        {
+          "seasonId": 16333,
+          "avgHome": 1.22,
+          "avgAway": 1.17,
+          "over25": 40,
+          "btts": 51,
+          "homeWin": 36,
+          "year": 2025
+        },
+        {
+          "seasonId": 11141,
+          "avgHome": 1.2,
+          "avgAway": 1.14,
+          "over25": 43,
+          "btts": 49,
+          "homeWin": 37,
+          "year": 2024
+        },
+        {
+          "seasonId": 8783,
+          "avgHome": 1.33,
+          "avgAway": 1.19,
+          "over25": 45,
+          "btts": 50,
+          "homeWin": 38,
+          "year": 2023
+        },
+        {
+          "seasonId": 6960,
+          "avgHome": 1.34,
+          "avgAway": 1.16,
+          "over25": 48,
+          "btts": 45,
+          "homeWin": 45,
+          "year": 2022
+        }
+      ]
+    },
+    {
+      "league_name": "Paraguay Division Intermedia",
+      "country": "Paraguay",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.062,
+      "avg_goals_away": 0.884,
+      "over25_pct": 34.8,
+      "under25_pct": 65.2,
+      "btts_pct": 39.2,
+      "home_win_pct": 34,
+      "seasons": [
+        {
+          "seasonId": 16900,
+          "avgHome": 0,
+          "avgAway": 0,
+          "over25": 0,
+          "btts": 0,
+          "homeWin": 0,
+          "year": 2026
+        },
+        {
+          "seasonId": 14174,
+          "avgHome": 1.34,
+          "avgAway": 1.03,
+          "over25": 42,
+          "btts": 52,
+          "homeWin": 43,
+          "year": 2025
+        },
+        {
+          "seasonId": 11314,
+          "avgHome": 1.31,
+          "avgAway": 1.05,
+          "over25": 42,
+          "btts": 48,
+          "homeWin": 44,
+          "year": 2024
+        },
+        {
+          "seasonId": 8774,
+          "avgHome": 1.43,
+          "avgAway": 1.21,
+          "over25": 48,
+          "btts": 50,
+          "homeWin": 44,
+          "year": 2023
+        },
+        {
+          "seasonId": 6963,
+          "avgHome": 1.23,
+          "avgAway": 1.13,
+          "over25": 42,
+          "btts": 46,
+          "homeWin": 39,
+          "year": 2022
+        }
+      ]
+    },
+    {
+      "league_name": "Montenegro Montenegrin First League",
+      "country": "Montenegro",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.384,
+      "avg_goals_away": 1.122,
+      "over25_pct": 45.8,
+      "under25_pct": 54.2,
+      "btts_pct": 51,
+      "home_win_pct": 42,
+      "seasons": [
+        {
+          "seasonId": 15111,
+          "avgHome": 1.47,
+          "avgAway": 1.01,
+          "over25": 46,
+          "btts": 50,
+          "homeWin": 48,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12821,
+          "avgHome": 1.3,
+          "avgAway": 1.16,
+          "over25": 41,
+          "btts": 49,
+          "homeWin": 39,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9602,
+          "avgHome": 1.35,
+          "avgAway": 1.11,
+          "over25": 43,
+          "btts": 52,
+          "homeWin": 41,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7473,
+          "avgHome": 1.36,
+          "avgAway": 1.12,
+          "over25": 49,
+          "btts": 51,
+          "homeWin": 41,
+          "year": 20222023
+        },
+        {
+          "seasonId": 5971,
+          "avgHome": 1.44,
+          "avgAway": 1.21,
+          "over25": 50,
+          "btts": 53,
+          "homeWin": 41,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Kazakhstan Kazakhstan Premier League",
+      "country": "Kazakhstan",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.408,
+      "avg_goals_away": 1.07,
+      "over25_pct": 45.2,
+      "under25_pct": 54.8,
+      "btts_pct": 51.6,
+      "home_win_pct": 42.8,
+      "seasons": [
+        {
+          "seasonId": 16832,
+          "avgHome": 1.25,
+          "avgAway": 1,
+          "over25": 38,
+          "btts": 54,
+          "homeWin": 33,
+          "year": 2026
+        },
+        {
+          "seasonId": 14276,
+          "avgHome": 1.51,
+          "avgAway": 1.21,
+          "over25": 50,
+          "btts": 55,
+          "homeWin": 42,
+          "year": 2025
+        },
+        {
+          "seasonId": 11279,
+          "avgHome": 1.35,
+          "avgAway": 1.02,
+          "over25": 42,
+          "btts": 47,
+          "homeWin": 46,
+          "year": 2024
+        },
+        {
+          "seasonId": 8953,
+          "avgHome": 1.34,
+          "avgAway": 1.1,
+          "over25": 48,
+          "btts": 54,
+          "homeWin": 44,
+          "year": 2023
+        },
+        {
+          "seasonId": 7128,
+          "avgHome": 1.59,
+          "avgAway": 1.02,
+          "over25": 48,
+          "btts": 48,
+          "homeWin": 49,
+          "year": 2022
+        }
+      ]
+    },
+    {
+      "league_name": "FYR Macedonia First Football League",
+      "country": "FYR Macedonia",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.434,
+      "avg_goals_away": 1.058,
+      "over25_pct": 45.2,
+      "under25_pct": 54.8,
+      "btts_pct": 45.2,
+      "home_win_pct": 46.4,
+      "seasons": [
+        {
+          "seasonId": 15548,
+          "avgHome": 1.67,
+          "avgAway": 1.35,
+          "over25": 56,
+          "btts": 48,
+          "homeWin": 44,
+          "year": 20252026
+        },
+        {
+          "seasonId": 13053,
+          "avgHome": 1.31,
+          "avgAway": 1.02,
+          "over25": 42,
+          "btts": 44,
+          "homeWin": 43,
+          "year": 20242025
+        },
+        {
+          "seasonId": 10253,
+          "avgHome": 1.39,
+          "avgAway": 0.86,
+          "over25": 40,
+          "btts": 45,
+          "homeWin": 53,
+          "year": 20232024
+        },
+        {
+          "seasonId": 8498,
+          "avgHome": 1.39,
+          "avgAway": 1.12,
+          "over25": 46,
+          "btts": 44,
+          "homeWin": 43,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6219,
+          "avgHome": 1.41,
+          "avgAway": 0.94,
+          "over25": 42,
+          "btts": 45,
+          "homeWin": 49,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Kosovo Superleague of Kosovo",
+      "country": "Kosovo",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.394,
+      "avg_goals_away": 1.1,
+      "over25_pct": 45,
+      "under25_pct": 55,
+      "btts_pct": 48.8,
+      "home_win_pct": 43.4,
+      "seasons": [
+        {
+          "seasonId": 15429,
+          "avgHome": 1.42,
+          "avgAway": 1.14,
+          "over25": 45,
+          "btts": 50,
+          "homeWin": 43,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12842,
+          "avgHome": 1.42,
+          "avgAway": 1.05,
+          "over25": 48,
+          "btts": 55,
+          "homeWin": 48,
+          "year": 20242025
+        },
+        {
+          "seasonId": 10126,
+          "avgHome": 1.34,
+          "avgAway": 1.06,
+          "over25": 43,
+          "btts": 43,
+          "homeWin": 44,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7924,
+          "avgHome": 1.37,
+          "avgAway": 1.11,
+          "over25": 46,
+          "btts": 52,
+          "homeWin": 41,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6095,
+          "avgHome": 1.42,
+          "avgAway": 1.14,
+          "over25": 43,
+          "btts": 44,
+          "homeWin": 41,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Uganda Uganda Premier League",
+      "country": "Uganda",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.33,
+      "avg_goals_away": 0.89,
+      "over25_pct": 38.2,
+      "under25_pct": 61.8,
+      "btts_pct": 41,
+      "home_win_pct": 46,
+      "seasons": [
+        {
+          "seasonId": 16017,
+          "avgHome": 1.3,
+          "avgAway": 0.8,
+          "over25": 36,
+          "btts": 39,
+          "homeWin": 46,
+          "year": 20252026
+        },
+        {
+          "seasonId": 13320,
+          "avgHome": 1.26,
+          "avgAway": 0.9,
+          "over25": 35,
+          "btts": 37,
+          "homeWin": 45,
+          "year": 20242025
+        },
+        {
+          "seasonId": 10466,
+          "avgHome": 1.41,
+          "avgAway": 0.91,
+          "over25": 43,
+          "btts": 44,
+          "homeWin": 47,
+          "year": 20232024
+        },
+        {
+          "seasonId": 8349,
+          "avgHome": 1.29,
+          "avgAway": 0.79,
+          "over25": 33,
+          "btts": 38,
+          "homeWin": 47,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6729,
+          "avgHome": 1.39,
+          "avgAway": 1.05,
+          "over25": 44,
+          "btts": 47,
+          "homeWin": 45,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Botswana Botswana Premier League",
+      "country": "Botswana",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.26,
+      "avg_goals_away": 1.126,
+      "over25_pct": 43.4,
+      "under25_pct": 56.6,
+      "btts_pct": 45.4,
+      "home_win_pct": 38.2,
+      "seasons": [
+        {
+          "seasonId": 15167,
+          "avgHome": 1.14,
+          "avgAway": 1,
+          "over25": 36,
+          "btts": 38,
+          "homeWin": 37,
+          "year": 20252026
+        },
+        {
+          "seasonId": 13372,
+          "avgHome": 1.32,
+          "avgAway": 1.09,
+          "over25": 45,
+          "btts": 47,
+          "homeWin": 38,
+          "year": 20242025
+        },
+        {
+          "seasonId": 10734,
+          "avgHome": 1.15,
+          "avgAway": 1.02,
+          "over25": 40,
+          "btts": 48,
+          "homeWin": 36,
+          "year": 20232024
+        },
+        {
+          "seasonId": 8455,
+          "avgHome": 1.38,
+          "avgAway": 1.16,
+          "over25": 46,
+          "btts": 45,
+          "homeWin": 43,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6768,
+          "avgHome": 1.31,
+          "avgAway": 1.36,
+          "over25": 50,
+          "btts": 49,
+          "homeWin": 37,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Zimbabwe Premier Soccer League",
+      "country": "Zimbabwe",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.064,
+      "avg_goals_away": 0.736,
+      "over25_pct": 28.2,
+      "under25_pct": 71.8,
+      "btts_pct": 36,
+      "home_win_pct": 40.8,
+      "seasons": [
+        {
+          "seasonId": 16604,
+          "avgHome": 1.02,
+          "avgAway": 0.69,
+          "over25": 27,
+          "btts": 33,
+          "homeWin": 38,
+          "year": 2026
+        },
+        {
+          "seasonId": 15851,
+          "avgHome": 0.97,
+          "avgAway": 0.75,
+          "over25": 24,
+          "btts": 36,
+          "homeWin": 36,
+          "year": 2025
+        },
+        {
+          "seasonId": 11259,
+          "avgHome": 1.08,
+          "avgAway": 0.71,
+          "over25": 27,
+          "btts": 38,
+          "homeWin": 42,
+          "year": 20232024
+        },
+        {
+          "seasonId": 9072,
+          "avgHome": 1.08,
+          "avgAway": 0.76,
+          "over25": 30,
+          "btts": 38,
+          "homeWin": 44,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6836,
+          "avgHome": 1.17,
+          "avgAway": 0.77,
+          "over25": 33,
+          "btts": 35,
+          "homeWin": 44,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Zambia Super League",
+      "country": "Zambia",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.094,
+      "avg_goals_away": 0.802,
+      "over25_pct": 28.8,
+      "under25_pct": 71.2,
+      "btts_pct": 39.4,
+      "home_win_pct": 40.8,
+      "seasons": [
+        {
+          "seasonId": 15029,
+          "avgHome": 1.04,
+          "avgAway": 0.68,
+          "over25": 22,
+          "btts": 36,
+          "homeWin": 42,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12127,
+          "avgHome": 1.08,
+          "avgAway": 0.8,
+          "over25": 28,
+          "btts": 38,
+          "homeWin": 40,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9905,
+          "avgHome": 1.1,
+          "avgAway": 0.75,
+          "over25": 28,
+          "btts": 40,
+          "homeWin": 42,
+          "year": 20232024
+        },
+        {
+          "seasonId": 7830,
+          "avgHome": 1.18,
+          "avgAway": 0.92,
+          "over25": 38,
+          "btts": 42,
+          "homeWin": 41,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6623,
+          "avgHome": 1.07,
+          "avgAway": 0.86,
+          "over25": 28,
+          "btts": 41,
+          "homeWin": 39,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Cambodia Cambodian League",
+      "country": "Cambodia",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.78,
+      "avg_goals_away": 1.758,
+      "over25_pct": 65,
+      "under25_pct": 35,
+      "btts_pct": 59.4,
+      "home_win_pct": 40.2,
+      "seasons": [
+        {
+          "seasonId": 15028,
+          "avgHome": 1.49,
+          "avgAway": 1.64,
+          "over25": 57,
+          "btts": 55,
+          "homeWin": 38,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12795,
+          "avgHome": 1.88,
+          "avgAway": 1.76,
+          "over25": 65,
+          "btts": 57,
+          "homeWin": 45,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9738,
+          "avgHome": 1.88,
+          "avgAway": 1.74,
+          "over25": 66,
+          "btts": 64,
+          "homeWin": 46,
+          "year": 2023
+        },
+        {
+          "seasonId": 8648,
+          "avgHome": 1.95,
+          "avgAway": 1.68,
+          "over25": 68,
+          "btts": 60,
+          "homeWin": 39,
+          "year": 2022
+        },
+        {
+          "seasonId": 5689,
+          "avgHome": 1.7,
+          "avgAway": 1.97,
+          "over25": 69,
+          "btts": 61,
+          "homeWin": 33,
+          "year": 2021
+        }
+      ]
+    },
+    {
+      "league_name": "Myanmar National League",
+      "country": "Myanmar",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.698,
+      "avg_goals_away": 1.554,
+      "over25_pct": 62.4,
+      "under25_pct": 37.6,
+      "btts_pct": 53.4,
+      "home_win_pct": 44.2,
+      "seasons": [
+        {
+          "seasonId": 15764,
+          "avgHome": 1.76,
+          "avgAway": 1.8,
+          "over25": 69,
+          "btts": 55,
+          "homeWin": 40,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12363,
+          "avgHome": 1.66,
+          "avgAway": 1.73,
+          "over25": 65,
+          "btts": 59,
+          "homeWin": 42,
+          "year": 20242025
+        },
+        {
+          "seasonId": 8999,
+          "avgHome": 1.73,
+          "avgAway": 1.42,
+          "over25": 63,
+          "btts": 57,
+          "homeWin": 43,
+          "year": 2023
+        },
+        {
+          "seasonId": 7531,
+          "avgHome": 1.64,
+          "avgAway": 1.34,
+          "over25": 54,
+          "btts": 43,
+          "homeWin": 49,
+          "year": 2022
+        },
+        {
+          "seasonId": 3694,
+          "avgHome": 1.7,
+          "avgAway": 1.48,
+          "over25": 61,
+          "btts": 53,
+          "homeWin": 47,
+          "year": 2020
+        }
+      ]
+    },
+    {
+      "league_name": "Turkey 2. Lig",
+      "country": "Turkey",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.43,
+      "avg_goals_away": 1.074,
+      "over25_pct": 45.8,
+      "under25_pct": 54.2,
+      "btts_pct": 49.2,
+      "home_win_pct": 44.2,
+      "seasons": [
+        {
+          "seasonId": 4909,
+          "avgHome": 1.59,
+          "avgAway": 1.23,
+          "over25": 52,
+          "btts": 49,
+          "homeWin": 44,
+          "year": 20202021
+        },
+        {
+          "seasonId": 4024,
+          "avgHome": 1.31,
+          "avgAway": 0.99,
+          "over25": 41,
+          "btts": 49,
+          "homeWin": 41,
+          "year": 20142015
+        },
+        {
+          "seasonId": 4023,
+          "avgHome": 1.44,
+          "avgAway": 1.11,
+          "over25": 48,
+          "btts": 52,
+          "homeWin": 45,
+          "year": 20132014
+        },
+        {
+          "seasonId": 4022,
+          "avgHome": 1.37,
+          "avgAway": 0.97,
+          "over25": 44,
+          "btts": 47,
+          "homeWin": 45,
+          "year": 20152016
+        },
+        {
+          "seasonId": 4021,
+          "avgHome": 1.44,
+          "avgAway": 1.07,
+          "over25": 44,
+          "btts": 49,
+          "homeWin": 46,
+          "year": 20162017
+        }
+      ]
+    },
+    {
+      "league_name": "Turkey 3. Lig",
+      "country": "Turkey",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.362,
+      "avg_goals_away": 1.014,
+      "over25_pct": 43.6,
+      "under25_pct": 56.4,
+      "btts_pct": 45.2,
+      "home_win_pct": 44.6,
+      "seasons": [
+        {
+          "seasonId": 2697,
+          "avgHome": 1.36,
+          "avgAway": 1.01,
+          "over25": 42,
+          "btts": 46,
+          "homeWin": 44,
+          "year": 20192020
+        },
+        {
+          "seasonId": 1789,
+          "avgHome": 1.38,
+          "avgAway": 0.99,
+          "over25": 43,
+          "btts": 47,
+          "homeWin": 46,
+          "year": 20182019
+        },
+        {
+          "seasonId": 1767,
+          "avgHome": 1.42,
+          "avgAway": 1.06,
+          "over25": 46,
+          "btts": 46,
+          "homeWin": 46,
+          "year": 20132014
+        },
+        {
+          "seasonId": 1766,
+          "avgHome": 1.31,
+          "avgAway": 1.05,
+          "over25": 45,
+          "btts": 44,
+          "homeWin": 42,
+          "year": 20142015
+        },
+        {
+          "seasonId": 1765,
+          "avgHome": 1.34,
+          "avgAway": 0.96,
+          "over25": 42,
+          "btts": 43,
+          "homeWin": 45,
+          "year": 20152016
+        }
+      ]
+    },
+    {
+      "league_name": "Nigeria NPFL",
+      "country": "Nigeria",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.462,
+      "avg_goals_away": 0.606,
+      "over25_pct": 33.8,
+      "under25_pct": 66.2,
+      "btts_pct": 40,
+      "home_win_pct": 63.8,
+      "seasons": [
+        {
+          "seasonId": 15762,
+          "avgHome": 1.37,
+          "avgAway": 0.56,
+          "over25": 28,
+          "btts": 38,
+          "homeWin": 62,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12762,
+          "avgHome": 1.46,
+          "avgAway": 0.6,
+          "over25": 34,
+          "btts": 39,
+          "homeWin": 64,
+          "year": 20242025
+        },
+        {
+          "seasonId": 10543,
+          "avgHome": 1.6,
+          "avgAway": 0.63,
+          "over25": 36,
+          "btts": 42,
+          "homeWin": 69,
+          "year": 20232024
+        },
+        {
+          "seasonId": 8835,
+          "avgHome": 1.36,
+          "avgAway": 0.71,
+          "over25": 34,
+          "btts": 44,
+          "homeWin": 53,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6826,
+          "avgHome": 1.52,
+          "avgAway": 0.53,
+          "over25": 37,
+          "btts": 37,
+          "homeWin": 71,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Australia Victoria NPL",
+      "country": "Australia",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.684,
+      "avg_goals_away": 1.452,
+      "over25_pct": 62.2,
+      "under25_pct": 37.8,
+      "btts_pct": 55.4,
+      "home_win_pct": 44.4,
+      "seasons": [
+        {
+          "seasonId": 16675,
+          "avgHome": 1.51,
+          "avgAway": 1.2,
+          "over25": 53,
+          "btts": 59,
+          "homeWin": 41,
+          "year": 2026
+        },
+        {
+          "seasonId": 16202,
+          "avgHome": 1.79,
+          "avgAway": 1.47,
+          "over25": 68,
+          "btts": 59,
+          "homeWin": 45,
+          "year": 2025
+        },
+        {
+          "seasonId": 10886,
+          "avgHome": 1.85,
+          "avgAway": 1.51,
+          "over25": 64,
+          "btts": 55,
+          "homeWin": 45,
+          "year": 2024
+        },
+        {
+          "seasonId": 8734,
+          "avgHome": 1.79,
+          "avgAway": 1.56,
+          "over25": 65,
+          "btts": 55,
+          "homeWin": 48,
+          "year": 2023
+        },
+        {
+          "seasonId": 6912,
+          "avgHome": 1.48,
+          "avgAway": 1.52,
+          "over25": 61,
+          "btts": 49,
+          "homeWin": 43,
+          "year": 2022
+        }
+      ]
+    },
+    {
+      "league_name": "Moldova Moldovan National Division",
+      "country": "Moldova",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.558,
+      "avg_goals_away": 1.27,
+      "over25_pct": 52.2,
+      "under25_pct": 47.8,
+      "btts_pct": 40.8,
+      "home_win_pct": 43.8,
+      "seasons": [
+        {
+          "seasonId": 16192,
+          "avgHome": 1.56,
+          "avgAway": 1.51,
+          "over25": 59,
+          "btts": 46,
+          "homeWin": 43,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12344,
+          "avgHome": 1.65,
+          "avgAway": 1.27,
+          "over25": 51,
+          "btts": 38,
+          "homeWin": 43,
+          "year": 20242025
+        },
+        {
+          "seasonId": 9754,
+          "avgHome": 1.77,
+          "avgAway": 1.19,
+          "over25": 59,
+          "btts": 47,
+          "homeWin": 51,
+          "year": 20232024
+        },
+        {
+          "seasonId": 9163,
+          "avgHome": 1.15,
+          "avgAway": 0.98,
+          "over25": 35,
+          "btts": 34,
+          "homeWin": 41,
+          "year": 20222023
+        },
+        {
+          "seasonId": 5949,
+          "avgHome": 1.66,
+          "avgAway": 1.4,
+          "over25": 57,
+          "btts": 39,
+          "homeWin": 41,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Iraq Iraqi Premier League",
+      "country": "Iraq",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.174,
+      "avg_goals_away": 1.034,
+      "over25_pct": 39.4,
+      "under25_pct": 60.6,
+      "btts_pct": 45.2,
+      "home_win_pct": 39.6,
+      "seasons": [
+        {
+          "seasonId": 16023,
+          "avgHome": 1.19,
+          "avgAway": 1.11,
+          "over25": 42,
+          "btts": 46,
+          "homeWin": 41,
+          "year": 20252026
+        },
+        {
+          "seasonId": 13627,
+          "avgHome": 1.24,
+          "avgAway": 1.02,
+          "over25": 39,
+          "btts": 43,
+          "homeWin": 44,
+          "year": 20242025
+        },
+        {
+          "seasonId": 10813,
+          "avgHome": 1.14,
+          "avgAway": 1.15,
+          "over25": 41,
+          "btts": 47,
+          "homeWin": 34,
+          "year": 20232024
+        },
+        {
+          "seasonId": 8468,
+          "avgHome": 1.15,
+          "avgAway": 1.03,
+          "over25": 40,
+          "btts": 47,
+          "homeWin": 39,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6658,
+          "avgHome": 1.15,
+          "avgAway": 0.86,
+          "over25": 35,
+          "btts": 43,
+          "homeWin": 40,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Ethiopia Ethiopia Premier League",
+      "country": "Ethiopia",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.014,
+      "avg_goals_away": 1.102,
+      "over25_pct": 36.4,
+      "under25_pct": 63.6,
+      "btts_pct": 45,
+      "home_win_pct": 31,
+      "seasons": [
+        {
+          "seasonId": 16364,
+          "avgHome": 0.89,
+          "avgAway": 0.88,
+          "over25": 26,
+          "btts": 41,
+          "homeWin": 30,
+          "year": 20252026
+        },
+        {
+          "seasonId": 13358,
+          "avgHome": 0.93,
+          "avgAway": 0.99,
+          "over25": 28,
+          "btts": 40,
+          "homeWin": 32,
+          "year": 20242025
+        },
+        {
+          "seasonId": 10452,
+          "avgHome": 1.01,
+          "avgAway": 1.3,
+          "over25": 45,
+          "btts": 48,
+          "homeWin": 29,
+          "year": 20232024
+        },
+        {
+          "seasonId": 8093,
+          "avgHome": 1.15,
+          "avgAway": 1.29,
+          "over25": 46,
+          "btts": 52,
+          "homeWin": 31,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6713,
+          "avgHome": 1.09,
+          "avgAway": 1.05,
+          "over25": 37,
+          "btts": 44,
+          "homeWin": 33,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Uzbekistan Uzbekistan Super League",
+      "country": "Uzbekistan",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.312,
+      "avg_goals_away": 1.09,
+      "over25_pct": 44.6,
+      "under25_pct": 55.4,
+      "btts_pct": 46.4,
+      "home_win_pct": 41.6,
+      "seasons": [
+        {
+          "seasonId": 16750,
+          "avgHome": 1.32,
+          "avgAway": 1.08,
+          "over25": 49,
+          "btts": 43,
+          "homeWin": 46,
+          "year": 2026
+        },
+        {
+          "seasonId": 14186,
+          "avgHome": 1.44,
+          "avgAway": 1.08,
+          "over25": 46,
+          "btts": 46,
+          "homeWin": 46,
+          "year": 2025
+        },
+        {
+          "seasonId": 11210,
+          "avgHome": 1.37,
+          "avgAway": 1.14,
+          "over25": 44,
+          "btts": 48,
+          "homeWin": 39,
+          "year": 2024
+        },
+        {
+          "seasonId": 8901,
+          "avgHome": 1.2,
+          "avgAway": 1.04,
+          "over25": 42,
+          "btts": 46,
+          "homeWin": 41,
+          "year": 2023
+        },
+        {
+          "seasonId": 7164,
+          "avgHome": 1.23,
+          "avgAway": 1.11,
+          "over25": 42,
+          "btts": 49,
+          "homeWin": 36,
+          "year": 2022
+        }
+      ]
+    },
+    {
+      "league_name": "Greece Super League 2",
+      "country": "Greece",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.268,
+      "avg_goals_away": 0.976,
+      "over25_pct": 40.2,
+      "under25_pct": 59.8,
+      "btts_pct": 38.2,
+      "home_win_pct": 43,
+      "seasons": [
+        {
+          "seasonId": 16015,
+          "avgHome": 1.25,
+          "avgAway": 0.95,
+          "over25": 38,
+          "btts": 38,
+          "homeWin": 43,
+          "year": 20252026
+        },
+        {
+          "seasonId": 13694,
+          "avgHome": 1.28,
+          "avgAway": 1.01,
+          "over25": 43,
+          "btts": 41,
+          "homeWin": 43,
+          "year": 20242025
+        },
+        {
+          "seasonId": 8571,
+          "avgHome": 1.31,
+          "avgAway": 1.07,
+          "over25": 44,
+          "btts": 36,
+          "homeWin": 42,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6739,
+          "avgHome": 1.39,
+          "avgAway": 0.87,
+          "over25": 41,
+          "btts": 38,
+          "homeWin": 47,
+          "year": 20212022
+        },
+        {
+          "seasonId": 5177,
+          "avgHome": 1.11,
+          "avgAway": 0.98,
+          "over25": 35,
+          "btts": 38,
+          "homeWin": 40,
+          "year": 20202021
+        }
+      ]
+    },
+    {
+      "league_name": "Israel Liga Alef",
+      "country": "Israel",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.39,
+      "avg_goals_away": 1.228,
+      "over25_pct": 48,
+      "under25_pct": 52,
+      "btts_pct": 47.2,
+      "home_win_pct": 39.8,
+      "seasons": [
+        {
+          "seasonId": 8116,
+          "avgHome": 1.5,
+          "avgAway": 1.26,
+          "over25": 50,
+          "btts": 51,
+          "homeWin": 41,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6573,
+          "avgHome": 1.51,
+          "avgAway": 1.39,
+          "over25": 56,
+          "btts": 48,
+          "homeWin": 41,
+          "year": 20212022
+        },
+        {
+          "seasonId": 5059,
+          "avgHome": 1.36,
+          "avgAway": 1.23,
+          "over25": 46,
+          "btts": 50,
+          "homeWin": 38,
+          "year": 20202021
+        },
+        {
+          "seasonId": 3330,
+          "avgHome": 1.31,
+          "avgAway": 1.2,
+          "over25": 45,
+          "btts": 46,
+          "homeWin": 38,
+          "year": 20142015
+        },
+        {
+          "seasonId": 3329,
+          "avgHome": 1.27,
+          "avgAway": 1.06,
+          "over25": 43,
+          "btts": 41,
+          "homeWin": 41,
+          "year": 20152016
+        }
+      ]
+    },
+    {
+      "league_name": "Kuwait Kuwait Premier League",
+      "country": "Kuwait",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.586,
+      "avg_goals_away": 1.368,
+      "over25_pct": 54.2,
+      "under25_pct": 45.8,
+      "btts_pct": 54.4,
+      "home_win_pct": 42.6,
+      "seasons": [
+        {
+          "seasonId": 15825,
+          "avgHome": 1.51,
+          "avgAway": 1.09,
+          "over25": 43,
+          "btts": 50,
+          "homeWin": 43,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12519,
+          "avgHome": 1.7,
+          "avgAway": 1.5,
+          "over25": 63,
+          "btts": 56,
+          "homeWin": 45,
+          "year": 20242025
+        },
+        {
+          "seasonId": 10292,
+          "avgHome": 1.59,
+          "avgAway": 1.43,
+          "over25": 53,
+          "btts": 51,
+          "homeWin": 38,
+          "year": 20232024
+        },
+        {
+          "seasonId": 8142,
+          "avgHome": 1.7,
+          "avgAway": 1.44,
+          "over25": 60,
+          "btts": 64,
+          "homeWin": 43,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6773,
+          "avgHome": 1.43,
+          "avgAway": 1.38,
+          "over25": 52,
+          "btts": 51,
+          "homeWin": 44,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Ivory Coast Ivory Coast Ligue 1",
+      "country": "Ivory Coast",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.07,
+      "avg_goals_away": 1.026,
+      "over25_pct": 35.4,
+      "under25_pct": 64.6,
+      "btts_pct": 41.8,
+      "home_win_pct": 36.2,
+      "seasons": [
+        {
+          "seasonId": 15874,
+          "avgHome": 0.98,
+          "avgAway": 0.98,
+          "over25": 32,
+          "btts": 35,
+          "homeWin": 36,
+          "year": 20252026
+        },
+        {
+          "seasonId": 13294,
+          "avgHome": 1.02,
+          "avgAway": 1.1,
+          "over25": 34,
+          "btts": 45,
+          "homeWin": 30,
+          "year": 20242025
+        },
+        {
+          "seasonId": 10755,
+          "avgHome": 1.12,
+          "avgAway": 1.03,
+          "over25": 37,
+          "btts": 42,
+          "homeWin": 38,
+          "year": 20232024
+        },
+        {
+          "seasonId": 8471,
+          "avgHome": 1.13,
+          "avgAway": 0.97,
+          "over25": 34,
+          "btts": 45,
+          "homeWin": 39,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6756,
+          "avgHome": 1.1,
+          "avgAway": 1.05,
+          "over25": 40,
+          "btts": 42,
+          "homeWin": 38,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Cameroon Elite One",
+      "country": "Cameroon",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.206,
+      "avg_goals_away": 0.982,
+      "over25_pct": 37.8,
+      "under25_pct": 62.2,
+      "btts_pct": 43.2,
+      "home_win_pct": 40.6,
+      "seasons": [
+        {
+          "seasonId": 16619,
+          "avgHome": 1.38,
+          "avgAway": 0.82,
+          "over25": 40,
+          "btts": 42,
+          "homeWin": 49,
+          "year": 20252026
+        },
+        {
+          "seasonId": 16306,
+          "avgHome": 1.24,
+          "avgAway": 0.91,
+          "over25": 35,
+          "btts": 38,
+          "homeWin": 45,
+          "year": 20242025
+        },
+        {
+          "seasonId": 10714,
+          "avgHome": 1.06,
+          "avgAway": 1.03,
+          "over25": 35,
+          "btts": 44,
+          "homeWin": 33,
+          "year": 20232024
+        },
+        {
+          "seasonId": 8567,
+          "avgHome": 1.11,
+          "avgAway": 1.02,
+          "over25": 39,
+          "btts": 46,
+          "homeWin": 37,
+          "year": 20222023
+        },
+        {
+          "seasonId": 7607,
+          "avgHome": 1.24,
+          "avgAway": 1.13,
+          "over25": 40,
+          "btts": 46,
+          "homeWin": 39,
+          "year": 2022
+        }
+      ]
+    },
+    {
+      "league_name": "Senegal Senegal Premier League",
+      "country": "Senegal",
+      "seasons_fetched": 5,
+      "avg_goals_home": 0.93,
+      "avg_goals_away": 0.74,
+      "over25_pct": 24,
+      "under25_pct": 76,
+      "btts_pct": 34.2,
+      "home_win_pct": 36.6,
+      "seasons": [
+        {
+          "seasonId": 16346,
+          "avgHome": 0.85,
+          "avgAway": 0.74,
+          "over25": 22,
+          "btts": 34,
+          "homeWin": 29,
+          "year": 20252026
+        },
+        {
+          "seasonId": 13648,
+          "avgHome": 0.9,
+          "avgAway": 0.82,
+          "over25": 25,
+          "btts": 37,
+          "homeWin": 34,
+          "year": 20242025
+        },
+        {
+          "seasonId": 10739,
+          "avgHome": 0.92,
+          "avgAway": 0.74,
+          "over25": 25,
+          "btts": 34,
+          "homeWin": 35,
+          "year": 20232024
+        },
+        {
+          "seasonId": 8357,
+          "avgHome": 1.03,
+          "avgAway": 0.64,
+          "over25": 25,
+          "btts": 35,
+          "homeWin": 45,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6788,
+          "avgHome": 0.95,
+          "avgAway": 0.76,
+          "over25": 23,
+          "btts": 31,
+          "homeWin": 40,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Italy Serie C Group A",
+      "country": "Italy",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.222,
+      "avg_goals_away": 1.048,
+      "over25_pct": 40,
+      "under25_pct": 60,
+      "btts_pct": 48,
+      "home_win_pct": 39,
+      "seasons": [
+        {
+          "seasonId": 15535,
+          "avgHome": 1.22,
+          "avgAway": 1.08,
+          "over25": 42,
+          "btts": 50,
+          "homeWin": 37,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12659,
+          "avgHome": 1.29,
+          "avgAway": 1.01,
+          "over25": 41,
+          "btts": 47,
+          "homeWin": 44,
+          "year": 20242025
+        },
+        {
+          "seasonId": 10298,
+          "avgHome": 1.17,
+          "avgAway": 1.06,
+          "over25": 38,
+          "btts": 46,
+          "homeWin": 37,
+          "year": 20232024
+        },
+        {
+          "seasonId": 8311,
+          "avgHome": 1.25,
+          "avgAway": 1.08,
+          "over25": 41,
+          "btts": 49,
+          "homeWin": 39,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6401,
+          "avgHome": 1.18,
+          "avgAway": 1.01,
+          "over25": 38,
+          "btts": 48,
+          "homeWin": 38,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Italy Serie C Group B",
+      "country": "Italy",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.298,
+      "avg_goals_away": 1.05,
+      "over25_pct": 42.8,
+      "under25_pct": 57.2,
+      "btts_pct": 48.4,
+      "home_win_pct": 40.2,
+      "seasons": [
+        {
+          "seasonId": 15532,
+          "avgHome": 1.19,
+          "avgAway": 1.07,
+          "over25": 39,
+          "btts": 49,
+          "homeWin": 38,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12647,
+          "avgHome": 1.28,
+          "avgAway": 1.08,
+          "over25": 45,
+          "btts": 50,
+          "homeWin": 39,
+          "year": 20242025
+        },
+        {
+          "seasonId": 10299,
+          "avgHome": 1.4,
+          "avgAway": 1.01,
+          "over25": 43,
+          "btts": 47,
+          "homeWin": 45,
+          "year": 20232024
+        },
+        {
+          "seasonId": 8312,
+          "avgHome": 1.21,
+          "avgAway": 1.06,
+          "over25": 41,
+          "btts": 47,
+          "homeWin": 36,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6403,
+          "avgHome": 1.41,
+          "avgAway": 1.03,
+          "over25": 46,
+          "btts": 49,
+          "homeWin": 43,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Italy Serie C Group C",
+      "country": "Italy",
+      "seasons_fetched": 5,
+      "avg_goals_home": 1.384,
+      "avg_goals_away": 1.036,
+      "over25_pct": 44.2,
+      "under25_pct": 55.8,
+      "btts_pct": 48.2,
+      "home_win_pct": 44,
+      "seasons": [
+        {
+          "seasonId": 15519,
+          "avgHome": 1.47,
+          "avgAway": 1.01,
+          "over25": 47,
+          "btts": 50,
+          "homeWin": 47,
+          "year": 20252026
+        },
+        {
+          "seasonId": 12670,
+          "avgHome": 1.34,
+          "avgAway": 1.1,
+          "over25": 44,
+          "btts": 50,
+          "homeWin": 40,
+          "year": 20242025
+        },
+        {
+          "seasonId": 10300,
+          "avgHome": 1.28,
+          "avgAway": 1.08,
+          "over25": 43,
+          "btts": 47,
+          "homeWin": 43,
+          "year": 20232024
+        },
+        {
+          "seasonId": 8313,
+          "avgHome": 1.38,
+          "avgAway": 0.99,
+          "over25": 44,
+          "btts": 45,
+          "homeWin": 45,
+          "year": 20222023
+        },
+        {
+          "seasonId": 6404,
+          "avgHome": 1.45,
+          "avgAway": 1,
+          "over25": 43,
+          "btts": 49,
+          "homeWin": 45,
+          "year": 20212022
+        }
+      ]
+    },
+    {
+      "league_name": "Malaysia Liga A1",
+      "country": "Malaysia",
+      "seasons_fetched": 1,
+      "avg_goals_home": 1.55,
+      "avg_goals_away": 1.4,
+      "over25_pct": 55,
+      "under25_pct": 45,
+      "btts_pct": 42,
+      "home_win_pct": 44,
+      "seasons": [
+        {
+          "seasonId": 16136,
+          "avgHome": 1.55,
+          "avgAway": 1.4,
+          "over25": 55,
+          "btts": 42,
+          "homeWin": 44,
+          "year": 20252026
+        }
+      ]
+    }
+  ]
+}

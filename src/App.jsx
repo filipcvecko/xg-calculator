@@ -6,9 +6,10 @@ import {
   buildScoreMatrix, blendLambda, fairOdds, calcCLV,
   brierScore, logLoss, calcMaxDrawdown,
   marketCalibration, calibrateProb, plattCalibrate, evFilter, oddsBandFilter,
-  timeDecayBlend, extractLastXStats, calcSotAdjustment,
+  timeDecayBlend, extractLastXStats, calcSotAdjustment, getLeagueCoefs,
   fmt2, fmt3, fmtPct, fmtSign, fmtSignPct
 } from './math'
+import leagueCoefData from '../league-coefficients.json'
 
 function midPrice(back, lay) {
   if (!back || !lay || back <= 1 || lay <= 1) return null
@@ -748,7 +749,9 @@ export default function App() {
 
   function handleCalc() {
     const sc = pf(xgScaler) || 0.90
-    const h = pf(xgH) * sc, a = pf(xgA) * sc
+    const leagueCoefs = getLeagueCoefs(selectedLeague?.id ?? null, leagueCoefData?.leagues)
+    const { scoring_coef, xg_coef, stability_coef, leagueMatched } = leagueCoefs
+    let h = pf(xgH) * sc * xg_coef, a = pf(xgA) * sc * xg_coef
     if (!h || !a) return
     const ha = pf(xgaH) * sc, aa = pf(xgaA) * sc
     const gfHv = pf(gfH), gaHv = pf(gaH), gfAv = pf(gfA), gaAv = pf(gaA)
@@ -830,6 +833,9 @@ export default function App() {
       lA = result.lA
     }
 
+    lH *= scoring_coef
+    lA *= scoring_coef
+
     let sotInfo = null
     if (sotEnabled && pf(sotHomeFor) > 0 && pf(sotAwayFor) > 0) {
       const { homeAdj, awayAdj } = calcSotAdjustment({
@@ -882,7 +888,8 @@ export default function App() {
     const midO = midPrice(bo, lo)
     const midU = midPrice(bu, lu)
 
-    const evMinVal = pf(evMin) / 100 || 0.12
+    let evMinVal = pf(evMin) / 100 || 0.12
+    if (stability_coef > 1.2) evMinVal += 0.03
     const oLow = pf(oddsLow) || 1.4
     const oHigh = pf(oddsHigh) || 3.5
 
@@ -915,6 +922,7 @@ export default function App() {
       ou275,
       ou225,
       btts,
+      leagueCoefInfo: { scoring_coef, xg_coef, stability_coef, leagueMatched, evBumped: stability_coef > 1.2 },
     })
   }
 

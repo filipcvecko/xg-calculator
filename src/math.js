@@ -324,6 +324,47 @@ export function extractLastXStats(lastxData, matchNum = 5) {
 }
 
 
+// League coefficients from league-coefficients.json
+// Returns { scoring_coef, xg_coef, stability_coef, leagueMatched }
+// All coefficients default to 1.0 (neutral) if league not found.
+export function getLeagueCoefs(leagueId, leaguesData) {
+  const neutral = { scoring_coef: 1, xg_coef: 1, stability_coef: 1, leagueMatched: false }
+  if (!leaguesData?.length) return neutral
+
+  const validLeagues = leaguesData.filter(l =>
+    l.avg_goals_home != null && l.avg_goals_away != null &&
+    l.over25_pct != null
+  )
+  if (!validLeagues.length) return neutral
+
+  // Globals
+  const totalGoals = validLeagues.map(l => l.avg_goals_home + l.avg_goals_away)
+  const globalAvgGoals = totalGoals.reduce((s, v) => s + v, 0) / totalGoals.length
+  const globalAvgOver25 = validLeagues.reduce((s, l) => s + l.over25_pct, 0) / validLeagues.length
+  const globalVariance = Math.sqrt(
+    totalGoals.reduce((s, v) => s + Math.pow(v - globalAvgGoals, 2), 0) / totalGoals.length
+  )
+
+  const league = validLeagues.find(l => l.league_id === leagueId)
+  if (!league) return neutral
+
+  const leagueAvgGoals = league.avg_goals_home + league.avg_goals_away
+  const scoring_coef = leagueAvgGoals / globalAvgGoals
+
+  const rawXgCoef = league.over25_pct / globalAvgOver25
+  const xg_coef = Math.max(0.85, Math.min(1.15, rawXgCoef))
+
+  const seasonTotals = (league.seasons ?? [])
+    .filter(s => s.avgHome != null && s.avgAway != null)
+    .map(s => s.avgHome + s.avgAway)
+  const leagueVariance = seasonTotals.length > 1
+    ? Math.sqrt(seasonTotals.reduce((s, v) => s + Math.pow(v - leagueAvgGoals, 2), 0) / seasonTotals.length)
+    : globalVariance
+  const stability_coef = globalVariance > 0 ? leagueVariance / globalVariance : 1
+
+  return { scoring_coef, xg_coef, stability_coef, leagueMatched: true }
+}
+
 export const fmt2 = n => (n == null || isNaN(n) ? '—' : n.toFixed(2))
 export const fmt3 = n => (n == null || isNaN(n) ? '—' : n.toFixed(3))
 export const fmtPct = n => (n == null || isNaN(n) ? '—' : n.toFixed(1) + '%')
