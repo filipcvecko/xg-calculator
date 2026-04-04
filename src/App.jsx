@@ -89,13 +89,20 @@ async function fetchLeagueAvg(leagueId) {
 
 async function fetchTodaysMatches(dateStr) {
   try {
-    let url = '/api/footystats?endpoint=todays-matches&chosen_leagues_only=true&max_per_page=300'
-    if (dateStr) url += `&date=${dateStr}`
-    const res = await fetch(url)
+    const base = '/api/footystats?endpoint=todays-matches&chosen_leagues_only=true&max_per_page=300'
+      + (dateStr ? `&date=${dateStr}` : '')
+    const res = await fetch(base + '&page=1')
     if (!res.ok) return []
     const json = await res.json()
-    console.log('[fetchTodaysMatches] pager:', json?.pager, '| data count:', json?.data?.length, '| full response keys:', Object.keys(json ?? {}))
-    return json?.data ?? []
+    const maxPage = json?.pager?.max_page ?? 1
+    let data = json?.data ?? []
+    if (maxPage > 1) {
+      const pages = Array.from({ length: maxPage - 1 }, (_, i) => i + 2)
+      const results = await Promise.all(pages.map(p => fetch(base + `&page=${p}`).then(r => r.ok ? r.json() : null)))
+      for (const r of results) if (r?.data) data = data.concat(r.data)
+    }
+    console.log('[fetchTodaysMatches] pages:', maxPage, '| total matches:', data.length)
+    return data
   } catch {
     return []
   }
