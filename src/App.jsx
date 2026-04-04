@@ -94,6 +94,7 @@ async function fetchTodaysMatches(dateStr) {
     const res = await fetch(url)
     if (!res.ok) return []
     const json = await res.json()
+    console.log('[fetchTodaysMatches] pager:', json?.pager, '| data count:', json?.data?.length, '| full response keys:', Object.keys(json ?? {}))
     return json?.data ?? []
   } catch {
     return []
