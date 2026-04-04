@@ -89,7 +89,7 @@ async function fetchLeagueAvg(leagueId) {
 
 async function fetchTodaysMatches(dateStr) {
   try {
-    let url = '/api/footystats?endpoint=todays-matches&chosen_leagues_only=true'
+    let url = '/api/footystats?endpoint=todays-matches&chosen_leagues_only=true&max_per_page=300'
     if (dateStr) url += `&date=${dateStr}`
     const res = await fetch(url)
     if (!res.ok) return []
