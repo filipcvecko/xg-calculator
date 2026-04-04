@@ -1167,7 +1167,7 @@ export default function App() {
     await loadBets()
   }
 
-  const OU25_MARKETS  = ['over2.5', 'under2.5']
+  const OU25_MARKETS  = ['over2.5', 'under2.5', 'Over 2.5', 'Under 2.5']
   const OU225_MARKETS = ['over2.25', 'under2.25']
   const OU275_MARKETS = ['over2.75', 'under2.75']
   const OU30_MARKETS  = ['over3.0', 'under3.0']
@@ -1328,7 +1328,7 @@ export default function App() {
   }
   const confidenceOverall = calcConfidenceScore(settled)
   const confidenceByMarket = {
-    'O/U 2.5': calcConfidenceScore(settled.filter(b => ['over2.5','under2.5'].includes(b.market))),
+    'O/U 2.5': calcConfidenceScore(settled.filter(b => OU25_MARKETS.includes(b.market))),
     'O/U 3.0': calcConfidenceScore(settled.filter(b => ['over3.0','under3.0'].includes(b.market))),
   }
   const confidenceRecent = calcConfidenceScore([...settled].slice(0, 30))
@@ -2814,11 +2814,12 @@ export default function App() {
               <div>
                 <div className="section-title">⚖️ Over 2.5 vs Under 2.5</div>
                 {(() => {
-                  const mkts = ['over2.5', 'under2.5']
+                  const mkts = [['over2.5', 'Over 2.5'], ['under2.5', 'Under 2.5']]
                   return (
                     <div className="grid2">
-                      {mkts.map(mkt => {
-                        const mb = settled.filter(b => b.market === mkt)
+                      {mkts.map(([mktOld, mktNew]) => {
+                        const mb = settled.filter(b => b.market === mktOld || b.market === mktNew)
+                        const mkt = mktOld
                         if (mb.length === 0) return <div key={mkt} className="card" style={{ padding: 14, opacity: 0.4 }}><div className="label">{mkt === 'over2.5' ? 'Over 2.5' : 'Under 2.5'}</div><div style={{ color: 'var(--text3)', fontSize: 12 }}>Žiadne bety</div></div>
                         const mWins = mb.filter(b => b.result === 1).length
                         const mHR = mWins / mb.length * 100
@@ -3043,8 +3044,8 @@ export default function App() {
                       if (bROI > 0) { recs.push({ icon: '✅', text: `EV pásmo ${band.label} má ROI ${fmtSignPct(bROI)} — toto je tvoj skutočný edge. Fokusuj sa na tieto bety.`, color: 'var(--green)' }); break }
                     }
                   }
-                  const overB = settled.filter(b => b.market === 'over2.5')
-                  const underB = settled.filter(b => b.market === 'under2.5')
+                  const overB = settled.filter(b => b.market === 'over2.5' || b.market === 'Over 2.5')
+                  const underB = settled.filter(b => b.market === 'under2.5' || b.market === 'Under 2.5')
                   if (overB.length > 3 && underB.length > 3) {
                     const overROI = overB.reduce((s, b) => s + b.stake, 0) > 0 ? overB.reduce((s, b) => s + (b.pnl || 0), 0) / overB.reduce((s, b) => s + b.stake, 0) * 100 : null
                     const underROI = underB.reduce((s, b) => s + b.stake, 0) > 0 ? underB.reduce((s, b) => s + (b.pnl || 0), 0) / underB.reduce((s, b) => s + b.stake, 0) * 100 : null
