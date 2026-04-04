@@ -749,9 +749,8 @@ export default function App() {
 
   function handleCalc() {
     const sc = pf(xgScaler) || 0.90
-    const leagueCoefs = getLeagueCoefs(selectedLeague?.id ?? null, leagueCoefData?.leagues)
-    const { scoring_coef, xg_coef, stability_coef, leagueMatched } = leagueCoefs
-    let h = pf(xgH) * sc * xg_coef, a = pf(xgA) * sc * xg_coef
+    const { stability_coef } = getLeagueCoefs(selectedLeague?.id ?? null, leagueCoefData?.leagues)
+    let h = pf(xgH) * sc, a = pf(xgA) * sc
     if (!h || !a) return
     const ha = pf(xgaH) * sc, aa = pf(xgaA) * sc
     const gfHv = pf(gfH), gaHv = pf(gaH), gfAv = pf(gfA), gaAv = pf(gaA)
@@ -832,9 +831,6 @@ export default function App() {
       lH = result.lH
       lA = result.lA
     }
-
-    lH *= scoring_coef
-    lA *= scoring_coef
 
     let sotInfo = null
     if (sotEnabled && pf(sotHomeFor) > 0 && pf(sotAwayFor) > 0) {
@@ -922,7 +918,7 @@ export default function App() {
       ou275,
       ou225,
       btts,
-      leagueCoefInfo: { scoring_coef, xg_coef, stability_coef, leagueMatched, evBumped: stability_coef > 1.2 },
+      leagueCoefInfo: { stability_coef, evBumped: stability_coef > 1.2 },
     })
   }
 
