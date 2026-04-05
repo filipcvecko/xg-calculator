@@ -421,7 +421,7 @@ export default function App() {
   const [leagueAvgA, setLeagueAvgA] = useState('')
   const [leagueAvgSource, setLeagueAvgSource] = useState(null)
   const [shrinkage, setShrinkage] = useState('0.15')
-  const [xgScaler, setXgScaler] = useState('0.90')
+  const [xgScaler, setXgScaler] = useState('0.83')
 
   const [matchTime, setMatchTime] = useState('')
   const [notifPermission, setNotifPermission] = useState(
@@ -756,7 +756,7 @@ export default function App() {
   }
 
   function handleCalc() {
-    const sc = pf(xgScaler) || 0.90
+    const sc = pf(xgScaler) || 0.83
     const { stability_coef } = getLeagueCoefs(selectedLeague?.id ?? null, leagueCoefData?.leagues)
     let h = pf(xgH) * sc, a = pf(xgA) * sc
     if (!h || !a) return
@@ -921,7 +921,7 @@ export default function App() {
       evMinVal,
       oLow, oHigh,
       formInfo,
-      xgScaler: pf(xgScaler) || 0.90,
+      xgScaler: pf(xgScaler) || 0.83,
       ou30,
       ou275,
       ou225,
