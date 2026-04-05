@@ -1178,7 +1178,9 @@ export default function App() {
   const settled_all = activeBets.filter(b => b.result != null)
   const settled = settled_all.filter(b => {
     if (EXCLUDED_MARKETS.includes(b.market) && statsMarket === 'all') return false
-    if (statsMarket === 'ou25'  && !OU25_MARKETS.includes(b.market))  return false
+    if (statsMarket === 'ou25'   && !OU25_MARKETS.includes(b.market))  return false
+    if (statsMarket === 'over25' && !['over2.5', 'Over 2.5'].includes(b.market))  return false
+    if (statsMarket === 'under25' && !['under2.5', 'Under 2.5'].includes(b.market)) return false
     if (statsMarket === 'ou225' && !OU225_MARKETS.includes(b.market)) return false
     if (statsMarket === 'ou275' && !OU275_MARKETS.includes(b.market)) return false
     if (statsMarket === 'ou30'  && !OU30_MARKETS.includes(b.market))  return false
@@ -1328,7 +1330,8 @@ export default function App() {
   }
   const confidenceOverall = calcConfidenceScore(settled)
   const confidenceByMarket = {
-    'O/U 2.5': calcConfidenceScore(settled.filter(b => OU25_MARKETS.includes(b.market))),
+    'Over 2.5': calcConfidenceScore(settled.filter(b => ['over2.5', 'Over 2.5'].includes(b.market))),
+    'Under 2.5': calcConfidenceScore(settled.filter(b => ['under2.5', 'Under 2.5'].includes(b.market))),
     'O/U 3.0': calcConfidenceScore(settled.filter(b => ['over3.0','under3.0'].includes(b.market))),
   }
   const confidenceRecent = calcConfidenceScore([...settled].slice(0, 30))
@@ -2646,7 +2649,7 @@ export default function App() {
           <div style={{ padding: '8px 16px 0' }}>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 600, letterSpacing: 1 }}>MARKET:</span>
-              {[['all', 'Všetky'], ['ou25', 'O/U 2.5'], ['ou30', 'O/U 3.0'], ['btts', 'BTTS']].map(([id, lbl]) => (
+              {[['all', 'Všetky'], ['over25', 'Over 2.5'], ['under25', 'Under 2.5'], ['ou30', 'O/U 3.0'], ['btts', 'BTTS']].map(([id, lbl]) => (
                 <button key={id} onClick={() => setStatsMarket(id)} style={{
                   fontSize: 11, padding: '3px 10px', borderRadius: 6, border: '1px solid',
                   borderColor: statsMarket === id ? 'var(--green)' : 'var(--border)',
