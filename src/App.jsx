@@ -1093,6 +1093,7 @@ export default function App() {
     const pinnCLV = (pinnClose > 1 && bet.pinnacle_open > 1)
       ? calcCLV(bet.pinnacle_open, pinnClose)
       : null
+    console.log('saving pinnClose:', pinnClose, 'settlePinnClose:', settlePinnClose)
     await supabase.from('bets').update({
       odds_close: oc,
       clv,
@@ -2629,6 +2630,12 @@ export default function App() {
                         <option value="4">½ Lose (2 góly — {b.market === 'under2.25' ? 'Under half lose' : 'Over half win'} — 50% strata)</option>
                       </>)}
                     </select>
+                    {b.pinnacle_open != null && b.pinnacle_close == null && (
+                      <div style={{ marginBottom: 8 }}>
+                        <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 4 }}>Pinnacle open bol {fmt3(b.pinnacle_open)} — zadaj Pinnacle closing:</div>
+                        <input className='inp' placeholder='Pinnacle closing (napr. 1.78)' value={settlePinnClose} onChange={e => setSettlePinnClose(e.target.value)} />
+                      </div>
+                    )}
                     <div style={{ marginBottom: 8 }}>
                       <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 4 }}>🔬 xG Brier (opt) — zadaj skutočné xG zo zápasu</div>
                       <div style={{ display: 'flex', gap: 8 }}>
