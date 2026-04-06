@@ -3242,6 +3242,7 @@ export default function App() {
 
                       console.log('matches sample:', matches[0])
                       console.log('match keys:', Object.keys(matches[0] ?? {}))
+                      console.log('xG fields:', Object.keys(matches[0] ?? {}).filter(k => k.toLowerCase().includes('xg')))
                       console.log('seasonIds:', seasonIds)
                       // Pre každý season_id fetchni league-teams
                       const allTeamData = await Promise.all(
