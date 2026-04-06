@@ -3158,12 +3158,12 @@ export default function App() {
 
           let _skanerCalcLogged = false
           function skanerCalc(match) {
-            const hId = Number(match.homeID ?? match.home_id)
-            const aId = Number(match.awayID ?? match.away_id)
-            const hStats = skanerTeamMap[hId] ?? skanerTeamMap[String(hId)]
-            const aStats = skanerTeamMap[aId] ?? skanerTeamMap[String(aId)]
+            const hKey = (match.home_name ?? match.home ?? '').toLowerCase()
+            const aKey = (match.away_name ?? match.away ?? '').toLowerCase()
+            const hStats = skanerTeamMap[hKey]
+            const aStats = skanerTeamMap[aKey]
             if (!_skanerCalcLogged) {
-              console.log('hId:', hId, 'aId:', aId, 'hStats:', hStats, 'keys sample:', Object.keys(skanerTeamMap).slice(0, 5))
+              console.log('hKey:', hKey, 'aKey:', aKey, 'hStats:', hStats, 'keys sample:', Object.keys(skanerTeamMap).slice(0, 5))
               _skanerCalcLogged = true
             }
             const rawXgH = hStats?.xgH ?? hStats?.gfH ?? match.team_a_xg_prematch ?? null
@@ -3268,7 +3268,7 @@ export default function App() {
                       for (const teamList of allTeamData) {
                         for (const t of teamList) {
                           const stats = extractTeamStats(t._statsRaw ?? t)
-                          if (stats) teamMap[t.id] = stats
+                          if (stats) teamMap[(t.cleanName ?? t.name ?? '').toLowerCase()] = stats
                         }
                       }
                       console.log('cidToSeason:', cidToSeason)
