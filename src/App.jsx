@@ -3237,7 +3237,7 @@ export default function App() {
 
                       // Zober unikátne season_id-y
                       const seasonIds = [...new Set(
-                        matches.map(m => m.season_id ?? m.seasonID).filter(Boolean).map(Number)
+                        matches.map(m => m.season_id ?? m.seasonID ?? m.season).filter(Boolean).map(Number)
                       )]
 
                       console.log('matches sample:', matches[0])
