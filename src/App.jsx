@@ -3227,8 +3227,6 @@ export default function App() {
                       setSkanerOdds({})
                       const matches = await fetchTodaysMatches(skanerDate)
                       setSkanerMatches(matches)
-                      console.log('liga test:', matches[0]?.competition_name, matches[0]?.league_name, matches[0]?.competition)
-                      console.log('liga fields:', Object.keys(matches[0] ?? {}).filter(k => k.toLowerCase().includes('league') || k.toLowerCase().includes('competition') || k.toLowerCase().includes('name')))
                       setSkanerLoaded(true)
                       setSkanerLoading(false)
                     }}
@@ -3268,10 +3266,10 @@ export default function App() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
                       <div>
                         <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text1)' }}>
-                          {m.home_name ?? m.homeTeam ?? '?'} vs {m.away_name ?? m.awayTeam ?? '?'}
+                          {m.home_name ?? m.home ?? m.homeTeam ?? '?'} vs {m.away_name ?? m.away ?? m.awayTeam ?? '?'}
                         </div>
                         <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2 }}>
-                          {m.competition_name ?? m.league ?? ''}
+                          {m.competition_name ?? m.league_name ?? (m.competition_id ? `Liga #${m.competition_id}` : '')}
                           {m.date_unix ? ` · ${new Date(m.date_unix * 1000).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' })}` : ''}
                         </div>
                       </div>
