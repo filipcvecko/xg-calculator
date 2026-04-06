@@ -3228,6 +3228,7 @@ export default function App() {
                       const matches = await fetchTodaysMatches(skanerDate)
                       setSkanerMatches(matches)
                       console.log('liga test:', matches[0]?.competition_name, matches[0]?.league_name, matches[0]?.competition)
+                      console.log('liga fields:', Object.keys(matches[0] ?? {}).filter(k => k.toLowerCase().includes('league') || k.toLowerCase().includes('competition') || k.toLowerCase().includes('name')))
                       setSkanerLoaded(true)
                       setSkanerLoading(false)
                     }}
