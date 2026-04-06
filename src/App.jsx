@@ -3273,6 +3273,7 @@ export default function App() {
                       }
                       console.log('cidToSeason:', cidToSeason)
                       console.log('teamMap size after:', Object.keys(teamMap).length)
+                      console.log('teamMap first entry:', Object.entries(teamMap).slice(0, 2))
                       setSkanerTeamMap(teamMap)
                       setSkanerLoaded(true)
                       setSkanerLoading(false)
