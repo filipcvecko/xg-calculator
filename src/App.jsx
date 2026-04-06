@@ -313,6 +313,7 @@ export default function App() {
   const [skanerLoading, setSkanerLoading] = useState(false)
   const [skanerLoaded, setSkanerLoaded] = useState(false)
   const [skanerOdds, setSkanerOdds] = useState({}) // { matchId_market: oddsValue }
+  const [skanerTeamMap, setSkanerTeamMap] = useState({}) // { teamId: { xgH, xgA, xgaH, xgaA, gfH, gfA, gaH, gaA } }
   const [statsMarket, setStatsMarket] = useState('all')
   const [bets, setBets] = useState([])
   const [loading, setLoading] = useState(true)
@@ -3155,12 +3156,17 @@ export default function App() {
           const COMM = 0.05
           const MW = 0.50
 
-          function skanerCalc(match) {
-            const xgH = match.homeXg ?? match.o_xg ?? null
-            const xgA = match.awayXg ?? match.a_xg ?? null
-            if (!xgH || !xgA || xgH <= 0 || xgA <= 0) return null
-            const lH = xgH * SC
-            const lA = xgA * SC
+          function skanerCalc(match, teamMap) {
+            const hId = Number(match.homeID ?? match.home_id)
+            const aId = Number(match.awayID ?? match.away_id)
+            const hStats = teamMap[hId]
+            const aStats = teamMap[aId]
+            // xG domáci: xg_for_avg_home tímu H vs xg_against_avg_away tímu A
+            const rawXgH = (hStats?.xgH ?? hStats?.gfH ?? null)
+            const rawXgA = (aStats?.xgA ?? aStats?.gfA ?? null)
+            if (!rawXgH || !rawXgA || rawXgH <= 0 || rawXgA <= 0) return null
+            const lH = rawXgH * SC
+            const lA = rawXgA * SC
             const { pOver: pOverRaw, pUnder: pUnderRaw } = calcOverUnder(lH, lA, RHO)
             const pOverCalib = plattCalibrate(pOverRaw)
             const pUnderCalib = plattCalibrate(pUnderRaw)
@@ -3168,7 +3174,7 @@ export default function App() {
             const pBTTSCalib = calibrateProb(btts.pBTTS, 0.85)
             const pNoBTTSCalib = calibrateProb(btts.pNoBTTS, 0.85)
             return {
-              lH, lA,
+              lH, lA, rawXgH, rawXgA,
               over25: { prob: pOverCalib, fer: fairOdds(pOverCalib) },
               under25: { prob: pUnderCalib, fer: fairOdds(pUnderCalib) },
               bttsYes: { prob: pBTTSCalib, fer: fairOdds(pBTTSCalib) },
@@ -3187,7 +3193,7 @@ export default function App() {
           const MKT_COLOR = { over25: 'var(--accent2)', under25: 'var(--green)', bttsYes: 'var(--yellow)', bttsNo: 'var(--text2)' }
 
           const enriched = skanerMatches.map(m => {
-            const res = skanerCalc(m)
+            const res = skanerCalc(m, skanerTeamMap)
             if (!res) return null
             const mkts = {}
             for (const mk of MARKETS) {
@@ -3197,7 +3203,7 @@ export default function App() {
               mkts[mk] = { ...res[mk], inputOdds, ev }
             }
             const bestEV = Math.max(...MARKETS.map(mk => mkts[mk].ev ?? -Infinity))
-            return { match: m, mkts, bestEV }
+            return { match: m, mkts, bestEV, lH: res.lH, lA: res.lA }
           }).filter(Boolean)
 
           const filtered = enriched.filter(e => e.bestEV > 0)
@@ -3225,8 +3231,29 @@ export default function App() {
                     onClick={async () => {
                       setSkanerLoading(true)
                       setSkanerOdds({})
+                      setSkanerTeamMap({})
                       const matches = await fetchTodaysMatches(skanerDate)
                       setSkanerMatches(matches)
+
+                      // Zober unikátne season_id-y
+                      const seasonIds = [...new Set(
+                        matches.map(m => m.season_id ?? m.seasonID).filter(Boolean).map(Number)
+                      )]
+
+                      // Pre každý season_id fetchni league-teams
+                      const allTeamData = await Promise.all(
+                        seasonIds.map(sid => fetchTeamNamesForSeason(sid, '', ''))
+                      )
+
+                      // Vytvor mapu teamId -> xG stats
+                      const teamMap = {}
+                      for (const teamList of allTeamData) {
+                        for (const t of teamList) {
+                          const stats = extractTeamStats(t._statsRaw ?? t)
+                          if (stats) teamMap[t.id] = stats
+                        }
+                      }
+                      setSkanerTeamMap(teamMap)
                       setSkanerLoaded(true)
                       setSkanerLoading(false)
                     }}
@@ -3254,7 +3281,7 @@ export default function App() {
                 <div className="empty">Žiadne zápasy s xG dátami pre tento dátum.</div>
               )}
 
-              {skanerLoaded && !skanerLoading && displayed.length > 0 && displayed.map(({ match: m, mkts, bestEV }) => {
+              {skanerLoaded && !skanerLoading && displayed.length > 0 && displayed.map(({ match: m, mkts, bestEV, lH, lA }) => {
                 const hasAnyEV = bestEV > 0
                 return (
                   <div
@@ -3274,8 +3301,8 @@ export default function App() {
                         </div>
                       </div>
                       <div style={{ fontSize: 10, color: 'var(--text3)', textAlign: 'right' }}>
-                        xG: <b style={{ color: 'var(--accent2)' }}>{(mkts.over25.prob > 0 ? (1 / mkts.over25.fer).toFixed(2) : '?')}</b>
-                        {' '}λH={((m.o_xg ?? m.homeXg ?? 0) * SC).toFixed(2)} λA={((m.a_xg ?? m.awayXg ?? 0) * SC).toFixed(2)}
+                        λH=<b style={{ color: 'var(--accent2)' }}>{lH?.toFixed(2) ?? '?'}</b>
+                        {' '}λA=<b style={{ color: 'var(--accent2)' }}>{lA?.toFixed(2) ?? '?'}</b>
                       </div>
                     </div>
 
