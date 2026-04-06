@@ -3266,6 +3266,8 @@ export default function App() {
                           if (stats) teamMap[t.id] = stats
                         }
                       }
+                      console.log('cidToSeason:', cidToSeason)
+                      console.log('teamMap size after:', Object.keys(teamMap).length)
                       setSkanerTeamMap(teamMap)
                       setSkanerLoaded(true)
                       setSkanerLoading(false)
