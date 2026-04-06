@@ -3253,6 +3253,8 @@ export default function App() {
                           if (stats) teamMap[t.id] = stats
                         }
                       }
+                      console.log('allTeamData sample:', allTeamData[0]?.slice(0, 2))
+                      console.log('teamMap size:', Object.keys(teamMap).length)
                       setSkanerTeamMap(teamMap)
                       setSkanerLoaded(true)
                       setSkanerLoading(false)
