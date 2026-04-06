@@ -3234,14 +3234,22 @@ export default function App() {
                       const matches = await fetchTodaysMatches(skanerDate)
                       setSkanerMatches(matches)
 
-                      // Unikátne competition_id hodnoty
+                      // Mapuj competition_id → season_id + league name cez allLeagues
                       const competitionIds = [...new Set(
                         matches.map(m => m.competition_id).filter(Boolean).map(Number)
                       )]
+                      const cidToSeason = {}
+                      for (const cid of competitionIds) {
+                        const league = allLeagues.find(l => Number(l.id) === cid)
+                        if (!league) continue
+                        const seasons = (league.season ?? []).slice().sort((a, b) => b.id - a.id)
+                        const sid = seasons[0]?.id ?? league.id
+                        cidToSeason[cid] = { sid, name: league.name }
+                      }
 
-                      // Pre každý competition_id fetchni league-teams
+                      // Pre každý nájdený season_id fetchni league-teams
                       const allTeamData = await Promise.all(
-                        competitionIds.map(cid => fetchTeamNamesForSeason(cid, '', ''))
+                        Object.values(cidToSeason).map(({ sid, name }) => fetchTeamNamesForSeason(sid, name, ''))
                       )
 
                       // Vytvor mapu teamId -> xG stats
