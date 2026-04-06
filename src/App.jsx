@@ -3240,6 +3240,8 @@ export default function App() {
                         matches.map(m => m.season_id ?? m.seasonID).filter(Boolean).map(Number)
                       )]
 
+                      console.log('matches sample:', matches[0])
+                      console.log('seasonIds:', seasonIds)
                       // Pre každý season_id fetchni league-teams
                       const allTeamData = await Promise.all(
                         seasonIds.map(sid => fetchTeamNamesForSeason(sid, '', ''))
