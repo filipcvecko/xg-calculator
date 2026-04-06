@@ -3272,6 +3272,7 @@ export default function App() {
                         }
                       }
                       console.log('cidToSeason:', cidToSeason)
+                      console.log('team sample:', allTeamData[0]?.[0])
                       console.log('teamMap size after:', Object.keys(teamMap).length)
                       console.log('teamMap first entry:', Object.entries(teamMap).slice(0, 2))
                       setSkanerTeamMap(teamMap)
