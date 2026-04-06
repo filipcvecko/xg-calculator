@@ -3269,8 +3269,8 @@ export default function App() {
                           {m.home_name ?? m.homeTeam ?? '?'} vs {m.away_name ?? m.awayTeam ?? '?'}
                         </div>
                         <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2 }}>
-                          {m.competition_name ?? m.league ?? ''}{m.date ? ` · ${m.date}` : ''}
-                          {m.time ? ` ${m.time}` : ''}
+                          {m.competition_name ?? m.league ?? ''}
+                          {m.date_unix ? ` · ${new Date(m.date_unix * 1000).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' })}` : ''}
                         </div>
                       </div>
                       <div style={{ fontSize: 10, color: 'var(--text3)', textAlign: 'right' }}>
