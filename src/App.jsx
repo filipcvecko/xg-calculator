@@ -313,6 +313,7 @@ export default function App() {
   const [skanerLoading, setSkanerLoading] = useState(false)
   const [skanerLoaded, setSkanerLoaded] = useState(false)
   const [skanerOdds, setSkanerOdds] = useState({}) // { matchId_market: oddsValue }
+  const [skanerTeamMap, setSkanerTeamMap] = useState({}) // { teamId: stats }
   const [statsMarket, setStatsMarket] = useState('all')
   const [bets, setBets] = useState([])
   const [loading, setLoading] = useState(true)
@@ -3156,8 +3157,12 @@ export default function App() {
           const MW = 0.50
 
           function skanerCalc(match) {
-            const rawXgH = match.team_a_xg_prematch ?? null
-            const rawXgA = match.team_b_xg_prematch ?? null
+            const hId = Number(match.homeID ?? match.home_id)
+            const aId = Number(match.awayID ?? match.away_id)
+            const hStats = skanerTeamMap[hId]
+            const aStats = skanerTeamMap[aId]
+            const rawXgH = hStats?.xgH ?? hStats?.gfH ?? match.team_a_xg_prematch ?? null
+            const rawXgA = aStats?.xgA ?? aStats?.gfA ?? match.team_b_xg_prematch ?? null
             if (!rawXgH || !rawXgA || rawXgH <= 0 || rawXgA <= 0) return null
             const lH = rawXgH * SC
             const lA = rawXgA * SC
@@ -3225,9 +3230,29 @@ export default function App() {
                     onClick={async () => {
                       setSkanerLoading(true)
                       setSkanerOdds({})
+                      setSkanerTeamMap({})
                       const matches = await fetchTodaysMatches(skanerDate)
                       setSkanerMatches(matches)
-                      console.log('season fields:', matches[0]?.season_id, matches[0]?.seasonID, matches[0]?.season, matches[0]?.competition_id)
+
+                      // Unikátne competition_id hodnoty
+                      const competitionIds = [...new Set(
+                        matches.map(m => m.competition_id).filter(Boolean).map(Number)
+                      )]
+
+                      // Pre každý competition_id fetchni league-teams
+                      const allTeamData = await Promise.all(
+                        competitionIds.map(cid => fetchTeamNamesForSeason(cid, '', ''))
+                      )
+
+                      // Vytvor mapu teamId -> xG stats
+                      const teamMap = {}
+                      for (const teamList of allTeamData) {
+                        for (const t of teamList) {
+                          const stats = extractTeamStats(t._statsRaw ?? t)
+                          if (stats) teamMap[t.id] = stats
+                        }
+                      }
+                      setSkanerTeamMap(teamMap)
                       setSkanerLoaded(true)
                       setSkanerLoading(false)
                     }}
