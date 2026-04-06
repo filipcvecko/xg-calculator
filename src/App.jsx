@@ -5,7 +5,7 @@ import {
   calcBTTS, dynamicRho,
   buildScoreMatrix, blendLambda, fairOdds, calcCLV,
   brierScore, logLoss, calcMaxDrawdown,
-  marketCalibration, calibrateProb, plattCalibrate, evFilter, oddsBandFilter,
+  marketCalibration, calibrateProb, plattCalibrate, calcEV, evFilter, oddsBandFilter,
   timeDecayBlend, extractLastXStats, calcSotAdjustment, getLeagueCoefs,
   fmt2, fmt3, fmtPct, fmtSign, fmtSignPct
 } from './math'
@@ -308,6 +308,11 @@ const BANKROLL_KEY = 'xgcalc_bankroll'
 
 export default function App() {
   const [tab, setTab] = useState('calc')
+  const [skanerDate, setSkanerDate] = useState(new Date().toISOString().slice(0, 10))
+  const [skanerMatches, setSkanerMatches] = useState([])
+  const [skanerLoading, setSkanerLoading] = useState(false)
+  const [skanerLoaded, setSkanerLoaded] = useState(false)
+  const [skanerOdds, setSkanerOdds] = useState({}) // { matchId_market: oddsValue }
   const [statsMarket, setStatsMarket] = useState('all')
   const [bets, setBets] = useState([])
   const [loading, setLoading] = useState(true)
@@ -1419,7 +1424,7 @@ export default function App() {
         </div>
       </div>
       <div className="tabs">
-        {[['calc', 'Kalkulačka'], ['history', `História (${activeBets.length})`], ['stats', 'Štatistiky'], ['archive', `Archív (${archivedBets.length})`]].map(([id, lbl]) => (
+        {[['calc', 'Kalkulačka'], ['skaner', 'Skener'], ['history', `História (${activeBets.length})`], ['stats', 'Štatistiky'], ['archive', `Archív (${archivedBets.length})`]].map(([id, lbl]) => (
           <button key={id} className={`tab ${tab === id ? 'active' : ''}`} onClick={() => setTab(id)}>{lbl}</button>
         ))}
       </div>
@@ -3143,6 +3148,175 @@ export default function App() {
           </div>
           </>
         )}
+
+        {tab === 'skaner' && (() => {
+          const SC = 0.90
+          const RHO = -0.10
+          const COMM = 0.05
+          const MW = 0.50
+
+          function skanerCalc(match) {
+            const xgH = match.homeXg ?? match.o_xg ?? null
+            const xgA = match.awayXg ?? match.a_xg ?? null
+            if (!xgH || !xgA || xgH <= 0 || xgA <= 0) return null
+            const lH = xgH * SC
+            const lA = xgA * SC
+            const { pOver: pOverRaw, pUnder: pUnderRaw } = calcOverUnder(lH, lA, RHO)
+            const pOverCalib = plattCalibrate(pOverRaw)
+            const pUnderCalib = plattCalibrate(pUnderRaw)
+            const btts = calcBTTS(lH, lA, RHO)
+            const pBTTSCalib = calibrateProb(btts.pBTTS, 0.85)
+            const pNoBTTSCalib = calibrateProb(btts.pNoBTTS, 0.85)
+            return {
+              lH, lA,
+              over25: { prob: pOverCalib, fer: fairOdds(pOverCalib) },
+              under25: { prob: pUnderCalib, fer: fairOdds(pUnderCalib) },
+              bttsYes: { prob: pBTTSCalib, fer: fairOdds(pBTTSCalib) },
+              bttsNo: { prob: pNoBTTSCalib, fer: fairOdds(pNoBTTSCalib) },
+            }
+          }
+
+          function skanerEV(prob, inputOdds, modelOdds) {
+            if (!inputOdds || inputOdds <= 1) return null
+            const pFinal = modelOdds > 1 ? marketCalibration(prob, inputOdds, MW) : prob
+            return calcEV(pFinal, inputOdds)
+          }
+
+          const MARKETS = ['over25', 'under25', 'bttsYes', 'bttsNo']
+          const MKT_LABEL = { over25: 'Over 2.5', under25: 'Under 2.5', bttsYes: 'BTTS Yes', bttsNo: 'BTTS No' }
+          const MKT_COLOR = { over25: 'var(--accent2)', under25: 'var(--green)', bttsYes: 'var(--yellow)', bttsNo: 'var(--text2)' }
+
+          const enriched = skanerMatches.map(m => {
+            const res = skanerCalc(m)
+            if (!res) return null
+            const mkts = {}
+            for (const mk of MARKETS) {
+              const key = `${m.id}_${mk}`
+              const inputOdds = parseFloat(skanerOdds[key]) || null
+              const ev = skanerEV(res[mk].prob, inputOdds, res[mk].fer)
+              mkts[mk] = { ...res[mk], inputOdds, ev }
+            }
+            const bestEV = Math.max(...MARKETS.map(mk => mkts[mk].ev ?? -Infinity))
+            return { match: m, mkts, bestEV }
+          }).filter(Boolean)
+
+          const filtered = enriched.filter(e => e.bestEV > 0)
+          const sorted = [...filtered].sort((a, b) => b.bestEV - a.bestEV)
+          const allSorted = [...enriched].sort((a, b) => b.bestEV - a.bestEV)
+          const displayed = allSorted.length > 0 ? allSorted : []
+
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {/* Header */}
+              <div className="card" style={{ borderLeft: '3px solid var(--accent)' }}>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <div className="label" style={{ margin: 0 }}>Dátum</div>
+                  <input
+                    className="inp"
+                    type="date"
+                    value={skanerDate}
+                    onChange={e => { setSkanerDate(e.target.value); setSkanerLoaded(false); setSkanerMatches([]) }}
+                    style={{ width: 140 }}
+                  />
+                  <button
+                    className="btn btn-primary"
+                    style={{ width: 'auto', padding: '8px 16px' }}
+                    disabled={skanerLoading}
+                    onClick={async () => {
+                      setSkanerLoading(true)
+                      setSkanerOdds({})
+                      const matches = await fetchTodaysMatches(skanerDate)
+                      setSkanerMatches(matches)
+                      setSkanerLoaded(true)
+                      setSkanerLoading(false)
+                    }}
+                  >
+                    {skanerLoading ? 'Načítavam...' : 'Načítať zápasy'}
+                  </button>
+                  {skanerLoaded && (
+                    <span style={{ fontSize: 11, color: 'var(--text3)' }}>
+                      {skanerMatches.length} zápasov · {enriched.length} s xG · {filtered.length} s EV &gt; 0
+                    </span>
+                  )}
+                </div>
+                {skanerLoaded && enriched.length > 0 && (
+                  <div style={{ marginTop: 10, fontSize: 10, color: 'var(--text3)', lineHeight: 1.8 }}>
+                    xG scaler: {SC} · Platt scaling (O/U 2.5) · calibrateProb k=0.85 (BTTS) · market blend w={MW} ak zadané odds
+                  </div>
+                )}
+              </div>
+
+              {skanerLoading && (
+                <div style={{ textAlign: 'center', color: 'var(--text3)', fontSize: 13, padding: 24 }}>Načítavam zápasy...</div>
+              )}
+
+              {skanerLoaded && !skanerLoading && enriched.length === 0 && (
+                <div className="empty">Žiadne zápasy s xG dátami pre tento dátum.</div>
+              )}
+
+              {skanerLoaded && !skanerLoading && displayed.length > 0 && displayed.map(({ match: m, mkts, bestEV }) => {
+                const hasAnyEV = bestEV > 0
+                return (
+                  <div
+                    key={m.id}
+                    className="card"
+                    style={{ borderLeft: `3px solid ${hasAnyEV ? 'var(--green)' : 'var(--border)'}`, opacity: hasAnyEV ? 1 : 0.55 }}
+                  >
+                    {/* Match header */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text1)' }}>
+                          {m.home_name ?? m.homeTeam ?? '?'} vs {m.away_name ?? m.awayTeam ?? '?'}
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2 }}>
+                          {m.competition_name ?? m.league ?? ''}{m.date ? ` · ${m.date}` : ''}
+                          {m.time ? ` ${m.time}` : ''}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 10, color: 'var(--text3)', textAlign: 'right' }}>
+                        xG: <b style={{ color: 'var(--accent2)' }}>{(mkts.over25.prob > 0 ? (1 / mkts.over25.fer).toFixed(2) : '?')}</b>
+                        {' '}λH={((m.o_xg ?? m.homeXg ?? 0) * SC).toFixed(2)} λA={((m.a_xg ?? m.awayXg ?? 0) * SC).toFixed(2)}
+                      </div>
+                    </div>
+
+                    {/* Markets grid */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                      {MARKETS.map(mk => {
+                        const d = mkts[mk]
+                        const evColor = d.ev == null ? 'var(--text3)' : d.ev > 0 ? 'var(--green)' : 'var(--red)'
+                        return (
+                          <div key={mk} style={{ background: 'var(--bg3)', borderRadius: 6, padding: '8px 10px', border: `1px solid ${d.ev > 0 ? 'rgba(46,204,138,0.3)' : 'var(--border)'}` }}>
+                            <div style={{ fontSize: 10, color: MKT_COLOR[mk], fontWeight: 700, marginBottom: 4, letterSpacing: '0.08em' }}>
+                              {MKT_LABEL[mk]}
+                            </div>
+                            <div style={{ display: 'flex', gap: 10, alignItems: 'baseline', marginBottom: 6 }}>
+                              <span style={{ fontSize: 11, color: 'var(--text3)' }}>P: <b style={{ color: 'var(--text2)' }}>{(d.prob * 100).toFixed(1)}%</b></span>
+                              <span style={{ fontSize: 11, color: 'var(--text3)' }}>FER: <b style={{ color: MKT_COLOR[mk] }}>{d.fer ? d.fer.toFixed(2) : '—'}</b></span>
+                            </div>
+                            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                              <input
+                                className="inp"
+                                placeholder="Odds"
+                                value={skanerOdds[`${m.id}_${mk}`] ?? ''}
+                                onChange={e => setSkanerOdds(prev => ({ ...prev, [`${m.id}_${mk}`]: e.target.value }))}
+                                style={{ width: 70, padding: '4px 8px', fontSize: 12 }}
+                              />
+                              {d.ev != null && (
+                                <span style={{ fontSize: 13, fontWeight: 800, color: evColor }}>
+                                  {d.ev > 0 ? '+' : ''}{(d.ev * 100).toFixed(1)}%
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )
+        })()}
 
         {tab === 'archive' && (
           <div>
