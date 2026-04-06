@@ -3247,6 +3247,12 @@ export default function App() {
                         cidToSeason[cid] = { sid, name: league.name }
                       }
 
+                      // Fallback: competition_id ktoré nie sú v allLeagues — skús priamo ako season_id
+                      const unmappedCids = competitionIds.filter(cid => !cidToSeason[cid])
+                      for (const cid of unmappedCids) {
+                        cidToSeason[cid] = { sid: cid, name: '' }
+                      }
+
                       // Pre každý nájdený season_id fetchni league-teams
                       const allTeamData = await Promise.all(
                         Object.values(cidToSeason).map(({ sid, name }) => fetchTeamNamesForSeason(sid, name, ''))
