@@ -313,7 +313,6 @@ export default function App() {
   const [skanerLoading, setSkanerLoading] = useState(false)
   const [skanerLoaded, setSkanerLoaded] = useState(false)
   const [skanerOdds, setSkanerOdds] = useState({}) // { matchId_market: oddsValue }
-  const [skanerTeamMap, setSkanerTeamMap] = useState({}) // { teamId: { xgH, xgA, xgaH, xgaA, gfH, gfA, gaH, gaA } }
   const [statsMarket, setStatsMarket] = useState('all')
   const [bets, setBets] = useState([])
   const [loading, setLoading] = useState(true)
@@ -3156,14 +3155,9 @@ export default function App() {
           const COMM = 0.05
           const MW = 0.50
 
-          function skanerCalc(match, teamMap) {
-            const hId = Number(match.homeID ?? match.home_id)
-            const aId = Number(match.awayID ?? match.away_id)
-            const hStats = teamMap[hId]
-            const aStats = teamMap[aId]
-            // xG domáci: xg_for_avg_home tímu H vs xg_against_avg_away tímu A
-            const rawXgH = (hStats?.xgH ?? hStats?.gfH ?? null)
-            const rawXgA = (aStats?.xgA ?? aStats?.gfA ?? null)
+          function skanerCalc(match) {
+            const rawXgH = match.team_a_xg_prematch ?? null
+            const rawXgA = match.team_b_xg_prematch ?? null
             if (!rawXgH || !rawXgA || rawXgH <= 0 || rawXgA <= 0) return null
             const lH = rawXgH * SC
             const lA = rawXgA * SC
@@ -3193,7 +3187,7 @@ export default function App() {
           const MKT_COLOR = { over25: 'var(--accent2)', under25: 'var(--green)', bttsYes: 'var(--yellow)', bttsNo: 'var(--text2)' }
 
           const enriched = skanerMatches.map(m => {
-            const res = skanerCalc(m, skanerTeamMap)
+            const res = skanerCalc(m)
             if (!res) return null
             const mkts = {}
             for (const mk of MARKETS) {
@@ -3231,35 +3225,8 @@ export default function App() {
                     onClick={async () => {
                       setSkanerLoading(true)
                       setSkanerOdds({})
-                      setSkanerTeamMap({})
                       const matches = await fetchTodaysMatches(skanerDate)
                       setSkanerMatches(matches)
-
-                      // Zober unikátne season_id-y
-                      const seasonIds = [...new Set(
-                        matches.map(m => m.season_id ?? m.seasonID ?? m.season).filter(Boolean).map(Number)
-                      )]
-
-                      console.log('matches sample:', matches[0])
-                      console.log('match keys:', Object.keys(matches[0] ?? {}))
-                      console.log('xG fields:', Object.keys(matches[0] ?? {}).filter(k => k.toLowerCase().includes('xg')))
-                      console.log('seasonIds:', seasonIds)
-                      // Pre každý season_id fetchni league-teams
-                      const allTeamData = await Promise.all(
-                        seasonIds.map(sid => fetchTeamNamesForSeason(sid, '', ''))
-                      )
-
-                      // Vytvor mapu teamId -> xG stats
-                      const teamMap = {}
-                      for (const teamList of allTeamData) {
-                        for (const t of teamList) {
-                          const stats = extractTeamStats(t._statsRaw ?? t)
-                          if (stats) teamMap[t.id] = stats
-                        }
-                      }
-                      console.log('allTeamData sample:', allTeamData[0]?.slice(0, 2))
-                      console.log('teamMap size:', Object.keys(teamMap).length)
-                      setSkanerTeamMap(teamMap)
                       setSkanerLoaded(true)
                       setSkanerLoading(false)
                     }}
