@@ -3227,6 +3227,7 @@ export default function App() {
                       setSkanerOdds({})
                       const matches = await fetchTodaysMatches(skanerDate)
                       setSkanerMatches(matches)
+                      console.log('season fields:', matches[0]?.season_id, matches[0]?.seasonID, matches[0]?.season, matches[0]?.competition_id)
                       setSkanerLoaded(true)
                       setSkanerLoading(false)
                     }}
