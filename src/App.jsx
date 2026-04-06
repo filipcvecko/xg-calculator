@@ -3160,15 +3160,15 @@ export default function App() {
           function skanerCalc(match) {
             const hId = Number(match.homeID ?? match.home_id)
             const aId = Number(match.awayID ?? match.away_id)
-            const hStats = skanerTeamMap[hId]
-            const aStats = skanerTeamMap[aId]
+            const hStats = skanerTeamMap[hId] ?? skanerTeamMap[String(hId)]
+            const aStats = skanerTeamMap[aId] ?? skanerTeamMap[String(aId)]
             if (!_skanerCalcLogged) {
               console.log('hId:', hId, 'aId:', aId, 'hStats:', hStats, 'keys sample:', Object.keys(skanerTeamMap).slice(0, 5))
               _skanerCalcLogged = true
             }
             const rawXgH = hStats?.xgH ?? hStats?.gfH ?? match.team_a_xg_prematch ?? null
             const rawXgA = aStats?.xgA ?? aStats?.gfA ?? match.team_b_xg_prematch ?? null
-            if (!rawXgH || !rawXgA || rawXgH <= 0 || rawXgA <= 0) return null
+            if (rawXgH == null || rawXgA == null || rawXgH <= 0 || rawXgA <= 0) return null
             const lH = rawXgH * SC
             const lA = rawXgA * SC
             const { pOver: pOverRaw, pUnder: pUnderRaw } = calcOverUnder(lH, lA, RHO)
