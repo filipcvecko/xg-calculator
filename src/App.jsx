@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import Skener from './Skener'
 import { supabase } from './supabase'
 import {
   calcOverUnder, calcOU30, calcEVOU30, calcOU275, calcEVOU275, calcOU225, calcEVOU225,
@@ -703,6 +704,65 @@ export default function App() {
     updateAutofillInfo(selectedHomeTeam, finalTeam, null, s)
   }
 
+  async function handleSelectBothTeams(homeTeam, awayTeam) {
+    setSelectedHomeTeam({ ...homeTeam, loading: true })
+    setSelectedAwayTeam({ ...awayTeam, loading: true })
+    setHomeTeamError(null)
+    setAwayTeamError(null)
+    setHomeTeamOpen(false)
+    setAwayTeamOpen(false)
+    setHomeTeamSearch('')
+    setAwayTeamSearch('')
+    setHomeLastX(null)
+    setAwayLastX(null)
+
+    const [
+      { stats: hStats, blendInfo: hBlend, error: hErr },
+      { stats: aStats, blendInfo: aBlend, error: aErr },
+      homeLastXData,
+      awayLastXData,
+    ] = await Promise.all([
+      fetchWithFallback(homeTeam, 'home'),
+      fetchWithFallback(awayTeam, 'away'),
+      fetchTeamLastX(homeTeam.id),
+      fetchTeamLastX(awayTeam.id),
+    ])
+
+    if (hErr) {
+      setHomeTeamError(hErr)
+      setSelectedHomeTeam({ ...homeTeam, stats: null, loading: false })
+    } else {
+      const finalHome = { ...homeTeam, stats: hStats, loading: false, blendInfo: hBlend }
+      setSelectedHomeTeam(finalHome)
+      if (hStats) {
+        if (hStats.xgH != null && hStats.xgH > 0) setXgH(String(hStats.xgH))
+        if (hStats.xgaH != null && hStats.xgaH > 0) setXgaH(String(hStats.xgaH))
+        if (hStats.gfH != null && hStats.gfH > 0) setGfH(String(hStats.gfH))
+        if (hStats.gaH != null && hStats.gaH > 0) setGaH(String(hStats.gaH))
+      }
+    }
+    setHomeLastX(homeLastXData)
+
+    if (aErr) {
+      setAwayTeamError(aErr)
+      setSelectedAwayTeam({ ...awayTeam, stats: null, loading: false })
+    } else {
+      const finalAway = { ...awayTeam, stats: aStats, loading: false, blendInfo: aBlend }
+      setSelectedAwayTeam(finalAway)
+      if (aStats) {
+        if (aStats.xgA != null && aStats.xgA > 0) setXgA(String(aStats.xgA))
+        if (aStats.xgaA != null && aStats.xgaA > 0) setXgaA(String(aStats.xgaA))
+        if (aStats.gfA != null && aStats.gfA > 0) setGfA(String(aStats.gfA))
+        if (aStats.gaA != null && aStats.gaA > 0) setGaA(String(aStats.gaA))
+      }
+    }
+    setAwayLastX(awayLastXData)
+
+    const finalHome = hErr ? { ...homeTeam, stats: null } : { ...homeTeam, stats: hStats }
+    const finalAway = aErr ? { ...awayTeam, stats: null } : { ...awayTeam, stats: aStats }
+    updateAutofillInfo(finalHome, finalAway, hStats, aStats)
+  }
+
   function updateAutofillInfo(home, away, homeStats, awayStats) {
     const h = homeStats || home?.stats
     const a = awayStats || away?.stats
@@ -1215,6 +1275,39 @@ export default function App() {
   const pinnBets = settled.filter(b => b.pinnacle_clv != null)
   const avgPinnCLV = pinnBets.length > 0 ? pinnBets.reduce((s, b) => s + b.pinnacle_clv, 0) / pinnBets.length : null
   const posPinnCLV = pinnBets.length > 0 ? (pinnBets.filter(b => b.pinnacle_clv > 0).length / pinnBets.length) * 100 : null
+
+  // Pinnacle close CLV: (bet_odds / pinnacle_close - 1) * 100
+  const pinnCloseBets = settled.filter(b => b.odds_open > 1 && b.pinnacle_close > 1)
+  const pinnCloseCLVs = pinnCloseBets.map(b => (b.odds_open / b.pinnacle_close - 1) * 100)
+  const pinnClvAvg = pinnCloseCLVs.length > 0 ? pinnCloseCLVs.reduce((s, v) => s + v, 0) / pinnCloseCLVs.length : null
+  const pinnClvMedian = (() => {
+    if (pinnCloseCLVs.length === 0) return null
+    const sorted = [...pinnCloseCLVs].sort((a, b) => a - b)
+    const mid = Math.floor(sorted.length / 2)
+    return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid]
+  })()
+  const pinnClvPos = pinnCloseCLVs.filter(v => v > 0)
+  const pinnClvNeg = pinnCloseCLVs.filter(v => v < 0)
+  const pinnClvAvgPos = pinnClvPos.length > 0 ? pinnClvPos.reduce((s, v) => s + v, 0) / pinnClvPos.length : null
+  const pinnClvAvgNeg = pinnClvNeg.length > 0 ? pinnClvNeg.reduce((s, v) => s + v, 0) / pinnClvNeg.length : null
+  const pinnClvTotalStake = pinnCloseBets.reduce((s, b) => s + b.stake, 0)
+  const pinnClvWeighted = pinnClvTotalStake > 0 ? pinnCloseBets.reduce((s, b, i) => s + pinnCloseCLVs[i] * b.stake, 0) / pinnClvTotalStake : null
+  const pinnClvWins = pinnCloseBets.filter((b, i) => b.result === 1)
+  const pinnClvLosses = pinnCloseBets.filter((b, i) => b.result === 0)
+  const pinnClvAvgWin = pinnClvWins.length > 0 ? pinnClvWins.reduce((s, b) => s + (b.odds_open / b.pinnacle_close - 1) * 100, 0) / pinnClvWins.length : null
+  const pinnClvAvgLoss = pinnClvLosses.length > 0 ? pinnClvLosses.reduce((s, b) => s + (b.odds_open / b.pinnacle_close - 1) * 100, 0) / pinnClvLosses.length : null
+  const PINN_CLV_BUCKETS = [
+    { label: '< −5%', min: -Infinity, max: -5 },
+    { label: '−5% až −2%', min: -5, max: -2 },
+    { label: '−2% až 0%', min: -2, max: 0 },
+    { label: '0% až +2%', min: 0, max: 2 },
+    { label: '+2% až +5%', min: 2, max: 5 },
+    { label: '> +5%', min: 5, max: Infinity },
+  ]
+  const pinnClvDist = PINN_CLV_BUCKETS.map(bk => {
+    const count = pinnCloseCLVs.filter(v => v >= bk.min && v < bk.max).length
+    return { ...bk, count, pct: pinnCloseCLVs.length > 0 ? count / pinnCloseCLVs.length * 100 : 0 }
+  })
   const MARKET = { 'over2.5': 'Over 2.5', 'under2.5': 'Under 2.5', 'over3.0': 'Over 3.0', 'under3.0': 'Under 3.0', 'over2.75': 'Over 2.75', 'under2.75': 'Under 2.75', 'over2.25': 'Over 2.25', 'under2.25': 'Under 2.25', 'Over 2.5': 'Over 2.5', 'Under 2.5': 'Under 2.5', 'Over 3.0': 'Over 3.0', 'Under 3.0': 'Under 3.0', 'Over 2.75': 'Over 2.75', 'Under 2.75': 'Under 2.75', 'Over 2.25': 'Over 2.25', 'Under 2.25': 'Under 2.25', 'btts-yes': 'BTTS Yes', 'btts-no': 'BTTS No', 'BTTS Yes': 'BTTS Yes', 'BTTS No': 'BTTS No' }
 
   const clvByTime = (() => {
@@ -1419,7 +1512,7 @@ export default function App() {
         </div>
       </div>
       <div className="tabs">
-        {[['calc', 'Kalkulačka'], ['history', `História (${activeBets.length})`], ['stats', 'Štatistiky'], ['archive', `Archív (${archivedBets.length})`]].map(([id, lbl]) => (
+        {[['calc', 'Kalkulačka'], ['skener', 'Skener'], ['history', `História (${activeBets.length})`], ['stats', 'Štatistiky'], ['archive', `Archív (${archivedBets.length})`]].map(([id, lbl]) => (
           <button key={id} className={`tab ${tab === id ? 'active' : ''}`} onClick={() => setTab(id)}>{lbl}</button>
         ))}
       </div>
@@ -1524,8 +1617,12 @@ export default function App() {
                             const mSeasonId = m.season_id ?? m.seasonID ?? null
                             const resolvedHome = homeTeam || (hId && mSeasonId ? { id: hId, name: homeName, cleanName: homeName, seasonId: mSeasonId, leagueName: league } : null)
                             const resolvedAway = awayTeam || (aId && mSeasonId ? { id: aId, name: awayName, cleanName: awayName, seasonId: mSeasonId, leagueName: league } : null)
-                            if (resolvedHome) handleSelectHomeTeam(resolvedHome)
-                            if (resolvedAway) handleSelectAwayTeam(resolvedAway)
+                            if (resolvedHome && resolvedAway) {
+                              handleSelectBothTeams(resolvedHome, resolvedAway)
+                            } else {
+                              if (resolvedHome) handleSelectHomeTeam(resolvedHome)
+                              if (resolvedAway) handleSelectAwayTeam(resolvedAway)
+                            }
                           }}
                         >
                           <div style={{ fontWeight: 600, color: 'var(--text)' }}>{homeName} vs {awayName}</div>
@@ -2500,6 +2597,8 @@ export default function App() {
           </div>
         )}
 
+        {tab === 'skener' && <Skener />}
+
         {tab === 'history' && (
           <div>
             {loading && <div className="loading">Načítavam...</div>}
@@ -3031,6 +3130,96 @@ export default function App() {
                             <span style={{ color: 'var(--text3)', marginLeft: 6, fontSize: 11 }}>{(avgModelProb - avgMarketProb) > 0.02 ? '↑ model preceňuje góly' : (avgModelProb - avgMarketProb) < -0.02 ? '↓ model podceňuje góly' : '≈ model a trh súhlasia'}</span>
                           </div>
                         </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {pinnCloseBets.length > 0 && (
+                <div className="card" style={{ padding: 16, borderLeft: '3px solid var(--accent2)' }}>
+                  <div className="section-title" style={{ marginBottom: 4 }}>📌 CLV vs Pinnacle Close</div>
+                  <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 14 }}>
+                    CLV = (bet_odds / pinnacle_close − 1) × 100 · Základ: {pinnCloseBets.length} betov s Pinnacle close
+                  </div>
+
+                  {/* Top summary stats */}
+                  <div className="grid3" style={{ marginBottom: 16 }}>
+                    {[
+                      { l: 'AVG CLV', v: pinnClvAvg != null ? pinnClvAvg.toFixed(1) + '%' : '—', cls: pinnClvAvg > 0 ? 'pos' : pinnClvAvg < 0 ? 'neg' : '', hint: '> 0 = porazil si Pinnacle close' },
+                      { l: 'MEDIAN CLV', v: pinnClvMedian != null ? pinnClvMedian.toFixed(1) + '%' : '—', cls: pinnClvMedian > 0 ? 'pos' : pinnClvMedian < 0 ? 'neg' : '', hint: 'stred distribúcie' },
+                      { l: 'Weighted CLV', v: pinnClvWeighted != null ? pinnClvWeighted.toFixed(1) + '%' : '—', cls: pinnClvWeighted > 0 ? 'pos' : pinnClvWeighted < 0 ? 'neg' : '', hint: 'vážený podľa stake' },
+                      { l: 'AVG Pos CLV', v: pinnClvAvgPos != null ? '+' + pinnClvAvgPos.toFixed(1) + '%' : '—', cls: 'pos', hint: `${pinnClvPos.length} betov > 0%` },
+                      { l: 'AVG Neg CLV', v: pinnClvAvgNeg != null ? pinnClvAvgNeg.toFixed(1) + '%' : '—', cls: 'neg', hint: `${pinnClvNeg.length} betov < 0%` },
+                      { l: 'Pos CLV %', v: pinnCloseCLVs.length > 0 ? (pinnClvPos.length / pinnCloseCLVs.length * 100).toFixed(1) + '%' : '—', cls: pinnClvPos.length / pinnCloseCLVs.length > 0.5 ? 'pos' : 'neg', hint: 'podiel betov > 0%' },
+                    ].map(({ l, v, cls, hint }) => (
+                      <div key={l} className="card" style={{ padding: 14 }}>
+                        <div className="label">{l}</div>
+                        <div className={`stat-val ${cls || ''}`}>{v}</div>
+                        {hint && <div className="hint">{hint}</div>}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* CLV Distribution */}
+                  <div style={{ marginBottom: 16 }}>
+                    <div style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>CLV Distribúcia</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {pinnClvDist.map(bk => (
+                        <div key={bk.label} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={{ fontSize: 11, color: 'var(--text3)', minWidth: 100, textAlign: 'right' }}>{bk.label}</span>
+                          <div style={{ flex: 1, height: 16, background: 'var(--bg3)', borderRadius: 3, overflow: 'hidden' }}>
+                            <div style={{
+                              height: '100%', width: bk.pct + '%',
+                              background: bk.min >= 0 ? 'var(--green)' : 'var(--red)',
+                              opacity: 0.75, borderRadius: 3, transition: 'width 0.3s'
+                            }} />
+                          </div>
+                          <span style={{ fontSize: 11, color: 'var(--text2)', minWidth: 28, textAlign: 'right', fontWeight: 600 }}>{bk.count}</span>
+                          <span style={{ fontSize: 10, color: 'var(--text3)', minWidth: 38 }}>{bk.pct.toFixed(1)}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* CLV vs Result */}
+                  <div>
+                    <div style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>CLV vs Výsledok</div>
+                    <div style={{ display: 'flex', gap: 12 }}>
+                      <div className="card" style={{ flex: 1, padding: '10px 14px' }}>
+                        <div style={{ fontSize: 10, color: 'var(--green)', fontWeight: 700, marginBottom: 4 }}>✅ WINY ({pinnClvWins.length})</div>
+                        <div style={{ fontSize: 20, fontWeight: 800, color: pinnClvAvgWin >= 0 ? 'var(--green)' : 'var(--red)' }}>
+                          {pinnClvAvgWin != null ? (pinnClvAvgWin >= 0 ? '+' : '') + pinnClvAvgWin.toFixed(1) + '%' : '—'}
+                        </div>
+                        <div style={{ fontSize: 10, color: 'var(--text3)' }}>avg CLV</div>
+                      </div>
+                      <div className="card" style={{ flex: 1, padding: '10px 14px' }}>
+                        <div style={{ fontSize: 10, color: 'var(--red)', fontWeight: 700, marginBottom: 4 }}>❌ LOSSY ({pinnClvLosses.length})</div>
+                        <div style={{ fontSize: 20, fontWeight: 800, color: pinnClvAvgLoss >= 0 ? 'var(--green)' : 'var(--red)' }}>
+                          {pinnClvAvgLoss != null ? (pinnClvAvgLoss >= 0 ? '+' : '') + pinnClvAvgLoss.toFixed(1) + '%' : '—'}
+                        </div>
+                        <div style={{ fontSize: 10, color: 'var(--text3)' }}>avg CLV</div>
+                      </div>
+                      {pinnCloseBets.some(b => b.result === 0.5) && (() => {
+                        const pushB = pinnCloseBets.filter(b => b.result === 0.5)
+                        const pushAvg = pushB.reduce((s, b) => s + (b.odds_open / b.pinnacle_close - 1) * 100, 0) / pushB.length
+                        return (
+                          <div className="card" style={{ flex: 1, padding: '10px 14px' }}>
+                            <div style={{ fontSize: 10, color: 'var(--text3)', fontWeight: 700, marginBottom: 4 }}>➗ PUSH ({pushB.length})</div>
+                            <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text2)' }}>
+                              {(pushAvg >= 0 ? '+' : '') + pushAvg.toFixed(1) + '%'}
+                            </div>
+                            <div style={{ fontSize: 10, color: 'var(--text3)' }}>avg CLV</div>
+                          </div>
+                        )
+                      })()}
+                    </div>
+                    {pinnClvAvgWin != null && pinnClvAvgLoss != null && (
+                      <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text3)' }}>
+                        {pinnClvAvgWin > pinnClvAvgLoss
+                          ? <span style={{ color: 'var(--green)' }}>✓ Vyšší CLV koreluje s výhrami — edge je reálny</span>
+                          : <span style={{ color: 'var(--yellow)' }}>⚠ Winy nemajú vyšší CLV ako lossy — možný variance alebo náhoda</span>
+                        }
                       </div>
                     )}
                   </div>
