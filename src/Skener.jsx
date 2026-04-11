@@ -245,6 +245,7 @@ async function fetchLeagueAvg(seasonId) {
     if (!res.ok) return null
     const json = await res.json()
     const data = json?.data
+    console.log(`[fetchLeagueAvg] seasonId=${seasonId} json keys:`, Object.keys(json ?? {}), '| data keys:', Object.keys(data ?? {}), '| data sample:', JSON.stringify(data).slice(0, 300))
     if (!data) return null
     const avgHome = data.seasonAVG_home ?? data.avg_goals_home ?? data.avgGoalsPerMatch_home ?? null
     const avgAway = data.seasonAVG_away ?? data.avg_goals_away ?? data.avgGoalsPerMatch_away ?? null
@@ -797,6 +798,7 @@ export default function Skener() {
       if (entry.avg)  lgAvgMap[sid]   = entry.avg
       if (entry.name) newNameMap[sid]  = entry.name
     }
+    console.log('[Skener] newNameMap:', newNameMap)
     setLgNameMap(newNameMap)
 
     // build our_event_id → betfairEventId map
