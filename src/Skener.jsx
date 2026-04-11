@@ -248,7 +248,9 @@ async function fetchLeagueAvg(seasonId) {
     if (!data) return null
     const avgHome = data.seasonAVG_home ?? data.avg_goals_home ?? data.avgGoalsPerMatch_home ?? null
     const avgAway = data.seasonAVG_away ?? data.avg_goals_away ?? data.avgGoalsPerMatch_away ?? null
-    return (avgHome && avgAway) ? { avgHome: +avgHome, avgAway: +avgAway } : null
+    const name = data.name ?? data.league_name ?? data.competition_name ?? null
+    const avg = (avgHome && avgAway) ? { avgHome: +avgHome, avgAway: +avgAway } : null
+    return { avg, name }
   } catch { return null }
 }
 
@@ -329,9 +331,9 @@ function loadCache(date) {
   } catch { return null }
 }
 
-function saveCache(date, matches, results) {
+function saveCache(date, matches, results, lgNameMap) {
   try {
-    localStorage.setItem(cacheKey(date), JSON.stringify({ matches, results }))
+    localStorage.setItem(cacheKey(date), JSON.stringify({ matches, results, lgNameMap }))
   } catch {}
 }
 
@@ -390,7 +392,7 @@ function EVRow({ label, ev, odds, p, fairO }) {
   )
 }
 
-function MatchCard({ match, calc, bfOdds, evOver, evUnder, isWatched, isSaving, onWatch, onBack }) {
+function MatchCard({ match, calc, bfOdds, evOver, evUnder, isWatched, isSaving, onWatch, onBack, leagueName }) {
   const [expanded,     setExpanded]     = useState(false)
   const [manualOver,   setManualOver]   = useState('')
   const [manualUnder,  setManualUnder]  = useState('')
@@ -420,7 +422,7 @@ function MatchCard({ match, calc, bfOdds, evOver, evUnder, isWatched, isSaving, 
             {isWatched && <span style={{ fontSize: 9, marginLeft: 8, color: '#fdcb6e', fontFamily: 'var(--mono)' }}>● LIVE</span>}
           </div>
           <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
-            {match.competition_name ?? match.league_name ?? match.league?.name ?? ''}
+            {leagueName ?? match.competition_name ?? match.league_name ?? match.league?.name ?? ''}
             {calc && <ModelBadge type={calc.modelType} />}
           </div>
         </div>
@@ -685,6 +687,7 @@ function MatchCard({ match, calc, bfOdds, evOver, evUnder, isWatched, isSaving, 
 export default function Skener() {
   const [date,       setDate]       = useState(todayStr())
   const [matches,    setMatches]    = useState([])
+  const [lgNameMap,  setLgNameMap]  = useState({})    // competition_id (str) → league name
   const [results,    setResults]    = useState({})    // matchId → calc
   const [bfMap,      setBfMap]      = useState({})    // our_event_id (str) → betfairEventId
   const [bfOdds,     setBfOdds]     = useState({})    // matchId (str) → {backOver, backUnder}
@@ -729,6 +732,7 @@ export default function Skener() {
     setResults({})
     setBfMap({})
     setBfOdds({})
+    setLgNameMap({})
     setNotified(new Set())
     setWatched(new Set())
     setProgress({ done: 0, total: 0 })
@@ -742,6 +746,7 @@ export default function Skener() {
         const cachedR = cached.results
         setMatches(raw)
         setResults(cachedR)
+        if (cached.lgNameMap) setLgNameMap(cached.lgNameMap)
         setProgress({ done: raw.length, total: raw.length })
         setLoading(false)
 
@@ -776,13 +781,23 @@ export default function Skener() {
     console.log('[Skener] first match homeID/awayID:', raw[0]?.homeID, raw[0]?.awayID, 'competition_id:', raw[0]?.competition_id)
 
     // parallel: league avgs + betfair upcoming + team stats + lastX
-    const [lgAvgMap, bfUpcoming, teamCache, lastXCache] = await Promise.all([
+    const [lgRawMap, bfUpcoming, teamCache, lastXCache] = await Promise.all([
       Promise.all(seasonIds.map(async sid => [sid, await fetchLeagueAvg(sid)])).then(Object.fromEntries),
       fetchBetfairUpcoming(),
       fetchAllTeamStats(raw),
       fetchAllLastX(raw),
     ])
     if (abortRef.current) return
+
+    // split lgRawMap into avg map and name map
+    const lgAvgMap  = {}
+    const newNameMap = {}
+    for (const [sid, entry] of Object.entries(lgRawMap)) {
+      if (!entry) continue
+      if (entry.avg)  lgAvgMap[sid]   = entry.avg
+      if (entry.name) newNameMap[sid]  = entry.name
+    }
+    setLgNameMap(newNameMap)
 
     // build our_event_id → betfairEventId map
     const newBfMap = {}
@@ -796,7 +811,7 @@ export default function Skener() {
 
     // save results to localStorage after all matches processed
     const resultsMap = Object.fromEntries(calcEntries.filter(Boolean))
-    saveCache(d, raw, resultsMap)
+    saveCache(d, raw, resultsMap, newNameMap)
   }
 
   function handleRefresh() {
@@ -1003,6 +1018,7 @@ export default function Skener() {
               isSaving={saving[id] ?? null}
               onWatch={toggleWatch}
               onBack={handleBack}
+              leagueName={lgNameMap[String(m.competition_id)] ?? null}
             />
           )
         })}
