@@ -420,7 +420,7 @@ function MatchCard({ match, calc, bfOdds, evOver, evUnder, isWatched, isSaving, 
             {isWatched && <span style={{ fontSize: 9, marginLeft: 8, color: '#fdcb6e', fontFamily: 'var(--mono)' }}>● LIVE</span>}
           </div>
           <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
-            {match.competition_name ?? match.league_name ?? ''}
+            {match.competition_name ?? match.league_name ?? match.league?.name ?? ''}
             {calc && <ModelBadge type={calc.modelType} />}
           </div>
         </div>
