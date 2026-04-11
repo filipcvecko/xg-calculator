@@ -316,6 +316,29 @@ function buildTelegramMsg(match, calc, bfOdds, evOver, evUnder) {
   return lines.join('\n')
 }
 
+// ─── localStorage cache ───────────────────────────────────────────────────────
+function cacheKey(date) { return `skener_cache_${date}` }
+
+function loadCache(date) {
+  try {
+    const raw = localStorage.getItem(cacheKey(date))
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (!parsed?.matches || !parsed?.results) return null
+    return parsed
+  } catch { return null }
+}
+
+function saveCache(date, matches, results) {
+  try {
+    localStorage.setItem(cacheKey(date), JSON.stringify({ matches, results }))
+  } catch {}
+}
+
+function clearCache(date) {
+  try { localStorage.removeItem(cacheKey(date)) } catch {}
+}
+
 // ─── utils ────────────────────────────────────────────────────────────────────
 function todayStr() {
   const d = new Date()
@@ -699,7 +722,7 @@ export default function Skener() {
   }, [date]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── main load ──────────────────────────────────────────────────────────────
-  async function run(d) {
+  async function run(d, forceRefresh = false) {
     abortRef.current = false
     setLoading(true)
     setMatches([])
@@ -709,6 +732,37 @@ export default function Skener() {
     setNotified(new Set())
     setWatched(new Set())
     setProgress({ done: 0, total: 0 })
+
+    // try cache first (skip on forced refresh)
+    if (!forceRefresh) {
+      const cached = loadCache(d)
+      if (cached) {
+        console.log('[Skener] cache hit pre', d, '— preskakujem FootyStats API')
+        const raw     = cached.matches
+        const cachedR = cached.results
+        setMatches(raw)
+        setResults(cachedR)
+        setProgress({ done: raw.length, total: raw.length })
+        setLoading(false)
+
+        // still fetch live Betfair odds (fast, 1-2 calls)
+        const bfUpcoming = await fetchBetfairUpcoming()
+        if (abortRef.current) return
+        const newBfMap = {}
+        for (const ev of bfUpcoming) {
+          if (ev.our_event_id) newBfMap[String(ev.our_event_id)] = String(ev.id)
+        }
+        setBfMap(newBfMap)
+        await Promise.all(raw.map(m => {
+          const id        = String(m.id)
+          const calc      = cachedR[id] ?? null
+          const bfEventId = newBfMap[id]
+          if (bfEventId && calc) return fetchAndApplyOdds(id, bfEventId, calc, false)
+          return Promise.resolve()
+        }))
+        return
+      }
+    }
 
     const raw = await fetchTodaysMatches(d)
     if (abortRef.current) return
@@ -738,7 +792,16 @@ export default function Skener() {
     setBfMap(newBfMap)
 
     // process all matches in parallel — all data cached
-    await Promise.all(raw.map(m => processMatch(m, lgAvgMap, newBfMap, teamCache, lastXCache)))
+    const calcEntries = await Promise.all(raw.map(m => processMatch(m, lgAvgMap, newBfMap, teamCache, lastXCache)))
+
+    // save results to localStorage after all matches processed
+    const resultsMap = Object.fromEntries(calcEntries.filter(Boolean))
+    saveCache(d, raw, resultsMap)
+  }
+
+  function handleRefresh() {
+    clearCache(date)
+    run(date, true)
   }
 
   async function processMatch(m, lgAvgMap, bfMapSnapshot, teamCache, lastXCache) {
@@ -746,7 +809,7 @@ export default function Skener() {
     const seasonId = m.competition_id
     const homeId   = String(m.homeID)
     const awayId   = String(m.awayID)
-    if (abortRef.current) return
+    if (abortRef.current) return null
 
     const homeRaw   = teamCache[`${homeId}_${seasonId}`] ?? null
     const awayRaw   = teamCache[`${awayId}_${seasonId}`] ?? null
@@ -764,6 +827,8 @@ export default function Skener() {
     // fetch betfair odds if mapped
     const bfEventId = bfMapSnapshot[id]
     if (bfEventId && calc) await fetchAndApplyOdds(id, bfEventId, calc, false)
+
+    return [id, calc]
   }
 
   async function fetchAndApplyOdds(matchId, bfEventId, calc, fromWatch) {
@@ -903,7 +968,7 @@ export default function Skener() {
             {watchCount > 0 && <span style={{ color: '#fdcb6e', marginLeft: 10 }}>● sledujem {watchCount}</span>}
           </div>
         )}
-        <button className="btn btn-primary btn-sm" onClick={() => run(date)}>Obnoviť</button>
+        <button className="btn btn-primary btn-sm" onClick={handleRefresh}>Obnoviť</button>
       </div>
 
       {/* progress bar */}
