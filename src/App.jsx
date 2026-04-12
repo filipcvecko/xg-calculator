@@ -1388,6 +1388,34 @@ export default function App() {
     return { ...bk, count: bb.length, avgProb, hitRate, diff: hitRate - avgProb }
   })
 
+  // ── Liga ranking ──────────────────────────────────────────────────────────────
+  const leagueRanking = (() => {
+    const map = {}
+    for (const b of pinnCloseBets) {
+      const key = b.league || 'Neznáma'
+      if (!map[key]) map[key] = []
+      map[key].push(b)
+    }
+    return Object.entries(map)
+      .filter(([, bets]) => bets.length >= 10)
+      .map(([league, bets]) => {
+        const clvs = bets.map(b => (b.odds_open / b.pinnacle_close - 1) * 100)
+        const avgClv = clvs.reduce((s, v) => s + v, 0) / clvs.length
+        const pinnClvBets = bets.filter(b => b.pinnacle_open > 1 && b.pinnacle_close > 1)
+        const avgPinnClv = pinnClvBets.length > 0
+          ? pinnClvBets.reduce((s, b) => s + (b.pinnacle_open / b.pinnacle_close - 1) * 100, 0) / pinnClvBets.length
+          : null
+        const totalStake = bets.reduce((s, b) => s + b.stake, 0)
+        const totalPnl = bets.reduce((s, b) => s + (b.pnl || 0), 0)
+        const roi = totalStake > 0 ? totalPnl / totalStake * 100 : null
+        const nonPush = bets.filter(b => b.result === 0 || b.result === 1)
+        const hitRate = nonPush.length > 0 ? nonPush.filter(b => b.result === 1).length / nonPush.length * 100 : null
+        const tier = avgClv >= 4 ? 1 : avgClv >= 2 ? 2 : avgClv >= 0 ? 3 : 0
+        return { league, count: bets.length, avgClv, avgPinnClv, roi, hitRate, tier }
+      })
+      .sort((a, b) => b.avgClv - a.avgClv)
+  })()
+
   const probComparison = settled.filter(b => b.model_prob != null && b.market_prob != null)
   const avgModelProb = probComparison.length > 0 ? probComparison.reduce((s, b) => s + b.model_prob, 0) / probComparison.length : null
   const avgMarketProb = probComparison.length > 0 ? probComparison.reduce((s, b) => s + b.market_prob, 0) / probComparison.length : null
@@ -3350,6 +3378,98 @@ export default function App() {
                   </div>
                 </div>
               )}
+
+              {/* ── Liga ranking ──────────────────────────────────────────────────── */}
+              {leagueRanking.length > 0 && (() => {
+                const TIER_CFG = {
+                  1: { label: 'Tier 1', color: '#00b894', bg: 'rgba(0,184,148,0.12)', border: 'rgba(0,184,148,0.4)', hint: 'CLV > 4%' },
+                  2: { label: 'Tier 2', color: 'var(--accent2)', bg: 'rgba(108,92,231,0.10)', border: 'rgba(108,92,231,0.35)', hint: 'CLV 2–4%' },
+                  3: { label: 'Tier 3', color: '#fdcb6e', bg: 'rgba(253,203,110,0.10)', border: 'rgba(253,203,110,0.35)', hint: 'CLV 0–2%' },
+                  0: { label: 'Avoid', color: 'var(--red)', bg: 'rgba(214,48,49,0.10)', border: 'rgba(214,48,49,0.35)', hint: 'CLV < 0%' },
+                }
+                const top = leagueRanking.slice(0, Math.ceil(leagueRanking.length / 2))
+                const worst = leagueRanking.slice(-Math.ceil(leagueRanking.length / 2)).reverse()
+                const cols = ['Liga', 'Betov', 'AVG CLV', 'Pinn. CLV', 'ROI', 'Tier']
+                const Row = ({ row }) => {
+                  const t = TIER_CFG[row.tier]
+                  return (
+                    <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                      <td style={{ padding: '7px 10px', fontWeight: 600, color: 'var(--text2)', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.league}</td>
+                      <td style={{ padding: '7px 10px', textAlign: 'right', color: 'var(--text3)', fontFamily: 'var(--mono)' }}>{row.count}</td>
+                      <td style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 700, fontFamily: 'var(--mono)' }}>
+                        <span style={{ color: row.avgClv >= 0 ? 'var(--green)' : 'var(--red)' }}>{row.avgClv >= 0 ? '+' : ''}{row.avgClv.toFixed(1)}%</span>
+                      </td>
+                      <td style={{ padding: '7px 10px', textAlign: 'right', fontFamily: 'var(--mono)' }}>
+                        {row.avgPinnClv != null
+                          ? <span style={{ color: row.avgPinnClv >= 0 ? 'var(--green)' : 'var(--red)' }}>{row.avgPinnClv >= 0 ? '+' : ''}{row.avgPinnClv.toFixed(1)}%</span>
+                          : <span style={{ color: 'var(--text3)' }}>—</span>}
+                      </td>
+                      <td style={{ padding: '7px 10px', textAlign: 'right', fontFamily: 'var(--mono)' }}>
+                        {row.roi != null
+                          ? <span style={{ color: row.roi >= 0 ? 'var(--green)' : 'var(--red)' }}>{row.roi >= 0 ? '+' : ''}{row.roi.toFixed(1)}%</span>
+                          : <span style={{ color: 'var(--text3)' }}>—</span>}
+                      </td>
+                      <td style={{ padding: '7px 10px', textAlign: 'right' }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4, color: t.color, background: t.bg, border: `1px solid ${t.border}` }}>
+                          {t.label}
+                        </span>
+                      </td>
+                    </tr>
+                  )
+                }
+                const TableHead = () => (
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                      {cols.map(h => (
+                        <th key={h} style={{ padding: '6px 10px', textAlign: h === 'Liga' ? 'left' : 'right', color: 'var(--text3)', fontWeight: 600, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                )
+                return (
+                  <div className="card" style={{ padding: 16, borderLeft: '3px solid #00b894' }}>
+                    <div className="section-title" style={{ marginBottom: 4 }}>🏆 Liga ranking</div>
+                    <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 14 }}>
+                      Min. 10 betov · CLV = (bet_odds / pinn_close − 1) × 100 · Pinn. CLV = (pinn_open / pinn_close − 1) × 100 · {leagueRanking.length} líg
+                    </div>
+
+                    {/* Tier legend */}
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+                      {Object.values(TIER_CFG).map(t => (
+                        <span key={t.label} style={{ fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 4, color: t.color, background: t.bg, border: `1px solid ${t.border}` }}>
+                          {t.label} — {t.hint}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* Top ligy */}
+                    <div style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
+                      Top ligy
+                    </div>
+                    <div style={{ overflowX: 'auto', marginBottom: 20 }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                        <TableHead />
+                        <tbody>{top.map(row => <Row key={row.league} row={row} />)}</tbody>
+                      </table>
+                    </div>
+
+                    {/* Worst ligy */}
+                    {worst.length > 0 && worst[0].league !== top[top.length - 1]?.league && (
+                      <>
+                        <div style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
+                          Najhoršie ligy
+                        </div>
+                        <div style={{ overflowX: 'auto' }}>
+                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                            <TableHead />
+                            <tbody>{worst.map(row => <Row key={row.league} row={row} />)}</tbody>
+                          </table>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )
+              })()}
 
               <div className="card" style={{ padding: 16, borderLeft: '3px solid var(--yellow)' }}>
                 <div className="section-title" style={{ marginBottom: 10 }}>💡 Odporúčania na základe tvojich dát</div>
