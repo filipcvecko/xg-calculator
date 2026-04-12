@@ -409,35 +409,27 @@ function EVRow({ label, ev, odds, p, fairO }) {
 const MARKET_WEIGHT = 0.50
 
 function MatchCard({ match, calc, bfOdds, evOver, evUnder, isWatched, isSaving, onWatch, onBack, leagueName }) {
-  const [expanded,     setExpanded]     = useState(false)
-  const [manualOver,   setManualOver]   = useState('')
-  const [manualLOver,  setManualLOver]  = useState('')
-  const [manualUnder,  setManualUnder]  = useState('')
-  const [manualLUnder, setManualLUnder] = useState('')
-  const [pinnOpen,     setPinnOpen]     = useState('')
+  const [expanded,    setExpanded]    = useState(false)
+  const [manualOver,  setManualOver]  = useState('')
+  const [manualUnder, setManualUnder] = useState('')
+  const [pinnOpen,    setPinnOpen]    = useState('')
 
   const pf = v => { const n = parseFloat(v); return n > 1 ? n : null }
 
-  const mOver   = pf(manualOver)
-  const mLOver  = pf(manualLOver)
-  const mUnder  = pf(manualUnder)
-  const mLUnder = pf(manualLUnder)
+  const mOver  = pf(manualOver)
+  const mUnder = pf(manualUnder)
 
-  // midpoints: avg of back+lay if both present, else back alone
-  const midOver  = mOver  ? (mLOver  ? (mOver  + mLOver)  / 2 : mOver)  : null
-  const midUnder = mUnder ? (mLUnder ? (mUnder + mLUnder) / 2 : mUnder) : null
-
-  // market probs from midpoint
-  const pMktOver  = midOver  ? 1 / midOver  : null
-  const pMktUnder = midUnder ? 1 / midUnder : null
+  // back odds = midpoint directly
+  const pMktOver  = mOver  ? 1 / mOver  : null
+  const pMktUnder = mUnder ? 1 / mUnder : null
 
   // blend model + market (50/50)
   const pBlendOver  = calc && pMktOver  ? MARKET_WEIGHT * calc.pOver  + (1 - MARKET_WEIGHT) * pMktOver  : null
   const pBlendUnder = calc && pMktUnder ? MARKET_WEIGHT * calc.pUnder + (1 - MARKET_WEIGHT) * pMktUnder : null
 
-  // EV and fair odds from blended prob at midpoint
-  const mEvOver   = pBlendOver  && midOver  ? calcBackEV(pBlendOver,  midOver,  COMM) : null
-  const mEvUnder  = pBlendUnder && midUnder ? calcBackEV(pBlendUnder, midUnder, COMM) : null
+  // EV and fair odds from blended prob at back odds
+  const mEvOver   = pBlendOver  && mOver  ? calcBackEV(pBlendOver,  mOver,  COMM) : null
+  const mEvUnder  = pBlendUnder && mUnder ? calcBackEV(pBlendUnder, mUnder, COMM) : null
   const mFerOver  = pBlendOver  ? fairOdds(pBlendOver)  : null
   const mFerUnder = pBlendUnder ? fairOdds(pBlendUnder) : null
   const homeName = match.home_name ?? match.homeName ?? '?'
@@ -588,7 +580,7 @@ function MatchCard({ match, calc, bfOdds, evOver, evUnder, isWatched, isSaving, 
             <div style={{ fontSize: 9, color: 'var(--text3)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 2 }}>
               Manuálne kurzy
             </div>
-            {/* Over row */}
+            {/* Back odds row */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               <div>
                 <div style={{ fontSize: 9, color: 'var(--text3)', marginBottom: 3 }}>Back Over 2.5</div>
@@ -601,35 +593,12 @@ function MatchCard({ match, calc, bfOdds, evOver, evUnder, isWatched, isSaving, 
                 />
               </div>
               <div>
-                <div style={{ fontSize: 9, color: 'var(--text3)', marginBottom: 3 }}>Lay Over 2.5 (voliteľné)</div>
-                <input
-                  className="inp inp-sm"
-                  type="number" step="0.01" placeholder="napr. 2.14"
-                  value={manualLOver}
-                  onChange={e => setManualLOver(e.target.value)}
-                  style={{ width: '100%' }}
-                />
-              </div>
-            </div>
-            {/* Under row */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-              <div>
                 <div style={{ fontSize: 9, color: 'var(--text3)', marginBottom: 3 }}>Back Under 2.5</div>
                 <input
                   className="inp inp-sm"
                   type="number" step="0.01" placeholder="napr. 1.85"
                   value={manualUnder}
                   onChange={e => setManualUnder(e.target.value)}
-                  style={{ width: '100%' }}
-                />
-              </div>
-              <div>
-                <div style={{ fontSize: 9, color: 'var(--text3)', marginBottom: 3 }}>Lay Under 2.5 (voliteľné)</div>
-                <input
-                  className="inp inp-sm"
-                  type="number" step="0.01" placeholder="napr. 1.87"
-                  value={manualLUnder}
-                  onChange={e => setManualLUnder(e.target.value)}
                   style={{ width: '100%' }}
                 />
               </div>
@@ -665,35 +634,33 @@ function MatchCard({ match, calc, bfOdds, evOver, evUnder, isWatched, isSaving, 
               </div>
             </div>
 
-            {(midOver || midUnder) && calc && (
+            {(mOver || mUnder) && calc && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
-                {midOver && (
+                {mOver && (
                   <>
                     <EVRow
                       label="Back Over 2.5"
                       ev={mEvOver}
-                      odds={midOver}
+                      odds={mOver}
                       p={pBlendOver}
                       fairO={mFerOver}
                     />
                     <div style={{ fontSize: 9, color: 'var(--text3)', paddingLeft: 2 }}>
-                      model {fmtPct(calc.pOver * 100)} · market {fmtPct((1 / midOver) * 100)} · blend {fmtPct(pBlendOver * 100)}
-                      {mLOver ? ` · mid ${fmt2(midOver)}` : ''}
+                      model {fmtPct(calc.pOver * 100)} · market {fmtPct(pMktOver * 100)} · blend {fmtPct(pBlendOver * 100)}
                     </div>
                   </>
                 )}
-                {midUnder && (
+                {mUnder && (
                   <>
                     <EVRow
                       label="Back Under 2.5"
                       ev={mEvUnder}
-                      odds={midUnder}
+                      odds={mUnder}
                       p={pBlendUnder}
                       fairO={mFerUnder}
                     />
                     <div style={{ fontSize: 9, color: 'var(--text3)', paddingLeft: 2 }}>
-                      model {fmtPct(calc.pUnder * 100)} · market {fmtPct((1 / midUnder) * 100)} · blend {fmtPct(pBlendUnder * 100)}
-                      {mLUnder ? ` · mid ${fmt2(midUnder)}` : ''}
+                      model {fmtPct(calc.pUnder * 100)} · market {fmtPct(pMktUnder * 100)} · blend {fmtPct(pBlendUnder * 100)}
                     </div>
                   </>
                 )}
