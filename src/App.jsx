@@ -421,6 +421,7 @@ export default function App() {
 
   const [settlingId, setSettlingId] = useState(null)
   const [settleMode, setSettleMode] = useState('clv')
+  const [expandedBadClv, setExpandedBadClv] = useState(null)
   const [settleClose, setSettleClose] = useState('')
   const [settleResult, setSettleResult] = useState('')
   const [settlePinnClose, setSettlePinnClose] = useState('')
@@ -1336,6 +1337,55 @@ export default function App() {
       avgEV: evB.length > 0 ? evB.reduce((s, b) => s + b.ev_pct, 0) / evB.length : null,
       roi: totalStakeB > 0 ? (totalPnLB / totalStakeB) * 100 : null,
     }
+  })
+
+  // ── EV vs CLV table ──────────────────────────────────────────────────────────
+  const EV_CLV_BUCKETS = [
+    { label: '0–5%',  min: 0,  max: 5  },
+    { label: '5–10%', min: 5,  max: 10 },
+    { label: '10–15%',min: 10, max: 15 },
+    { label: '15%+',  min: 15, max: Infinity },
+  ]
+  const evClvTable = EV_CLV_BUCKETS.map(bk => {
+    const bb = settled.filter(b =>
+      b.ev_pct != null && b.ev_pct >= bk.min && b.ev_pct < bk.max &&
+      b.pinnacle_close > 1 && b.odds_open > 1
+    )
+    const nonPush = bb.filter(b => b.result === 0 || b.result === 1)
+    const wins = nonPush.filter(b => b.result === 1).length
+    const hitRate = nonPush.length > 0 ? wins / nonPush.length * 100 : null
+    const clvs = bb.map(b => (b.odds_open / b.pinnacle_close - 1) * 100)
+    const avgClv = clvs.length > 0 ? clvs.reduce((s, v) => s + v, 0) / clvs.length : null
+    const totalStake = bb.reduce((s, b) => s + b.stake, 0)
+    const totalPnl = bb.reduce((s, b) => s + (b.pnl || 0), 0)
+    const roi = totalStake > 0 ? totalPnl / totalStake * 100 : null
+    return { ...bk, count: bb.length, avgClv, hitRate, roi }
+  })
+
+  // ── Bad CLV analysis ──────────────────────────────────────────────────────────
+  const badClvBets = pinnCloseBets
+    .map(b => ({ ...b, pinnClv: (b.odds_open / b.pinnacle_close - 1) * 100 }))
+    .sort((a, b) => a.pinnClv - b.pinnClv)
+    .slice(0, 20)
+
+  // ── Calibration by odds bucket ────────────────────────────────────────────────
+  const CALIB_ODDS_BUCKETS = [
+    { label: '1.5–2.0', min: 1.5, max: 2.0 },
+    { label: '2.0–2.5', min: 2.0, max: 2.5 },
+    { label: '2.5–3.0', min: 2.5, max: 3.0 },
+    { label: '3.0+',    min: 3.0, max: Infinity },
+  ]
+  const calibByOdds = CALIB_ODDS_BUCKETS.map(bk => {
+    const bb = settled.filter(b =>
+      b.odds_open >= bk.min && b.odds_open < bk.max &&
+      (b.result === 0 || b.result === 1) &&
+      b.sel_prob != null
+    )
+    if (bb.length === 0) return { ...bk, count: 0, avgProb: null, hitRate: null, diff: null }
+    const w = bb.filter(b => b.result === 1).length
+    const hitRate = w / bb.length * 100
+    const avgProb = bb.reduce((s, b) => s + b.sel_prob, 0) / bb.length * 100
+    return { ...bk, count: bb.length, avgProb, hitRate, diff: hitRate - avgProb }
   })
 
   const probComparison = settled.filter(b => b.model_prob != null && b.market_prob != null)
@@ -3153,6 +3203,150 @@ export default function App() {
                         }
                       </div>
                     )}
+                  </div>
+                </div>
+              )}
+
+              {/* ── EV vs CLV tabuľka ─────────────────────────────────────────── */}
+              {evClvTable.some(r => r.count > 0) && (
+                <div className="card" style={{ padding: 16, borderLeft: '3px solid var(--green)' }}>
+                  <div className="section-title" style={{ marginBottom: 4 }}>📊 EV pásmo vs CLV (Pinnacle close)</div>
+                  <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 14 }}>
+                    Len bety s dostupným Pinnacle close · CLV = (bet_odds / pinn_close − 1) × 100
+                  </div>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                          {['EV pásmo', 'Betov', 'AVG CLV', 'Hit rate', 'ROI'].map(h => (
+                            <th key={h} style={{ padding: '6px 10px', textAlign: h === 'EV pásmo' ? 'left' : 'right', color: 'var(--text3)', fontWeight: 600, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {evClvTable.map(row => (
+                          <tr key={row.label} style={{ borderBottom: '1px solid var(--border)' }}>
+                            <td style={{ padding: '8px 10px', fontWeight: 700, color: 'var(--text2)' }}>{row.label}</td>
+                            <td style={{ padding: '8px 10px', textAlign: 'right', color: 'var(--text3)' }}>{row.count > 0 ? row.count : '—'}</td>
+                            <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 700 }}>
+                              {row.avgClv != null
+                                ? <span style={{ color: row.avgClv >= 0 ? 'var(--green)' : 'var(--red)' }}>{row.avgClv >= 0 ? '+' : ''}{row.avgClv.toFixed(1)}%</span>
+                                : <span style={{ color: 'var(--text3)' }}>—</span>}
+                            </td>
+                            <td style={{ padding: '8px 10px', textAlign: 'right' }}>
+                              {row.hitRate != null ? <span style={{ color: 'var(--text2)' }}>{row.hitRate.toFixed(1)}%</span> : <span style={{ color: 'var(--text3)' }}>—</span>}
+                            </td>
+                            <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 700 }}>
+                              {row.roi != null
+                                ? <span style={{ color: row.roi >= 0 ? 'var(--green)' : 'var(--red)' }}>{row.roi >= 0 ? '+' : ''}{row.roi.toFixed(1)}%</span>
+                                : <span style={{ color: 'var(--text3)' }}>—</span>}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* ── Bad CLV analysis ──────────────────────────────────────────────── */}
+              {badClvBets.length > 0 && (
+                <div className="card" style={{ padding: 16, borderLeft: '3px solid var(--red)' }}>
+                  <div className="section-title" style={{ marginBottom: 4 }}>🔴 Najhoršie CLV bety (top {badClvBets.length})</div>
+                  <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 14 }}>
+                    Zoradené podľa CLV = (bet_odds / pinnacle_close − 1) × 100 · iba bety s Pinnacle close
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    {badClvBets.map((b, i) => {
+                      const isExp = expandedBadClv === b.id
+                      const dateStr = b.bet_time ? new Date(b.bet_time).toLocaleDateString('sk-SK', { day: '2-digit', month: '2-digit' }) : '—'
+                      const resLabel = b.result === 1 ? 'W' : b.result === 0 ? 'L' : b.result === 2 ? 'V' : b.result === 3 ? 'HW' : b.result === 4 ? 'HL' : '?'
+                      const resColor = b.result === 1 ? 'var(--green)' : b.result === 0 ? 'var(--red)' : 'var(--text3)'
+                      return (
+                        <div key={b.id}>
+                          <div
+                            onClick={() => setExpandedBadClv(isExp ? null : b.id)}
+                            style={{ display: 'grid', gridTemplateColumns: '22px 48px 1fr 80px 60px 60px 52px 36px', gap: 6, alignItems: 'center', padding: '7px 8px', borderRadius: 4, cursor: 'pointer', background: isExp ? 'var(--bg3)' : 'transparent', fontSize: 11 }}
+                          >
+                            <span style={{ color: 'var(--text3)', fontFamily: 'var(--mono)', fontSize: 10 }}>{i + 1}.</span>
+                            <span style={{ color: 'var(--text3)', fontFamily: 'var(--mono)', fontSize: 10 }}>{dateStr}</span>
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text2)', fontWeight: 600 }}>{b.match_name || '—'}</span>
+                            <span style={{ color: 'var(--text3)', fontSize: 10 }}>{MARKET[b.market] || b.market || '—'}</span>
+                            <span style={{ textAlign: 'right', fontFamily: 'var(--mono)' }}>{b.odds_open ? fmt3(b.odds_open) : '—'}</span>
+                            <span style={{ textAlign: 'right', fontFamily: 'var(--mono)', color: 'var(--text3)' }}>{b.pinnacle_close ? fmt3(b.pinnacle_close) : '—'}</span>
+                            <span style={{ textAlign: 'right', fontWeight: 800, color: 'var(--red)', fontFamily: 'var(--mono)' }}>{b.pinnClv.toFixed(1)}%</span>
+                            <span style={{ textAlign: 'right', fontWeight: 700, color: resColor, fontSize: 10 }}>{resLabel}</span>
+                          </div>
+                          {isExp && (
+                            <div style={{ margin: '2px 0 6px 30px', padding: '10px 12px', background: 'var(--bg3)', borderRadius: 6, fontSize: 11, color: 'var(--text3)', display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+                              <div>EV: <b style={{ color: b.ev_pct > 0 ? 'var(--green)' : 'var(--red)' }}>{b.ev_pct != null ? (b.ev_pct >= 0 ? '+' : '') + b.ev_pct.toFixed(1) + '%' : '—'}</b></div>
+                              <div>Stake: <b style={{ color: 'var(--text2)' }}>{b.stake}€</b></div>
+                              <div>P&L: <b style={{ color: (b.pnl || 0) >= 0 ? 'var(--green)' : 'var(--red)' }}>{b.pnl != null ? ((b.pnl >= 0 ? '+' : '') + b.pnl.toFixed(2) + '€') : '—'}</b></div>
+                              <div>Pinn. open: <b style={{ color: 'var(--text2)' }}>{b.pinnacle_open ? fmt3(b.pinnacle_open) : '—'}</b></div>
+                              <div>Pinn. CLV (open→close): <b style={{ color: b.pinnacle_clv > 0 ? 'var(--green)' : 'var(--red)' }}>{b.pinnacle_clv != null ? (b.pinnacle_clv >= 0 ? '+' : '') + b.pinnacle_clv.toFixed(1) + '%' : '—'}</b></div>
+                              <div>Model P: <b style={{ color: 'var(--text2)' }}>{b.sel_prob != null ? fmtPct(b.sel_prob * 100) : '—'}</b></div>
+                              {b.league && <div>Liga: <b style={{ color: 'var(--text2)' }}>{b.league}</b></div>}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                  {/* header labels */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '22px 48px 1fr 80px 60px 60px 52px 36px', gap: 6, padding: '0 8px', marginTop: 8, fontSize: 9, color: 'var(--text3)', letterSpacing: '0.08em', textTransform: 'uppercase', borderTop: '1px solid var(--border)', paddingTop: 6 }}>
+                    <span>#</span><span>Dátum</span><span>Zápas</span><span>Market</span><span style={{ textAlign: 'right' }}>Odds</span><span style={{ textAlign: 'right' }}>Pinn.close</span><span style={{ textAlign: 'right' }}>CLV</span><span style={{ textAlign: 'right' }}>Res</span>
+                  </div>
+                </div>
+              )}
+
+              {/* ── Calibration by odds bucket ────────────────────────────────────── */}
+              {calibByOdds.some(r => r.count > 0) && (
+                <div className="card" style={{ padding: 16, borderLeft: '3px solid var(--accent2)' }}>
+                  <div className="section-title" style={{ marginBottom: 4 }}>🎯 Kalibrácia podľa kurzového pásma</div>
+                  <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 14 }}>
+                    Predicted prob = avg sel_prob (blended model+market) · Actual hit rate = reálne výhry / bety · Iba non-push
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {calibByOdds.filter(r => r.count > 0).map(row => {
+                      const diff = row.diff
+                      const diffColor = diff == null ? 'var(--text3)' : Math.abs(diff) < 2 ? 'var(--green)' : Math.abs(diff) < 5 ? 'var(--yellow)' : 'var(--red)'
+                      const barMax = Math.max(row.avgProb ?? 0, row.hitRate ?? 0, 1)
+                      return (
+                        <div key={row.label} style={{ background: 'var(--bg3)', borderRadius: 8, padding: '12px 14px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                            <div>
+                              <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--text2)' }}>{row.label}</span>
+                              <span style={{ fontSize: 10, color: 'var(--text3)', marginLeft: 8 }}>{row.count} betov</span>
+                            </div>
+                            <div style={{ textAlign: 'right', fontSize: 11 }}>
+                              <span style={{ color: 'var(--text3)' }}>Rozdiel: </span>
+                              <b style={{ color: diffColor }}>{diff != null ? (diff >= 0 ? '+' : '') + diff.toFixed(1) + ' pp' : '—'}</b>
+                              {diff != null && (
+                                <span style={{ marginLeft: 6, fontSize: 10, color: 'var(--text3)' }}>
+                                  {Math.abs(diff) < 2 ? '✓ dobre kalibrovaný' : diff > 0 ? '↑ model podceňuje P (hit rate > pred)' : '↓ model preceňuje P (hit rate < pred)'}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                            {[
+                              { label: 'Predicted P', value: row.avgProb, color: 'var(--accent2)' },
+                              { label: 'Actual hit rate', value: row.hitRate, color: 'var(--green)' },
+                            ].map(({ label, value, color }) => (
+                              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <span style={{ fontSize: 10, color: 'var(--text3)', minWidth: 90 }}>{label}</span>
+                                <div style={{ flex: 1, height: 10, background: 'var(--bg2)', borderRadius: 3, overflow: 'hidden' }}>
+                                  <div style={{ height: '100%', width: value != null ? (value / barMax * 100) + '%' : '0%', background: color, opacity: 0.8, borderRadius: 3, transition: 'width 0.4s' }} />
+                                </div>
+                                <span style={{ fontSize: 11, fontWeight: 700, color, minWidth: 40, textAlign: 'right', fontFamily: 'var(--mono)' }}>
+                                  {value != null ? value.toFixed(1) + '%' : '—'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
               )}
