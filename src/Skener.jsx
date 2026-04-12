@@ -174,20 +174,28 @@ function calcMatchFromStats(homeRaw, awayRaw, lgAvg, homeLastXRaw = null, awayLa
 // ─── API fetchers ─────────────────────────────────────────────────────────────
 
 // fetch all teams for a season via league-teams (same as App.jsx fetchTeamNamesForSeason)
-// returns cache entries: `${teamId}_${seasonId}` → statsRaw (t.stats || t)
+// returns { statsMap: { `${teamId}_${seasonId}` → statsRaw }, leagueName: string|null }
 async function fetchLeagueTeams(seasonId) {
   try {
     const res  = await fetch(`/api/footystats?endpoint=league-teams&season_id=${seasonId}&include=stats`)
-    if (!res.ok) return {}
+    if (!res.ok) return { statsMap: {}, leagueName: null }
     const json = await res.json()
     const teams = json?.data ?? []
-    const map = {}
+    if (teams.length > 0) {
+      const sample = teams[0]
+      console.log(`[fetchLeagueTeams] seasonId=${seasonId} team keys:`, Object.keys(sample))
+    }
+    const statsMap = {}
+    let leagueName = null
     for (const t of teams) {
       const tid = String(t.id)
-      map[`${tid}_${seasonId}`] = t.stats || t
+      statsMap[`${tid}_${seasonId}`] = t.stats || t
+      if (!leagueName) {
+        leagueName = t.league_name ?? t.competition ?? t.league ?? t.season_name ?? t.competition_name ?? null
+      }
     }
-    return map
-  } catch { return {} }
+    return { statsMap, leagueName }
+  } catch { return { statsMap: {}, leagueName: null } }
 }
 
 async function fetchLastX(teamId) {
@@ -214,10 +222,16 @@ async function fetchAllLastX(matches, batchSize = 20) {
 }
 
 // fetch stats for all teams in all seasons — one league-teams call per unique season
+// returns { statsMap, teamLeagueNames: { seasonId → leagueName } }
 async function fetchAllTeamStats(matches) {
   const seasonIds = [...new Set(matches.map(m => m.competition_id).filter(Boolean))]
   const results   = await Promise.all(seasonIds.map(sid => fetchLeagueTeams(sid)))
-  return Object.assign({}, ...results)
+  const statsMap  = Object.assign({}, ...results.map(r => r.statsMap))
+  const teamLeagueNames = {}
+  seasonIds.forEach((sid, i) => {
+    if (results[i].leagueName) teamLeagueNames[String(sid)] = results[i].leagueName
+  })
+  return { statsMap, teamLeagueNames }
 }
 
 async function fetchTodaysMatches(dateStr) {
@@ -422,8 +436,15 @@ function MatchCard({ match, calc, bfOdds, evOver, evUnder, isWatched, isSaving, 
             {homeName} <span style={{ color: 'var(--text3)' }}>vs</span> {awayName}
             {isWatched && <span style={{ fontSize: 9, marginLeft: 8, color: '#fdcb6e', fontFamily: 'var(--mono)' }}>● LIVE</span>}
           </div>
+          {(() => {
+            const lgLabel = leagueName ?? match.competition_name ?? match.league_name ?? match.league?.name ?? ''
+            return lgLabel ? (
+              <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {lgLabel}
+              </div>
+            ) : null
+          })()}
           <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
-            {leagueName ?? match.competition_name ?? match.league_name ?? match.league?.name ?? ''}
             {calc && <ModelBadge type={calc.modelType} />}
           </div>
         </div>
@@ -782,7 +803,7 @@ export default function Skener() {
     console.log('[Skener] first match homeID/awayID:', raw[0]?.homeID, raw[0]?.awayID, 'competition_id:', raw[0]?.competition_id)
 
     // parallel: league avgs + betfair upcoming + team stats + lastX
-    const [lgRawMap, bfUpcoming, teamCache, lastXCache] = await Promise.all([
+    const [lgRawMap, bfUpcoming, { statsMap: teamCache, teamLeagueNames }, lastXCache] = await Promise.all([
       Promise.all(seasonIds.map(async sid => [sid, await fetchLeagueAvg(sid)])).then(Object.fromEntries),
       fetchBetfairUpcoming(),
       fetchAllTeamStats(raw),
@@ -790,13 +811,13 @@ export default function Skener() {
     ])
     if (abortRef.current) return
 
-    // split lgRawMap into avg map and name map
+    // split lgRawMap into avg map and name map; fallback to team-object league names
     const lgAvgMap  = {}
-    const newNameMap = {}
+    const newNameMap = { ...teamLeagueNames }
     for (const [sid, entry] of Object.entries(lgRawMap)) {
       if (!entry) continue
       if (entry.avg)  lgAvgMap[sid]   = entry.avg
-      if (entry.name) newNameMap[sid]  = entry.name
+      if (entry.name) newNameMap[sid]  = entry.name   // league-season name wins if present
     }
     console.log('[Skener] newNameMap:', newNameMap)
     setLgNameMap(newNameMap)
