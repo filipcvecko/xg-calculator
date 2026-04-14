@@ -337,10 +337,19 @@ function buildBfMap(bfUpcoming, footyMatches) {
 
 async function fetchBetfairUpcoming() {
   try {
-    const res  = await fetch('/api/betsapi?endpoint=betfair%2Fupcoming&sport_id=1')
-    if (!res.ok) return []
-    const json = await res.json()
-    return json?.results ?? []
+    const all = []
+    let page = 1
+    while (true) {
+      const res  = await fetch(`/api/betsapi?endpoint=betfair%2Fupcoming&sport_id=1&page=${page}`)
+      if (!res.ok) break
+      const json = await res.json()
+      const results = json?.results ?? []
+      all.push(...results)
+      const pager = json?.pager
+      if (!pager || page >= (pager.max_page ?? 1)) break
+      page++
+    }
+    return all
   } catch { return [] }
 }
 
@@ -356,9 +365,9 @@ async function fetchBetfairEvent(eventId) {
 // ─── Betfair market parsing helpers ──────────────────────────────────────────
 
 function _getMarkets(eventData) {
-  return Array.isArray(eventData)
-    ? eventData
-    : (eventData?.markets ?? eventData?.mc ?? [])
+  // fetchBetfairEvent returns results = [{event, competitions, markets: [...]}]
+  const obj = Array.isArray(eventData) ? eventData[0] : eventData
+  return obj?.markets ?? obj?.mc ?? []
 }
 
 function _marketName(m) {
