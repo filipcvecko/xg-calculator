@@ -1042,16 +1042,16 @@ export default function Skener() {
     setSaving(prev => ({ ...prev, [matchId]: marketKey }))
 
     const MINFO = {
-      over25:   { prob: calc.pOver,           ferO: calc.ferOver,              market: 'Over 2.5' },
-      under25:  { prob: calc.pUnder,          ferO: calc.ferUnder,             market: 'Under 2.5' },
-      over225:  { prob: calc.ou225?.pOver225,  ferO: calc.ou225?.fairOver,     market: 'Over 2.25' },
-      under225: { prob: calc.ou225?.pUnder225, ferO: calc.ou225?.fairUnder,    market: 'Under 2.25' },
-      over275:  { prob: calc.ou275?.pOver275,  ferO: calc.ou275?.fairOver,     market: 'Over 2.75' },
-      under275: { prob: calc.ou275?.pUnder275, ferO: calc.ou275?.fairUnder,    market: 'Under 2.75' },
-      over30:   { prob: calc.ou30.pOver3,     ferO: calc.ou30.fairOver,        market: 'Over 3.0' },
-      under30:  { prob: calc.ou30.pUnder2,    ferO: calc.ou30.fairUnder,       market: 'Under 3.0' },
-      bttsYes:  { prob: calc.btts?.pBTTS,     ferO: calc.btts?.fairOddsBTTS,   market: 'BTTS Yes' },
-      bttsNo:   { prob: calc.btts?.pNoBTTS,   ferO: calc.btts?.fairOddsNoBTTS, market: 'BTTS No' },
+      over25:   { prob: calc.pOver,           ferO: calc.ferOver,              market: 'over2.5' },
+      under25:  { prob: calc.pUnder,          ferO: calc.ferUnder,             market: 'under2.5' },
+      over225:  { prob: calc.ou225?.pOver225,  ferO: calc.ou225?.fairOver,     market: 'over2.25' },
+      under225: { prob: calc.ou225?.pUnder225, ferO: calc.ou225?.fairUnder,    market: 'under2.25' },
+      over275:  { prob: calc.ou275?.pOver275,  ferO: calc.ou275?.fairOver,     market: 'over2.75' },
+      under275: { prob: calc.ou275?.pUnder275, ferO: calc.ou275?.fairUnder,    market: 'under2.75' },
+      over30:   { prob: calc.ou30.pOver3,     ferO: calc.ou30.fairOver,        market: 'over3.0' },
+      under30:  { prob: calc.ou30.pUnder2,    ferO: calc.ou30.fairUnder,       market: 'under3.0' },
+      bttsYes:  { prob: calc.btts?.pBTTS,     ferO: calc.btts?.fairOddsBTTS,   market: 'btts-yes' },
+      bttsNo:   { prob: calc.btts?.pNoBTTS,   ferO: calc.btts?.fairOddsNoBTTS, market: 'btts-no' },
     }
     const { prob, ferO, market } = MINFO[marketKey] ?? {}
     if (!prob || !market) {
