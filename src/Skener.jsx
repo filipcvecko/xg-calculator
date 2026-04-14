@@ -388,8 +388,9 @@ function _runnersByOrder(market) {
 // O/U 2.5 — market 'Over/Under Total Goals 2.5'
 // runnerOrder 10 = Under 2.5, 20 = Over 2.5
 function extractOU25Odds(eventData) {
-  console.log('[extractOU25Odds] eventData:', JSON.stringify(eventData).slice(0, 300))
   const markets = _getMarkets(eventData)
+  console.log('[extractOU25Odds] markets.length:', markets.length, 'first market keys:', markets[0] ? Object.keys(markets[0]) : 'none')
+  console.log('[extractOU25Odds] first market sample:', JSON.stringify(markets[0]).slice(0, 300))
   const ouMarket = markets.find(m => {
     const n = _marketName(m).toLowerCase()
     return n.includes('2.5') && !n.includes('half') && !n.includes('home')
