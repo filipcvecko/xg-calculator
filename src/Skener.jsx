@@ -318,11 +318,19 @@ function buildBfMap(bfUpcoming, footyMatches) {
 
     if (match) {
       const matchId = String(match.id)
-      console.log(`[buildBfMap] paired: "${bfHome}" vs "${bfAway}" → matchId=${matchId} bfEventId=${ev.id}`)
+      console.log(`[buildBfMap] ✓ paired: "${bfHome}" vs "${bfAway}" → matchId=${matchId}`)
       map[matchId] = String(ev.id)
+    } else {
+      console.log(`[buildBfMap] ✗ no match for BetsAPI: "${bfHome}" vs "${bfAway}" (time=${bfTime})`)
     }
   }
   console.log('[buildBfMap] paired', Object.keys(map).length, '/', footyMatches.length, 'matches')
+  // log unpaired FootyStats matches for diagnosis
+  const pairedIds = new Set(Object.keys(map))
+  footyMatches.forEach(m => {
+    if (!pairedIds.has(String(m.id)))
+      console.log(`[buildBfMap] ✗ unpaired FootyStats: "${m.home_name ?? m.homeName}" vs "${m.away_name ?? m.awayName}" (time=${m.date_unix})`)
+  })
   return map
 }
 
