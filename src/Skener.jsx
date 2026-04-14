@@ -1091,7 +1091,7 @@ export default function Skener() {
       match_time:  kickoff,
       bet_time:    betTime,
       hours_to_ko: hoursToKO != null ? Math.round(hoursToKO * 10) / 10 : null,
-      league:      match.competition_name ?? match.league_name ?? null,
+      league:      lgNameMap[String(match.competition_id)] ?? match.competition_name ?? match.league_name ?? null,
       model_prob:  prob,
       market_prob: null,
       pinnacle_open:  pinnOpenVal != null && pinnOpenVal > 1 ? pinnOpenVal : null,
