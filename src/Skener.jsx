@@ -290,21 +290,113 @@ async function fetchBetfairEvent(eventId) {
   } catch { return null }
 }
 
-function extractOU25Odds(eventData) {
-  // event may be an object with markets array, or array of markets
-  const markets = Array.isArray(eventData)
+// ─── Betfair market parsing helpers ──────────────────────────────────────────
+
+function _getMarkets(eventData) {
+  return Array.isArray(eventData)
     ? eventData
     : (eventData?.markets ?? eventData?.mc ?? [])
-  const ouMarket = markets.find(m =>
-    String(m.marketName ?? m.marketCatalogue?.marketName ?? '').toLowerCase().includes('2.5')
-  )
+}
+
+function _marketName(m) {
+  return String(m.marketName ?? m.marketCatalogue?.marketName ?? '')
+}
+
+function _runnerOdds(market, namePart) {
+  const runners = market.runnerDetails ?? market.runners ?? []
+  const r = runners.find(r => {
+    const name = String(
+      r.runnerName ?? r.runner?.runnerName ?? r.name ?? ''
+    ).toLowerCase()
+    return name.includes(namePart.toLowerCase())
+  })
+  const val = +(r?.runnerOdds?.decimalDisplayOdds?.decimalOdds ?? 0)
+  return val > 1 ? val : null
+}
+
+// O/U 2.5 — market 'Over/Under Total Goals 2.5' (runners: Over 2.5 / Under 2.5)
+// Exclude markets with 'half', 'home', 'away', '&' to avoid false matches
+function extractOU25Odds(eventData) {
+  const markets = _getMarkets(eventData)
+  const ouMarket = markets.find(m => {
+    const n = _marketName(m).toLowerCase()
+    return n.includes('2.5') && !n.includes('half') && !n.includes('home')
+        && !n.includes('away') && !n.includes('&')
+  })
   if (!ouMarket) return null
-  const runners   = ouMarket.runnerDetails ?? ouMarket.runners ?? []
-  const backOver  = +(runners[0]?.runnerOdds?.decimalDisplayOdds?.decimalOdds ?? 0)
-  const backUnder = +(runners[1]?.runnerOdds?.decimalDisplayOdds?.decimalOdds ?? 0)
   return {
-    backOver:  backOver  > 1 ? backOver  : null,
-    backUnder: backUnder > 1 ? backUnder : null,
+    backOver:  _runnerOdds(ouMarket, 'over'),
+    backUnder: _runnerOdds(ouMarket, 'under'),
+  }
+}
+
+// O/U 3.0 — market 'Over/Under Total Goals 3.0' (runners: Over 3.0 / Under 3.0)
+function extractOU30Odds(eventData) {
+  const markets = _getMarkets(eventData)
+  const ouMarket = markets.find(m => {
+    const n = _marketName(m).toLowerCase()
+    return n.includes('3.0') && !n.includes('half') && !n.includes('home')
+        && !n.includes('away') && !n.includes('&')
+  })
+  if (!ouMarket) return null
+  return {
+    backOver:  _runnerOdds(ouMarket, 'over'),
+    backUnder: _runnerOdds(ouMarket, 'under'),
+  }
+}
+
+// O/U 2.25 — dve samostatné markets: 'Over 2.0 & 2.5' a 'Under 2.0 & 2.5'
+function extractOU225Odds(eventData) {
+  const markets = _getMarkets(eventData)
+  const findSingle = (namePart) =>
+    markets.find(m => _marketName(m).toLowerCase().includes(namePart.toLowerCase()))
+  const overMkt  = findSingle('over 2.0 & 2.5')  ?? findSingle('over 2.0&2.5')
+  const underMkt = findSingle('under 2.0 & 2.5') ?? findSingle('under 2.0&2.5')
+  if (!overMkt && !underMkt) return null
+  // pre tieto markety je cena na prvom runneri (single-runner market)
+  function firstOdds(mkt) {
+    if (!mkt) return null
+    const runners = mkt.runnerDetails ?? mkt.runners ?? []
+    const val = +(runners[0]?.runnerOdds?.decimalDisplayOdds?.decimalOdds ?? 0)
+    return val > 1 ? val : null
+  }
+  return {
+    backOver:  firstOdds(overMkt),
+    backUnder: firstOdds(underMkt),
+  }
+}
+
+// O/U 2.75 — dve samostatné markets: 'Over 2.5 & 3.0' a 'Under 2.5 & 3.0'
+function extractOU275Odds(eventData) {
+  const markets = _getMarkets(eventData)
+  const findSingle = (namePart) =>
+    markets.find(m => _marketName(m).toLowerCase().includes(namePart.toLowerCase()))
+  const overMkt  = findSingle('over 2.5 & 3.0')  ?? findSingle('over 2.5&3.0')
+  const underMkt = findSingle('under 2.5 & 3.0') ?? findSingle('under 2.5&3.0')
+  if (!overMkt && !underMkt) return null
+  function firstOdds(mkt) {
+    if (!mkt) return null
+    const runners = mkt.runnerDetails ?? mkt.runners ?? []
+    const val = +(runners[0]?.runnerOdds?.decimalDisplayOdds?.decimalOdds ?? 0)
+    return val > 1 ? val : null
+  }
+  return {
+    backOver:  firstOdds(overMkt),
+    backUnder: firstOdds(underMkt),
+  }
+}
+
+// BTTS — market 'Both Teams To Score' alebo 'Both teams to Score?' (runners: Yes / No)
+function extractBTTSOdds(eventData) {
+  const markets = _getMarkets(eventData)
+  const bttsMarket = markets.find(m => {
+    const n = _marketName(m).toLowerCase()
+    return n.includes('both teams to score')
+  })
+  if (!bttsMarket) return null
+  return {
+    backYes: _runnerOdds(bttsMarket, 'yes'),
+    backNo:  _runnerOdds(bttsMarket, 'no'),
   }
 }
 
@@ -486,15 +578,25 @@ function MatchCard({ match, calc, bfOdds, evOver, evUnder, isWatched, isSaving, 
   const [expanded, setExpanded] = useState(false)
   const [inputs, setInputs]     = useState({})
 
-  // auto-fill Betfair O/U 2.5 odds into back fields (only if user hasn't typed)
+  // auto-fill Betfair odds into back fields (only if user hasn't typed)
   useEffect(() => {
     if (!bfOdds) return
     setInputs(prev => {
       const next = { ...prev }
-      if (bfOdds.backOver  != null && !prev.over25?.back)
-        next.over25  = { ...prev.over25,  back: String(bfOdds.backOver)  }
-      if (bfOdds.backUnder != null && !prev.under25?.back)
-        next.under25 = { ...prev.under25, back: String(bfOdds.backUnder) }
+      const fill = (mkey, val) => {
+        if (val != null && !prev[mkey]?.back)
+          next[mkey] = { ...prev[mkey], back: String(val) }
+      }
+      fill('over25',   bfOdds.ou25?.backOver)
+      fill('under25',  bfOdds.ou25?.backUnder)
+      fill('over225',  bfOdds.ou225?.backOver)
+      fill('under225', bfOdds.ou225?.backUnder)
+      fill('over275',  bfOdds.ou275?.backOver)
+      fill('under275', bfOdds.ou275?.backUnder)
+      fill('over30',   bfOdds.ou30?.backOver)
+      fill('under30',  bfOdds.ou30?.backUnder)
+      fill('bttsYes',  bfOdds.btts?.backYes)
+      fill('bttsNo',   bfOdds.btts?.backNo)
       return next
     })
   }, [bfOdds])
@@ -808,22 +910,29 @@ export default function Skener() {
     const eventData = await fetchBetfairEvent(bfEventId)
     console.log(`[fetchAndApplyOdds] eventData keys:`, eventData ? Object.keys(eventData) : 'null')
     if (!eventData) return
-    const odds = extractOU25Odds(eventData)
-    console.log(`[fetchAndApplyOdds] matchId=${matchId} → backOver=${odds?.backOver} backUnder=${odds?.backUnder}`)
-    if (!odds) return
 
-    setBfOdds(prev => ({ ...prev, [matchId]: odds }))
+    const ou25  = extractOU25Odds(eventData)
+    const ou30  = extractOU30Odds(eventData)
+    const ou225 = extractOU225Odds(eventData)
+    const ou275 = extractOU275Odds(eventData)
+    const btts  = extractBTTSOdds(eventData)
+    console.log(`[fetchAndApplyOdds] matchId=${matchId} → ou25:`, ou25, 'ou30:', ou30, 'ou225:', ou225, 'ou275:', ou275, 'btts:', btts)
+
+    if (!ou25 && !ou30 && !ou225 && !ou275 && !btts) return
+
+    const allOdds = { ou25, ou30, ou225, ou275, btts }
+    setBfOdds(prev => ({ ...prev, [matchId]: allOdds }))
 
     if (!calc) return
-    const evOver  = odds.backOver  ? calcBackEV(calc.pOver,  odds.backOver,  COMM) : null
-    const evUnder = odds.backUnder ? calcBackEV(calc.pUnder, odds.backUnder, COMM) : null
+    const evOver  = ou25?.backOver  ? calcBackEV(calc.pOver,  ou25.backOver,  COMM) : null
+    const evUnder = ou25?.backUnder ? calcBackEV(calc.pUnder, ou25.backUnder, COMM) : null
     const evMet   = (evOver  != null && evOver  >= EV_MIN)
                  || (evUnder != null && evUnder >= EV_MIN)
 
     if (evMet && !notifiedRef.current.has(matchId)) {
       const match = matchesRef.current.find(m => String(m.id) === matchId)
       if (match) {
-        const msg = buildTelegramMsg(match, calc, odds, evOver, evUnder)
+        const msg = buildTelegramMsg(match, calc, ou25, evOver, evUnder)
         await sendTelegram(msg)
       }
       setNotified(prev => new Set([...prev, matchId]))
@@ -979,8 +1088,8 @@ export default function Skener() {
           const id    = String(m.id)
           const calc  = Object.prototype.hasOwnProperty.call(results, id) ? results[id] : undefined
           const odds  = bfOdds[id] ?? null
-          const evOver  = calc && odds?.backOver  ? calcBackEV(calc.pOver,  odds.backOver,  COMM) : null
-          const evUnder = calc && odds?.backUnder ? calcBackEV(calc.pUnder, odds.backUnder, COMM) : null
+          const evOver  = calc && odds?.ou25?.backOver  ? calcBackEV(calc.pOver,  odds.ou25.backOver,  COMM) : null
+          const evUnder = calc && odds?.ou25?.backUnder ? calcBackEV(calc.pUnder, odds.ou25.backUnder, COMM) : null
           return (
             <MatchCard
               key={id}
