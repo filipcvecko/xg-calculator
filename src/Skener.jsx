@@ -272,6 +272,60 @@ async function fetchLeagueAvg(seasonId) {
   } catch { return null }
 }
 
+// ─── BetsAPI ↔ FootyStats team-name matching ─────────────────────────────────
+
+// Normalise a team name for fuzzy comparison:
+// lowercase, strip accents, remove common suffixes/punctuation, collapse spaces
+function cleanName(s) {
+  return String(s ?? '')
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')   // strip diacritics
+    .replace(/\bfc\b|\baf\b|\bsc\b|\bac\b|\bfk\b|\bsk\b|\bif\b|\bbk\b|\bvfb\b|\bsv\b|\brcd\b/g, '')
+    .replace(/[^a-z0-9 ]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+// Returns true if two team names are considered the same club
+function namesMatch(a, b) {
+  const ca = cleanName(a)
+  const cb = cleanName(b)
+  if (ca === cb) return true
+  // one fully contains the other (handles "Man United" vs "Manchester United" partially)
+  if (ca.length >= 4 && cb.includes(ca)) return true
+  if (cb.length >= 4 && ca.includes(cb)) return true
+  return false
+}
+
+// Build matchId → betfairEventId map by pairing on home+away names and kick-off time (±3h)
+function buildBfMap(bfUpcoming, footyMatches) {
+  const THREE_HOURS = 3 * 60 * 60
+  const map = {}
+  for (const ev of bfUpcoming) {
+    const bfHome = ev.home?.name
+    const bfAway = ev.away?.name
+    const bfTime = Number(ev.time)
+    if (!bfHome || !bfAway || !bfTime) continue
+
+    const match = footyMatches.find(m => {
+      const fHome = m.home_name ?? m.homeName
+      const fAway = m.away_name ?? m.awayName
+      const fTime = Number(m.date_unix)
+      if (!fHome || !fAway || !fTime) return false
+      const timeDiff = Math.abs(fTime - bfTime)
+      return timeDiff <= THREE_HOURS && namesMatch(fHome, bfHome) && namesMatch(fAway, bfAway)
+    })
+
+    if (match) {
+      const matchId = String(match.id)
+      console.log(`[buildBfMap] paired: "${bfHome}" vs "${bfAway}" → matchId=${matchId} bfEventId=${ev.id}`)
+      map[matchId] = String(ev.id)
+    }
+  }
+  console.log('[buildBfMap] paired', Object.keys(map).length, '/', footyMatches.length, 'matches')
+  return map
+}
+
 async function fetchBetfairUpcoming() {
   try {
     const res  = await fetch('/api/betsapi?endpoint=betfair%2Fupcoming&sport_id=1')
@@ -808,10 +862,7 @@ export default function Skener() {
         const bfUpcoming = await fetchBetfairUpcoming()
         console.log('[bfUpcoming] count:', bfUpcoming?.length, 'first entry:', JSON.stringify(bfUpcoming?.[0]).slice(0, 200))
         if (abortRef.current) return
-        const newBfMap = {}
-        for (const ev of bfUpcoming) {
-          if (ev.our_event_id) newBfMap[String(ev.our_event_id)] = String(ev.id)
-        }
+        const newBfMap = buildBfMap(bfUpcoming, raw)
         console.log('[Skener] bfMap (cache path) entries:', Object.keys(newBfMap).length, newBfMap)
         console.log('[Skener] match IDs (cache):', raw.map(m => String(m.id)))
         setBfMap(newBfMap)
@@ -858,11 +909,8 @@ export default function Skener() {
     console.log('[Skener] newNameMap:', newNameMap)
     setLgNameMap(newNameMap)
 
-    // build our_event_id → betfairEventId map
-    const newBfMap = {}
-    for (const ev of bfUpcoming) {
-      if (ev.our_event_id) newBfMap[String(ev.our_event_id)] = String(ev.id)
-    }
+    // build matchId → betfairEventId map via home/away name + time matching
+    const newBfMap = buildBfMap(bfUpcoming, raw)
     console.log('[Skener] bfMap entries:', Object.keys(newBfMap).length, newBfMap)
     console.log('[Skener] match IDs:', raw.map(m => String(m.id)))
     setBfMap(newBfMap)
