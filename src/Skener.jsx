@@ -708,6 +708,8 @@ export default function Skener() {
         for (const ev of bfUpcoming) {
           if (ev.our_event_id) newBfMap[String(ev.our_event_id)] = String(ev.id)
         }
+        console.log('[Skener] bfMap (cache path) entries:', Object.keys(newBfMap).length, newBfMap)
+        console.log('[Skener] match IDs (cache):', raw.map(m => String(m.id)))
         setBfMap(newBfMap)
         await Promise.all(raw.map(m => {
           const id        = String(m.id)
@@ -757,6 +759,8 @@ export default function Skener() {
     for (const ev of bfUpcoming) {
       if (ev.our_event_id) newBfMap[String(ev.our_event_id)] = String(ev.id)
     }
+    console.log('[Skener] bfMap entries:', Object.keys(newBfMap).length, newBfMap)
+    console.log('[Skener] match IDs:', raw.map(m => String(m.id)))
     setBfMap(newBfMap)
 
     // process all matches in parallel — all data cached
@@ -800,9 +804,12 @@ export default function Skener() {
   }
 
   async function fetchAndApplyOdds(matchId, bfEventId, calc, fromWatch) {
+    console.log(`[fetchAndApplyOdds] matchId=${matchId} bfEventId=${bfEventId} fromWatch=${fromWatch}`)
     const eventData = await fetchBetfairEvent(bfEventId)
+    console.log(`[fetchAndApplyOdds] eventData keys:`, eventData ? Object.keys(eventData) : 'null')
     if (!eventData) return
     const odds = extractOU25Odds(eventData)
+    console.log(`[fetchAndApplyOdds] matchId=${matchId} → backOver=${odds?.backOver} backUnder=${odds?.backUnder}`)
     if (!odds) return
 
     setBfOdds(prev => ({ ...prev, [matchId]: odds }))
