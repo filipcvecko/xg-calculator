@@ -397,9 +397,8 @@ function _logRunners(label, market) {
 function extractOU25Odds(eventData) {
   const markets = _getMarkets(eventData)
   const ouMarket = markets.find(m => {
-    const n = _marketName(m).toLowerCase()
-    return n.includes('2.5') && !n.includes('half') && !n.includes('home')
-        && !n.includes('away') && !n.includes('&')
+    const n = m.market?.marketName ?? ''
+    return n === 'Over/Under 2.5 Goals' || n === 'Over/Under Total Goals 2.5'
   })
   if (!ouMarket) return null
   return {
