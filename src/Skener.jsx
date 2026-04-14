@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import {
-  calcOverUnder, calcOU30,
+  calcOverUnder, calcOU30, calcBTTS,
   blendLambda, fairOdds, plattCalibrate,
   dynamicRho, timeDecayBlend, extractLastXStats,
   fmt2, fmt3, fmtPct, fmtSign,
@@ -166,6 +166,7 @@ function calcMatchFromStats(homeRaw, awayRaw, lgAvg, homeLastXRaw = null, awayLa
     ferOver:  fairOdds(pOver),
     ferUnder: fairOdds(pUnder),
     ou30,
+    btts: calcBTTS(lH, lA, rhoVal),
     modelType: hasGoals ? (hasXGA ? 'full' : 'goals') : (hasXGA ? 'xga' : 'basic'),
     mp_h: hs.mp_h, mp_a: as_.mp_a,
   }
@@ -408,34 +409,92 @@ function EVRow({ label, ev, odds, p, fairO }) {
 
 const MARKET_WEIGHT = 0.50
 
-function MatchCard({ match, calc, bfOdds, evOver, evUnder, isWatched, isSaving, onWatch, onBack, leagueName }) {
-  const [expanded,    setExpanded]    = useState(false)
-  const [manualOver,  setManualOver]  = useState('')
-  const [manualUnder, setManualUnder] = useState('')
-  const [pinnOpen,    setPinnOpen]    = useState('')
-
+function MarketCard({ mkey, label, prob, ferOdds, color, inputs, setInputs, onBet, isSaving }) {
   const pf = v => { const n = parseFloat(v); return n > 1 ? n : null }
+  const back = inputs[mkey]?.back ?? ''
+  const pinn = inputs[mkey]?.pinn ?? ''
+  const backOdds = pf(back)
+  const pinnOdds = pf(pinn)
 
-  const mOver  = pf(manualOver)
-  const mUnder = pf(manualUnder)
+  const pMkt   = backOdds ? 1 / backOdds : null
+  const pBlend = pMkt != null ? MARKET_WEIGHT * prob + (1 - MARKET_WEIGHT) * pMkt : null
+  const ev     = pBlend && backOdds ? calcBackEV(pBlend, backOdds, COMM) : null
+  const ferBlend = pBlend ? fairOdds(pBlend) : null
+  const clv    = backOdds && pinnOdds ? (backOdds / pinnOdds - 1) * 100 : null
 
-  // back odds = midpoint directly
-  const pMktOver  = mOver  ? 1 / mOver  : null
-  const pMktUnder = mUnder ? 1 / mUnder : null
+  const set = (field, val) => setInputs(p => ({ ...p, [mkey]: { ...p[mkey], [field]: val } }))
 
-  // blend model + market (50/50)
-  const pBlendOver  = calc && pMktOver  ? MARKET_WEIGHT * calc.pOver  + (1 - MARKET_WEIGHT) * pMktOver  : null
-  const pBlendUnder = calc && pMktUnder ? MARKET_WEIGHT * calc.pUnder + (1 - MARKET_WEIGHT) * pMktUnder : null
+  return (
+    <div style={{ background: 'var(--bg3)', borderRadius: 8, padding: '10px 12px', borderTop: `2px solid ${color}` }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+        <div>
+          <div style={{ fontSize: 9, color: 'var(--text3)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{label}</div>
+          <div style={{ fontSize: 20, fontWeight: 800, color, fontFamily: 'var(--display)' }}>{fmtPct(prob * 100)}</div>
+          <div style={{ fontSize: 10, color: 'var(--text3)' }}>fair {ferOdds ? fmt2(ferOdds) : '—'}</div>
+        </div>
+        {ev != null && (
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: 9, color: 'var(--text3)' }}>EV (blend)</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: evColor(ev), fontFamily: 'var(--display)' }}>{fmtSign(ev * 100)}%</div>
+            {ferBlend && <div style={{ fontSize: 10, color: 'var(--text3)' }}>fair {fmt2(ferBlend)}</div>}
+          </div>
+        )}
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+        <div>
+          <div style={{ fontSize: 9, color: 'var(--text3)', marginBottom: 2 }}>Back odds</div>
+          <input className="inp inp-sm" type="number" step="0.01" placeholder="napr. 2.10"
+            value={back} onChange={e => set('back', e.target.value)} style={{ width: '100%' }} />
+          {ev != null && (
+            <div style={{ fontSize: 9, marginTop: 3, color: 'var(--text3)' }}>
+              model {fmtPct(prob * 100)} · blend {fmtPct((pBlend ?? 0) * 100)}
+            </div>
+          )}
+        </div>
+        <div>
+          <div style={{ fontSize: 9, color: 'var(--text3)', marginBottom: 2 }}>Pinnacle Open</div>
+          <input className="inp inp-sm" type="number" step="0.001" placeholder="napr. 2.050"
+            value={pinn} onChange={e => set('pinn', e.target.value)} style={{ width: '100%' }} />
+          {clv != null && (
+            <div style={{ fontSize: 10, fontWeight: 700, marginTop: 2, color: clv >= 0 ? 'var(--green)' : 'var(--red)' }}>
+              CLV: {clv >= 0 ? '+' : ''}{clv.toFixed(1)}%
+            </div>
+          )}
+        </div>
+      </div>
+      {backOdds && (
+        <button
+          className="btn-save-back"
+          style={{ width: '100%', marginTop: 8, fontSize: 10, padding: '7px 0',
+            opacity: isSaving === mkey ? 0.5 : 1,
+            background: ev != null && ev >= EV_MIN ? undefined : 'rgba(108,92,231,0.3)' }}
+          disabled={isSaving != null}
+          onClick={() => onBet(backOdds, mkey, pinnOdds)}
+        >
+          {isSaving === mkey ? '…' : `BET ${label} @ ${fmt2(backOdds)}`}
+        </button>
+      )}
+    </div>
+  )
+}
 
-  // EV and fair odds from blended prob at back odds
-  const mEvOver   = pBlendOver  && mOver  ? calcBackEV(pBlendOver,  mOver,  COMM) : null
-  const mEvUnder  = pBlendUnder && mUnder ? calcBackEV(pBlendUnder, mUnder, COMM) : null
-  const mFerOver  = pBlendOver  ? fairOdds(pBlendOver)  : null
-  const mFerUnder = pBlendUnder ? fairOdds(pBlendUnder) : null
+function MatchCard({ match, calc, bfOdds, evOver, evUnder, isWatched, isSaving, onWatch, onBack, leagueName }) {
+  const [expanded, setExpanded] = useState(false)
+  const [inputs, setInputs]     = useState({})
+
   const homeName = match.home_name ?? match.homeName ?? '?'
   const awayName = match.away_name ?? match.awayName ?? '?'
   const koTime   = fmtKO(match.date_unix)
   const hasEV    = (evOver != null && evOver >= EV_MIN) || (evUnder != null && evUnder >= EV_MIN)
+
+  const MARKETS = calc ? [
+    { mkey: 'over25',  label: 'Over 2.5',  prob: calc.pOver,        ferOdds: calc.ferOver,             color: 'var(--accent2)' },
+    { mkey: 'under25', label: 'Under 2.5', prob: calc.pUnder,       ferOdds: calc.ferUnder,            color: 'var(--green)' },
+    { mkey: 'over30',  label: 'Over 3.0',  prob: calc.ou30.pOver3,  ferOdds: calc.ou30.fairOver,       color: '#a29bfe' },
+    { mkey: 'under30', label: 'Under 3.0', prob: calc.ou30.pUnder2, ferOdds: calc.ou30.fairUnder,      color: '#00b894' },
+    { mkey: 'bttsYes', label: 'BTTS Yes',  prob: calc.btts.pBTTS,   ferOdds: calc.btts.fairOddsBTTS,   color: '#fd79a8' },
+    { mkey: 'bttsNo',  label: 'BTTS No',   prob: calc.btts.pNoBTTS, ferOdds: calc.btts.fairOddsNoBTTS, color: '#fab1a0' },
+  ] : []
 
   return (
     <div className="card" style={{ padding: 0, overflow: 'hidden', borderLeft: hasEV ? '3px solid var(--green)' : undefined }}>
@@ -509,167 +568,22 @@ function MatchCard({ match, calc, bfOdds, evOver, evUnder, isWatched, isSaving, 
             </div>
           </div>
 
-          {/* O/U 2.5 probs */}
-          <div>
-            <div style={{ fontSize: 9, color: 'var(--text3)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 6 }}>Over / Under 2.5</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-              <div style={{ background: 'var(--bg3)', borderRadius: 6, padding: '10px 12px', borderTop: '2px solid var(--accent)' }}>
-                <div style={{ fontSize: 9, color: 'var(--text3)', letterSpacing: '0.1em' }}>OVER 2.5</div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--accent2)', fontFamily: 'var(--display)' }}>{fmtPct(calc.pOver * 100)}</div>
-                <div style={{ fontSize: 11, color: 'var(--text3)' }}>fair {calc.ferOver ? fmt2(calc.ferOver) : '—'}</div>
-              </div>
-              <div style={{ background: 'var(--bg3)', borderRadius: 6, padding: '10px 12px', borderTop: '2px solid var(--green)' }}>
-                <div style={{ fontSize: 9, color: 'var(--text3)', letterSpacing: '0.1em' }}>UNDER 2.5</div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--green)', fontFamily: 'var(--display)' }}>{fmtPct(calc.pUnder * 100)}</div>
-                <div style={{ fontSize: 11, color: 'var(--text3)' }}>fair {calc.ferUnder ? fmt2(calc.ferUnder) : '—'}</div>
-              </div>
-            </div>
+          {/* Market karty — 2 stĺpce, 3 riadky */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            {MARKETS.map(m => (
+              <MarketCard
+                key={m.mkey}
+                {...m}
+                inputs={inputs}
+                setInputs={setInputs}
+                onBet={(odds, mkey, pinn) => onBack(match, calc, odds, mkey, pinn)}
+                isSaving={isSaving}
+              />
+            ))}
           </div>
 
-          {/* O/U 3.0 probs */}
-          <div>
-            <div style={{ fontSize: 9, color: 'var(--text3)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 6 }}>Over / Under 3.0 (s push)</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-              <div style={{ background: 'var(--bg3)', borderRadius: 6, padding: '10px 12px', borderTop: '2px solid #a29bfe' }}>
-                <div style={{ fontSize: 9, color: 'var(--text3)', letterSpacing: '0.1em' }}>OVER 3.0</div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: '#a29bfe', fontFamily: 'var(--display)' }}>{fmtPct(calc.ou30.pOver3 * 100)}</div>
-                <div style={{ fontSize: 11, color: 'var(--text3)' }}>
-                  fair {calc.ou30.fairOver ? fmt2(calc.ou30.fairOver) : '—'}
-                  <span style={{ marginLeft: 6, opacity: 0.6 }}>push {fmtPct(calc.ou30.pExact3 * 100)}</span>
-                </div>
-              </div>
-              <div style={{ background: 'var(--bg3)', borderRadius: 6, padding: '10px 12px', borderTop: '2px solid #00b894' }}>
-                <div style={{ fontSize: 9, color: 'var(--text3)', letterSpacing: '0.1em' }}>UNDER 3.0</div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: '#00b894', fontFamily: 'var(--display)' }}>{fmtPct(calc.ou30.pUnder2 * 100)}</div>
-                <div style={{ fontSize: 11, color: 'var(--text3)' }}>
-                  fair {calc.ou30.fairUnder ? fmt2(calc.ou30.fairUnder) : '—'}
-                  <span style={{ marginLeft: 6, opacity: 0.6 }}>push {fmtPct(calc.ou30.pExact3 * 100)}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Betfair EV sekcia */}
-          <div>
-            <div style={{ fontSize: 9, color: 'var(--text3)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 6 }}>
-              Betfair O/U 2.5 — EV (Back, 5% comm)
-              {!bfOdds && <span style={{ marginLeft: 8, opacity: 0.5 }}>kurzy nedostupné</span>}
-            </div>
-            {bfOdds && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <EVRow
-                  label="Back Over"
-                  ev={evOver}
-                  odds={bfOdds.backOver}
-                  p={calc.pOver}
-                  fairO={calc.ferOver}
-                />
-                <EVRow
-                  label="Back Under"
-                  ev={evUnder}
-                  odds={bfOdds.backUnder}
-                  p={calc.pUnder}
-                  fairO={calc.ferUnder}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* manuálny vstup kurzov */}
-          <div style={{ background: 'var(--bg3)', borderRadius: 8, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ fontSize: 9, color: 'var(--text3)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 2 }}>
-              Manuálne kurzy
-            </div>
-            {/* Back odds row */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-              <div>
-                <div style={{ fontSize: 9, color: 'var(--text3)', marginBottom: 3 }}>Back Over 2.5</div>
-                <input
-                  className="inp inp-sm"
-                  type="number" step="0.01" placeholder="napr. 2.10"
-                  value={manualOver}
-                  onChange={e => setManualOver(e.target.value)}
-                  style={{ width: '100%' }}
-                />
-              </div>
-              <div>
-                <div style={{ fontSize: 9, color: 'var(--text3)', marginBottom: 3 }}>Back Under 2.5</div>
-                <input
-                  className="inp inp-sm"
-                  type="number" step="0.01" placeholder="napr. 1.85"
-                  value={manualUnder}
-                  onChange={e => setManualUnder(e.target.value)}
-                  style={{ width: '100%' }}
-                />
-              </div>
-            </div>
-            {/* Pinnacle */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, alignItems: 'start' }}>
-              <div>
-                <div style={{ fontSize: 9, color: 'var(--text3)', marginBottom: 3 }}>Pinnacle Open (voliteľné)</div>
-                <input
-                  className="inp inp-sm"
-                  type="number" step="0.001" placeholder="napr. 2.050"
-                  value={pinnOpen}
-                  onChange={e => setPinnOpen(e.target.value)}
-                  style={{ width: '100%' }}
-                />
-                {(() => {
-                  const pp = pf(pinnOpen)
-                  if (!pp) return null
-                  const lines = []
-                  if (mOver) lines.push({ label: 'CLV Over',  clv: (mOver  / pp - 1) * 100 })
-                  if (mUnder) lines.push({ label: 'CLV Under', clv: (mUnder / pp - 1) * 100 })
-                  if (lines.length === 0) return null
-                  return (
-                    <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                      {lines.map(({ label, clv }) => (
-                        <div key={label} style={{ fontSize: 10, fontWeight: 700, color: clv >= 0 ? 'var(--green)' : 'var(--red)' }}>
-                          {label}: {clv >= 0 ? '+' : ''}{clv.toFixed(1)}%
-                        </div>
-                      ))}
-                    </div>
-                  )
-                })()}
-              </div>
-            </div>
-
-            {(mOver || mUnder) && calc && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
-                {mOver && (
-                  <>
-                    <EVRow
-                      label="Back Over 2.5"
-                      ev={mEvOver}
-                      odds={mOver}
-                      p={pBlendOver}
-                      fairO={mFerOver}
-                    />
-                    <div style={{ fontSize: 9, color: 'var(--text3)', paddingLeft: 2 }}>
-                      model {fmtPct(calc.pOver * 100)} · market {fmtPct(pMktOver * 100)} · blend {fmtPct(pBlendOver * 100)}
-                    </div>
-                  </>
-                )}
-                {mUnder && (
-                  <>
-                    <EVRow
-                      label="Back Under 2.5"
-                      ev={mEvUnder}
-                      odds={mUnder}
-                      p={pBlendUnder}
-                      fairO={mFerUnder}
-                    />
-                    <div style={{ fontSize: 9, color: 'var(--text3)', paddingLeft: 2 }}>
-                      model {fmtPct(calc.pUnder * 100)} · market {fmtPct(pMktUnder * 100)} · blend {fmtPct(pBlendUnder * 100)}
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* akčné tlačidlá */}
-          <div style={{ display: 'flex', gap: 8, marginTop: 2, flexWrap: 'wrap' }}>
+          {/* Sledovať */}
+          <div style={{ display: 'flex', gap: 8, marginTop: 2 }}>
             <button
               className="btn-ghost"
               style={{ fontSize: 10, padding: '7px 14px', color: isWatched ? '#fdcb6e' : 'var(--text2)', borderColor: isWatched ? 'rgba(253,203,110,0.5)' : undefined }}
@@ -677,50 +591,6 @@ function MatchCard({ match, calc, bfOdds, evOver, evUnder, isWatched, isSaving, 
             >
               {isWatched ? '■ Stop sledovanie' : '▶ Sledovať (30s)'}
             </button>
-
-            {bfOdds?.backOver && (
-              <button
-                className="btn-save-back"
-                style={{ fontSize: 10, padding: '7px 14px', opacity: isSaving === 'over' ? 0.5 : 1 }}
-                disabled={isSaving != null}
-                onClick={() => onBack(match, calc, bfOdds.backOver, true, null)}
-              >
-                {isSaving === 'over' ? '…' : `+ Back Over @ ${fmt2(bfOdds.backOver)}`}
-              </button>
-            )}
-            {bfOdds?.backUnder && (
-              <button
-                className="btn-save-back"
-                style={{ fontSize: 10, padding: '7px 14px', opacity: isSaving === 'under' ? 0.5 : 1 }}
-                disabled={isSaving != null}
-                onClick={() => onBack(match, calc, bfOdds.backUnder, false, null)}
-              >
-                {isSaving === 'under' ? '…' : `+ Back Under @ ${fmt2(bfOdds.backUnder)}`}
-              </button>
-            )}
-            {mOver && (
-              <button
-                className="btn-save-back"
-                style={{ fontSize: 10, padding: '7px 14px', opacity: isSaving === 'over' ? 0.5 : 1,
-                  background: mEvOver != null && mEvOver >= EV_MIN ? undefined : 'rgba(108,92,231,0.3)' }}
-                disabled={isSaving != null}
-                onClick={() => onBack(match, calc, mOver, true, pf(pinnOpen))}
-              >
-                {isSaving === 'over' ? '…' : `+ Back Over 2.5 @ ${fmt2(mOver)}`}
-              </button>
-            )}
-            {mUnder && (
-              <button
-                className="btn-save-back"
-                style={{ fontSize: 10, padding: '7px 14px', opacity: isSaving === 'under' ? 0.5 : 1,
-                  background: mEvUnder != null && mEvUnder >= EV_MIN ? undefined : 'rgba(108,92,231,0.3)' }}
-                disabled={isSaving != null}
-                onClick={() => onBack(match, calc, mUnder, false, pf(pinnOpen))}
-              >
-                {isSaving === 'under' ? '…' : `+ Back Under 2.5 @ ${fmt2(mUnder)}`}
-              </button>
-            )}
-
           </div>
         </div>
       )}
@@ -940,14 +810,25 @@ export default function Skener() {
     })
   }
 
-  async function handleBack(match, calc, oddsVal, isOver, pinnOpenVal = null) {
+  async function handleBack(match, calc, oddsVal, marketKey, pinnOpenVal = null) {
     const matchId = String(match.id)
-    setSaving(prev => ({ ...prev, [matchId]: isOver ? 'over' : 'under' }))
+    setSaving(prev => ({ ...prev, [matchId]: marketKey }))
 
-    const prob  = isOver ? calc.pOver  : calc.pUnder
-    const ferO  = isOver ? calc.ferOver : calc.ferUnder
+    const MINFO = {
+      over25:  { prob: calc.pOver,        ferO: calc.ferOver,              market: 'Over 2.5' },
+      under25: { prob: calc.pUnder,       ferO: calc.ferUnder,             market: 'Under 2.5' },
+      over30:  { prob: calc.ou30.pOver3,  ferO: calc.ou30.fairOver,        market: 'Over 3.0' },
+      under30: { prob: calc.ou30.pUnder2, ferO: calc.ou30.fairUnder,       market: 'Under 3.0' },
+      bttsYes: { prob: calc.btts.pBTTS,   ferO: calc.btts.fairOddsBTTS,   market: 'BTTS Yes' },
+      bttsNo:  { prob: calc.btts.pNoBTTS, ferO: calc.btts.fairOddsNoBTTS, market: 'BTTS No' },
+    }
+    const { prob, ferO, market } = MINFO[marketKey] ?? {}
+    if (!prob || !market) {
+      setSaving(prev => { const next = { ...prev }; delete next[matchId]; return next })
+      return
+    }
+
     const evVal = calcBackEV(prob, oddsVal, COMM)
-    const market   = isOver ? 'Over 2.5' : 'Under 2.5'
     const home     = match.home_name ?? match.homeName ?? '?'
     const away     = match.away_name ?? match.awayName ?? '?'
     const kickoff  = match.date_unix ? new Date(match.date_unix * 1000).toISOString() : null
@@ -986,6 +867,7 @@ export default function Skener() {
       pinnacle_close: null,
       pinnacle_clv:   null,
       is_archived: false,
+      calibration_version: 'v2',
     })
 
     setSaving(prev => { const next = { ...prev }; delete next[matchId]; return next })
@@ -993,7 +875,6 @@ export default function Skener() {
     if (error) {
       alert('Chyba pri ukladaní: ' + (error.message ?? JSON.stringify(error)))
     } else {
-      // stop watching this match
       setWatched(prev => { const next = new Set(prev); next.delete(matchId); return next })
     }
   }
