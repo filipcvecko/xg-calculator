@@ -486,6 +486,19 @@ function MatchCard({ match, calc, bfOdds, evOver, evUnder, isWatched, isSaving, 
   const [expanded, setExpanded] = useState(false)
   const [inputs, setInputs]     = useState({})
 
+  // auto-fill Betfair O/U 2.5 odds into back fields (only if user hasn't typed)
+  useEffect(() => {
+    if (!bfOdds) return
+    setInputs(prev => {
+      const next = { ...prev }
+      if (bfOdds.backOver  != null && !prev.over25?.back)
+        next.over25  = { ...prev.over25,  back: String(bfOdds.backOver)  }
+      if (bfOdds.backUnder != null && !prev.under25?.back)
+        next.under25 = { ...prev.under25, back: String(bfOdds.backUnder) }
+      return next
+    })
+  }, [bfOdds])
+
   const homeName = match.home_name ?? match.homeName ?? '?'
   const awayName = match.away_name ?? match.awayName ?? '?'
   const koTime   = fmtKO(match.date_unix)
