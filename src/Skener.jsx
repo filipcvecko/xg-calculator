@@ -275,12 +275,13 @@ async function fetchLeagueAvg(seasonId) {
 // ─── BetsAPI ↔ FootyStats team-name matching ─────────────────────────────────
 
 // Normalise a team name for fuzzy comparison:
-// lowercase, strip accents, remove common suffixes/punctuation, collapse spaces
+// lowercase, strip accents, remove club suffixes/prefixes and age groups, collapse spaces
 function cleanName(s) {
   return String(s ?? '')
     .toLowerCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')   // strip diacritics
-    .replace(/\bfc\b|\baf\b|\bsc\b|\bac\b|\bfk\b|\bsk\b|\bif\b|\bbk\b|\bvfb\b|\bsv\b|\brcd\b/g, '')
+    .replace(/\bu\s?21\b|\bu\s?23\b|\bu\s?18\b|\bu\s?19\b|\bu\s?20\b/g, '')  // age groups
+    .replace(/\bfc\b|\baf\b|\bsc\b|\bac\b|\bfk\b|\bsk\b|\bif\b|\bbk\b|\bvfb\b|\bsv\b|\brcd\b|\bnk\b|\bkf\b|\bcd\b|\bsd\b|\bcf\b|\brc\b/g, '')
     .replace(/[^a-z0-9 ]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
@@ -297,9 +298,9 @@ function namesMatch(a, b) {
   return false
 }
 
-// Build matchId → betfairEventId map by pairing on home+away names and kick-off time (±3h)
+// Build matchId → betfairEventId map by pairing on home+away names and kick-off time (±12h)
 function buildBfMap(bfUpcoming, footyMatches) {
-  const THREE_HOURS = 3 * 60 * 60
+  const TWELVE_HOURS = 12 * 60 * 60
   const map = {}
   for (const ev of bfUpcoming) {
     const bfHome = ev.home?.name
@@ -313,7 +314,7 @@ function buildBfMap(bfUpcoming, footyMatches) {
       const fTime = Number(m.date_unix)
       if (!fHome || !fAway || !fTime) return false
       const timeDiff = Math.abs(fTime - bfTime)
-      return timeDiff <= THREE_HOURS && namesMatch(fHome, bfHome) && namesMatch(fAway, bfAway)
+      return timeDiff <= TWELVE_HOURS && namesMatch(fHome, bfHome) && namesMatch(fAway, bfAway)
     })
 
     if (match) {
