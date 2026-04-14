@@ -492,8 +492,10 @@ function MatchCard({ match, calc, bfOdds, evOver, evUnder, isWatched, isSaving, 
     { mkey: 'under25', label: 'Under 2.5', prob: calc.pUnder,       ferOdds: calc.ferUnder,            color: 'var(--green)' },
     { mkey: 'over30',  label: 'Over 3.0',  prob: calc.ou30.pOver3,  ferOdds: calc.ou30.fairOver,       color: '#a29bfe' },
     { mkey: 'under30', label: 'Under 3.0', prob: calc.ou30.pUnder2, ferOdds: calc.ou30.fairUnder,      color: '#00b894' },
-    { mkey: 'bttsYes', label: 'BTTS Yes',  prob: calc.btts.pBTTS,   ferOdds: calc.btts.fairOddsBTTS,   color: '#fd79a8' },
-    { mkey: 'bttsNo',  label: 'BTTS No',   prob: calc.btts.pNoBTTS, ferOdds: calc.btts.fairOddsNoBTTS, color: '#fab1a0' },
+    ...(calc.btts ? [
+      { mkey: 'bttsYes', label: 'BTTS Yes',  prob: calc.btts.pBTTS,   ferOdds: calc.btts.fairOddsBTTS,   color: '#fd79a8' },
+      { mkey: 'bttsNo',  label: 'BTTS No',   prob: calc.btts.pNoBTTS, ferOdds: calc.btts.fairOddsNoBTTS, color: '#fab1a0' },
+    ] : []),
   ] : []
 
   return (
@@ -656,9 +658,14 @@ export default function Skener() {
     if (!forceRefresh) {
       const cached = loadCache(d)
       if (cached) {
+        // Invalidate cache if calc objects are missing btts (old format)
+        const cachedR = cached.results
+        const isStale = Object.values(cachedR).some(c => c && !c.btts)
+        if (isStale) {
+          console.log('[Skener] cache stale (chýba btts) — ignorujem')
+        } else {
         console.log('[Skener] cache hit pre', d, '— preskakujem FootyStats API')
         const raw     = cached.matches
-        const cachedR = cached.results
         setMatches(raw)
         setResults(cachedR)
         if (cached.lgNameMap) setLgNameMap(cached.lgNameMap)
@@ -681,6 +688,7 @@ export default function Skener() {
           return Promise.resolve()
         }))
         return
+        } // end: cache not stale
       }
     }
 
