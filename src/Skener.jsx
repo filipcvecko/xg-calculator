@@ -397,7 +397,7 @@ function extractOU25Odds(eventData) {
         && !n.includes('away') && !n.includes('&')
   })
   if (!ouMarket) return null
-  const [under, over] = _runnersByOrder(ouMarket)
+  const [over, under] = _runnersByOrder(ouMarket)  // runnerOrder 10 = Over, 20 = Under
   return {
     backOver:  _oddsFromRunner(over),
     backUnder: _oddsFromRunner(under),
@@ -405,7 +405,7 @@ function extractOU25Odds(eventData) {
 }
 
 // O/U 3.0 — market 'Over/Under Total Goals 3.0'
-// runnerOrder 10 = Under 3.0, 20 = Over 3.0
+// runnerOrder 10 = Over 3.0, 20 = Under 3.0
 function extractOU30Odds(eventData) {
   const markets = _getMarkets(eventData)
   const ouMarket = markets.find(m => {
@@ -414,7 +414,7 @@ function extractOU30Odds(eventData) {
         && !n.includes('away') && !n.includes('&')
   })
   if (!ouMarket) return null
-  const [under, over] = _runnersByOrder(ouMarket)
+  const [over, under] = _runnersByOrder(ouMarket)  // runnerOrder 10 = Over, 20 = Under
   return {
     backOver:  _oddsFromRunner(over),
     backUnder: _oddsFromRunner(under),
