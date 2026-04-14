@@ -358,16 +358,16 @@ async function fetchBetfairEvent(eventId) {
     const res  = await fetch(`/api/betsapi?endpoint=betfair%2Fevent&event_id=${eventId}`)
     if (!res.ok) return null
     const json = await res.json()
-    return json?.results ?? null
+    // results is [{event, competitions, markets: [...]}] — return results[0] directly
+    return json?.results?.[0] ?? null
   } catch { return null }
 }
 
 // ─── Betfair market parsing helpers ──────────────────────────────────────────
 
 function _getMarkets(eventData) {
-  // fetchBetfairEvent returns results = [{event, competitions, markets: [...]}]
-  const obj = Array.isArray(eventData) ? eventData[0] : eventData
-  return obj?.markets ?? obj?.mc ?? []
+  // eventData is results[0]: {event, competitions, markets: [...]}
+  return eventData?.markets ?? eventData?.mc ?? []
 }
 
 function _marketName(m) {
