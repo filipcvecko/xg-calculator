@@ -374,38 +374,41 @@ function _marketName(m) {
   return String(m.market?.marketName ?? m.marketName ?? m.marketCatalogue?.marketName ?? '')
 }
 
-// runnerOrder: 10 = Under/No (nižší), 20 = Over/Yes (vyšší)
 function _oddsFromRunner(r) {
   const val = +(r?.runnerOdds?.decimalDisplayOdds?.decimalOdds ?? 0)
   return val > 1 ? val : null
 }
 
-function _runnersByOrder(market) {
+function _runnerById(market, selectionId) {
   const runners = market.runnerDetails ?? market.runners ?? []
-  return [...runners].sort((a, b) => (a.runnerOrder ?? 0) - (b.runnerOrder ?? 0))
+  return runners.find(r => Number(r.selectionId ?? r.runner?.selectionId) === selectionId) ?? null
 }
 
-// O/U 2.5 — market 'Over/Under Total Goals 2.5'
-// runnerOrder 10 = Under 2.5, 20 = Over 2.5
+function _logRunners(label, market) {
+  const runners = market.runnerDetails ?? market.runners ?? []
+  console.log(`[${label}] runners:`, runners.map(r => ({
+    selectionId: r.selectionId ?? r.runner?.selectionId,
+    runnerOrder: r.runnerOrder,
+    odds: r.runnerOdds?.decimalDisplayOdds?.decimalOdds,
+  })))
+}
+
+// O/U 2.5 — selectionId 47972 = Over 2.5, 47973 = Under 2.5
 function extractOU25Odds(eventData) {
   const markets = _getMarkets(eventData)
-  console.log('[extractOU25Odds] markets.length:', markets.length, 'first market keys:', markets[0] ? Object.keys(markets[0]) : 'none')
-  console.log('[extractOU25Odds] first market sample:', JSON.stringify(markets[0]).slice(0, 300))
   const ouMarket = markets.find(m => {
     const n = _marketName(m).toLowerCase()
     return n.includes('2.5') && !n.includes('half') && !n.includes('home')
         && !n.includes('away') && !n.includes('&')
   })
   if (!ouMarket) return null
-  const [over, under] = _runnersByOrder(ouMarket)  // runnerOrder 10 = Over, 20 = Under
   return {
-    backOver:  _oddsFromRunner(over),
-    backUnder: _oddsFromRunner(under),
+    backOver:  _oddsFromRunner(_runnerById(ouMarket, 47972)),
+    backUnder: _oddsFromRunner(_runnerById(ouMarket, 47973)),
   }
 }
 
-// O/U 3.0 — market 'Over/Under Total Goals 3.0'
-// runnerOrder 10 = Over 3.0, 20 = Under 3.0
+// O/U 3.0 — selectionId zistiť cez konzolu
 function extractOU30Odds(eventData) {
   const markets = _getMarkets(eventData)
   const ouMarket = markets.find(m => {
@@ -414,10 +417,12 @@ function extractOU30Odds(eventData) {
         && !n.includes('away') && !n.includes('&')
   })
   if (!ouMarket) return null
-  const [over, under] = _runnersByOrder(ouMarket)  // runnerOrder 10 = Over, 20 = Under
+  _logRunners('extractOU30Odds', ouMarket)
+  const runners = [...(ouMarket.runnerDetails ?? ouMarket.runners ?? [])]
+    .sort((a, b) => (a.runnerOrder ?? 0) - (b.runnerOrder ?? 0))
   return {
-    backOver:  _oddsFromRunner(over),
-    backUnder: _oddsFromRunner(under),
+    backOver:  _oddsFromRunner(runners[0]),
+    backUnder: _oddsFromRunner(runners[1]),
   }
 }
 
@@ -459,18 +464,19 @@ function extractOU275Odds(eventData) {
   }
 }
 
-// BTTS — market 'Both Teams To Score' alebo 'Both teams to Score?'
-// runnerOrder 10 = No, 20 = Yes
+// BTTS — selectionId zistiť cez konzolu
 function extractBTTSOdds(eventData) {
   const markets = _getMarkets(eventData)
   const bttsMarket = markets.find(m =>
     _marketName(m).toLowerCase().includes('both teams to score')
   )
   if (!bttsMarket) return null
-  const [no, yes] = _runnersByOrder(bttsMarket)
+  _logRunners('extractBTTSOdds', bttsMarket)
+  const runners = [...(bttsMarket.runnerDetails ?? bttsMarket.runners ?? [])]
+    .sort((a, b) => (a.runnerOrder ?? 0) - (b.runnerOrder ?? 0))
   return {
-    backYes: _oddsFromRunner(yes),
-    backNo:  _oddsFromRunner(no),
+    backYes: _oddsFromRunner(runners[0]),
+    backNo:  _oddsFromRunner(runners[1]),
   }
 }
 
