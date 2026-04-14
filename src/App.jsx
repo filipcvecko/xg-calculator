@@ -2609,7 +2609,7 @@ export default function App() {
           </div>
         )}
 
-        {tab === 'skener' && <Skener />}
+        {tab === 'skener' && <Skener onBetSaved={loadBets} />}
 
         {tab === 'history' && (
           <div>

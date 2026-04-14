@@ -788,7 +788,10 @@ function MatchCard({ match, calc, bfOdds, evOver, evUnder, isWatched, isSaving, 
                 {...m}
                 inputs={inputs}
                 setInputs={setInputs}
-                onBet={(odds, mkey, pinn) => onBack(match, calc, odds, mkey, pinn)}
+                onBet={async (odds, mkey, pinn) => {
+                  const ok = await onBack(match, calc, odds, mkey, pinn)
+                  if (ok) setInputs(prev => ({ ...prev, [mkey]: { back: '', pinn: '' } }))
+                }}
                 isSaving={isSaving}
               />
             ))}
@@ -811,7 +814,7 @@ function MatchCard({ match, calc, bfOdds, evOver, evUnder, isWatched, isSaving, 
 }
 
 // ─── main component ───────────────────────────────────────────────────────────
-export default function Skener() {
+export default function Skener({ onBetSaved }) {
   const [date,       setDate]       = useState(todayStr())
   const [matches,    setMatches]    = useState([])
   const [lgNameMap,  setLgNameMap]  = useState({})    // competition_id (str) → league name
@@ -1105,9 +1108,11 @@ export default function Skener() {
 
     if (error) {
       alert('Chyba pri ukladaní: ' + (error.message ?? JSON.stringify(error)))
-    } else {
-      setWatched(prev => { const next = new Set(prev); next.delete(matchId); return next })
+      return false
     }
+
+    onBetSaved?.()
+    return true
   }
 
   // ── render ─────────────────────────────────────────────────────────────────
