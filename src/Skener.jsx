@@ -371,7 +371,7 @@ function _getMarkets(eventData) {
 }
 
 function _marketName(m) {
-  return String(m.marketName ?? m.marketCatalogue?.marketName ?? '')
+  return String(m.market?.marketName ?? m.marketName ?? m.marketCatalogue?.marketName ?? '')
 }
 
 // runnerOrder: 10 = Under/No (nižší), 20 = Over/Yes (vyšší)
