@@ -310,6 +310,7 @@ const BANKROLL_KEY = 'xgcalc_bankroll'
 export default function App() {
   const [tab, setTab] = useState('calc')
   const [statsMarket, setStatsMarket] = useState('all')
+  const [statsVersion, setStatsVersion] = useState('all')
   const [bets, setBets] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -1065,6 +1066,7 @@ export default function App() {
       pinnacle_close: null,
       pinnacle_clv: null,
       is_archived: false,
+      calibration_version: 'v2',
       stake_pct_bankroll: currentBankroll > 0 ? Math.round((calc.st / currentBankroll) * 1000) / 10 : null,
     }).select()
     console.log('Supabase result:', { inserted, error })
@@ -1205,6 +1207,7 @@ export default function App() {
   const archivedBets = bets.filter(b => b.is_archived)
   const settled_all = activeBets.filter(b => b.result != null)
   const settled = settled_all.filter(b => {
+    if (statsVersion !== 'all' && (b.calibration_version || 'v1') !== statsVersion) return false
     if (EXCLUDED_MARKETS.includes(b.market) && statsMarket === 'all') return false
     if (statsMarket === 'ou25'   && !OU25_MARKETS.includes(b.market))  return false
     if (statsMarket === 'over25' && !['over2.5', 'Over 2.5'].includes(b.market))  return false
@@ -2762,7 +2765,7 @@ export default function App() {
         {tab === 'stats' && (
           <>
           <div style={{ padding: '8px 16px 0' }}>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 600, letterSpacing: 1 }}>MARKET:</span>
               {[['all', 'Všetky'], ['over25', 'Over 2.5'], ['under25', 'Under 2.5'], ['ou30', 'O/U 3.0'], ['btts', 'BTTS']].map(([id, lbl]) => (
                 <button key={id} onClick={() => setStatsMarket(id)} style={{
@@ -2771,6 +2774,18 @@ export default function App() {
                   background: statsMarket === id ? 'var(--green)' : 'transparent',
                   color: statsMarket === id ? '#fff' : 'var(--text3)',
                   cursor: 'pointer', fontWeight: statsMarket === id ? 700 : 400
+                }}>{lbl}</button>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 600, letterSpacing: 1 }}>VERZIA:</span>
+              {[['all', 'Všetky'], ['v1', 'V1 (starý Platt)'], ['v2', 'V2 (nový Platt)']].map(([id, lbl]) => (
+                <button key={id} onClick={() => setStatsVersion(id)} style={{
+                  fontSize: 11, padding: '3px 10px', borderRadius: 6, border: '1px solid',
+                  borderColor: statsVersion === id ? 'var(--accent2)' : 'var(--border)',
+                  background: statsVersion === id ? 'var(--accent2)' : 'transparent',
+                  color: statsVersion === id ? '#fff' : 'var(--text3)',
+                  cursor: 'pointer', fontWeight: statsVersion === id ? 700 : 400
                 }}>{lbl}</button>
               ))}
               <span style={{ fontSize: 11, color: 'var(--text3)', marginLeft: 4 }}>{settled.length} betov</span>
