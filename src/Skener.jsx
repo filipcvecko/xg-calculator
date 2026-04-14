@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import {
-  calcOverUnder, calcOU30, calcBTTS,
+  calcOverUnder, calcOU30, calcOU275, calcOU225, calcBTTS,
+  calcEVOU275, calcEVOU225,
   blendLambda, fairOdds, plattCalibrate,
   dynamicRho, timeDecayBlend, extractLastXStats,
   fmt2, fmt3, fmtPct, fmtSign,
@@ -166,6 +167,8 @@ function calcMatchFromStats(homeRaw, awayRaw, lgAvg, homeLastXRaw = null, awayLa
     ferOver:  fairOdds(pOver),
     ferUnder: fairOdds(pUnder),
     ou30,
+    ou275: calcOU275(lH, lA, rhoVal),
+    ou225: calcOU225(lH, lA, rhoVal),
     btts: calcBTTS(lH, lA, rhoVal),
     modelType: hasGoals ? (hasXGA ? 'full' : 'goals') : (hasXGA ? 'xga' : 'basic'),
     mp_h: hs.mp_h, mp_a: as_.mp_a,
@@ -409,7 +412,7 @@ function EVRow({ label, ev, odds, p, fairO }) {
 
 const MARKET_WEIGHT = 0.50
 
-function MarketCard({ mkey, label, prob, ferOdds, color, inputs, setInputs, onBet, isSaving }) {
+function MarketCard({ mkey, label, prob, ferOdds, color, inputs, setInputs, onBet, isSaving, calcEVFn }) {
   const pf = v => { const n = parseFloat(v); return n > 1 ? n : null }
   const back = inputs[mkey]?.back ?? ''
   const pinn = inputs[mkey]?.pinn ?? ''
@@ -418,7 +421,8 @@ function MarketCard({ mkey, label, prob, ferOdds, color, inputs, setInputs, onBe
 
   const pMkt   = backOdds ? 1 / backOdds : null
   const pBlend = pMkt != null ? MARKET_WEIGHT * prob + (1 - MARKET_WEIGHT) * pMkt : null
-  const ev     = pBlend && backOdds ? calcBackEV(pBlend, backOdds, COMM) : null
+  // Asian lines (calcEVFn) používajú vlastný EV vzorec s push mechanikou
+  const ev     = backOdds ? (calcEVFn ? calcEVFn(backOdds) : (pBlend ? calcBackEV(pBlend, backOdds, COMM) : null)) : null
   const ferBlend = pBlend ? fairOdds(pBlend) : null
   const clv    = backOdds && pinnOdds ? (backOdds / pinnOdds - 1) * 100 : null
 
@@ -429,7 +433,7 @@ function MarketCard({ mkey, label, prob, ferOdds, color, inputs, setInputs, onBe
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
         <div>
           <div style={{ fontSize: 9, color: 'var(--text3)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{label}</div>
-          <div style={{ fontSize: 20, fontWeight: 800, color, fontFamily: 'var(--display)' }}>{fmtPct(prob * 100)}</div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text2)', fontFamily: 'var(--display)' }}>{fmtPct(prob * 100)}</div>
           <div style={{ fontSize: 10, color: 'var(--text3)' }}>fair {ferOdds ? fmt2(ferOdds) : '—'}</div>
         </div>
         {ev != null && (
@@ -490,8 +494,20 @@ function MatchCard({ match, calc, bfOdds, evOver, evUnder, isWatched, isSaving, 
   const MARKETS = calc ? [
     { mkey: 'over25',  label: 'Over 2.5',  prob: calc.pOver,        ferOdds: calc.ferOver,             color: 'var(--accent2)' },
     { mkey: 'under25', label: 'Under 2.5', prob: calc.pUnder,       ferOdds: calc.ferUnder,            color: 'var(--green)' },
-    { mkey: 'over30',  label: 'Over 3.0',  prob: calc.ou30.pOver3,  ferOdds: calc.ou30.fairOver,       color: '#a29bfe' },
-    { mkey: 'under30', label: 'Under 3.0', prob: calc.ou30.pUnder2, ferOdds: calc.ou30.fairUnder,      color: '#00b894' },
+    ...(calc.ou225 ? [
+      { mkey: 'over225',  label: 'Over 2.25',  prob: calc.ou225.pOver225,  ferOdds: calc.ou225.fairOver,  color: '#fdcb6e',
+        calcEVFn: odds => calcEVOU225(true,  calc.ou225.p0_1, calc.ou225.p2, calc.ou225.p3plus, odds, COMM) },
+      { mkey: 'under225', label: 'Under 2.25', prob: calc.ou225.pUnder225, ferOdds: calc.ou225.fairUnder, color: '#e17055',
+        calcEVFn: odds => calcEVOU225(false, calc.ou225.p0_1, calc.ou225.p2, calc.ou225.p3plus, odds, COMM) },
+    ] : []),
+    ...(calc.ou275 ? [
+      { mkey: 'over275',  label: 'Over 2.75',  prob: calc.ou275.pOver275,  ferOdds: calc.ou275.fairOver,  color: '#a29bfe',
+        calcEVFn: odds => calcEVOU275(true,  calc.ou275.p0_2, calc.ou275.p3, calc.ou275.p4plus, odds, COMM) },
+      { mkey: 'under275', label: 'Under 2.75', prob: calc.ou275.pUnder275, ferOdds: calc.ou275.fairUnder, color: '#00b894',
+        calcEVFn: odds => calcEVOU275(false, calc.ou275.p0_2, calc.ou275.p3, calc.ou275.p4plus, odds, COMM) },
+    ] : []),
+    { mkey: 'over30',  label: 'Over 3.0',  prob: calc.ou30.pOver3,  ferOdds: calc.ou30.fairOver,       color: '#74b9ff' },
+    { mkey: 'under30', label: 'Under 3.0', prob: calc.ou30.pUnder2, ferOdds: calc.ou30.fairUnder,      color: '#55efc4' },
     ...(calc.btts ? [
       { mkey: 'bttsYes', label: 'BTTS Yes',  prob: calc.btts.pBTTS,   ferOdds: calc.btts.fairOddsBTTS,   color: '#fd79a8' },
       { mkey: 'bttsNo',  label: 'BTTS No',   prob: calc.btts.pNoBTTS, ferOdds: calc.btts.fairOddsNoBTTS, color: '#fab1a0' },
@@ -660,7 +676,7 @@ export default function Skener() {
       if (cached) {
         // Invalidate cache if calc objects are missing btts (old format)
         const cachedR = cached.results
-        const isStale = Object.values(cachedR).some(c => c && !c.btts)
+        const isStale = Object.values(cachedR).some(c => c && (!c.btts || !c.ou275 || !c.ou225))
         if (isStale) {
           console.log('[Skener] cache stale (chýba btts) — ignorujem')
         } else {
@@ -823,12 +839,16 @@ export default function Skener() {
     setSaving(prev => ({ ...prev, [matchId]: marketKey }))
 
     const MINFO = {
-      over25:  { prob: calc.pOver,        ferO: calc.ferOver,              market: 'Over 2.5' },
-      under25: { prob: calc.pUnder,       ferO: calc.ferUnder,             market: 'Under 2.5' },
-      over30:  { prob: calc.ou30.pOver3,  ferO: calc.ou30.fairOver,        market: 'Over 3.0' },
-      under30: { prob: calc.ou30.pUnder2, ferO: calc.ou30.fairUnder,       market: 'Under 3.0' },
-      bttsYes: { prob: calc.btts.pBTTS,   ferO: calc.btts.fairOddsBTTS,   market: 'BTTS Yes' },
-      bttsNo:  { prob: calc.btts.pNoBTTS, ferO: calc.btts.fairOddsNoBTTS, market: 'BTTS No' },
+      over25:   { prob: calc.pOver,           ferO: calc.ferOver,              market: 'Over 2.5' },
+      under25:  { prob: calc.pUnder,          ferO: calc.ferUnder,             market: 'Under 2.5' },
+      over225:  { prob: calc.ou225?.pOver225,  ferO: calc.ou225?.fairOver,     market: 'Over 2.25' },
+      under225: { prob: calc.ou225?.pUnder225, ferO: calc.ou225?.fairUnder,    market: 'Under 2.25' },
+      over275:  { prob: calc.ou275?.pOver275,  ferO: calc.ou275?.fairOver,     market: 'Over 2.75' },
+      under275: { prob: calc.ou275?.pUnder275, ferO: calc.ou275?.fairUnder,    market: 'Under 2.75' },
+      over30:   { prob: calc.ou30.pOver3,     ferO: calc.ou30.fairOver,        market: 'Over 3.0' },
+      under30:  { prob: calc.ou30.pUnder2,    ferO: calc.ou30.fairUnder,       market: 'Under 3.0' },
+      bttsYes:  { prob: calc.btts?.pBTTS,     ferO: calc.btts?.fairOddsBTTS,   market: 'BTTS Yes' },
+      bttsNo:   { prob: calc.btts?.pNoBTTS,   ferO: calc.btts?.fairOddsNoBTTS, market: 'BTTS No' },
     }
     const { prob, ferO, market } = MINFO[marketKey] ?? {}
     if (!prob || !market) {
