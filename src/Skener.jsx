@@ -806,6 +806,7 @@ export default function Skener() {
 
         // still fetch live Betfair odds (fast, 1-2 calls)
         const bfUpcoming = await fetchBetfairUpcoming()
+        console.log('[bfUpcoming] count:', bfUpcoming?.length, 'first entry:', JSON.stringify(bfUpcoming?.[0]).slice(0, 200))
         if (abortRef.current) return
         const newBfMap = {}
         for (const ev of bfUpcoming) {
