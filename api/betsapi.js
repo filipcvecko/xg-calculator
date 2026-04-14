@@ -1,4 +1,4 @@
-const BETFAIR_PINNACLE_TOKEN = process.env.PINNACLE_TOKEN || '247216-BtDsNpmSHVbBgZ'
+const BETFAIR_PINNACLE_TOKEN = process.env.BETSAPI_TOKEN
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
