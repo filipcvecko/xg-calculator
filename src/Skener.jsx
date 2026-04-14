@@ -302,20 +302,19 @@ function _marketName(m) {
   return String(m.marketName ?? m.marketCatalogue?.marketName ?? '')
 }
 
-function _runnerOdds(market, namePart) {
-  const runners = market.runnerDetails ?? market.runners ?? []
-  const r = runners.find(r => {
-    const name = String(
-      r.runnerName ?? r.runner?.runnerName ?? r.name ?? ''
-    ).toLowerCase()
-    return name.includes(namePart.toLowerCase())
-  })
+// runnerOrder: 10 = Under/No (nižší), 20 = Over/Yes (vyšší)
+function _oddsFromRunner(r) {
   const val = +(r?.runnerOdds?.decimalDisplayOdds?.decimalOdds ?? 0)
   return val > 1 ? val : null
 }
 
-// O/U 2.5 — market 'Over/Under Total Goals 2.5' (runners: Over 2.5 / Under 2.5)
-// Exclude markets with 'half', 'home', 'away', '&' to avoid false matches
+function _runnersByOrder(market) {
+  const runners = market.runnerDetails ?? market.runners ?? []
+  return [...runners].sort((a, b) => (a.runnerOrder ?? 0) - (b.runnerOrder ?? 0))
+}
+
+// O/U 2.5 — market 'Over/Under Total Goals 2.5'
+// runnerOrder 10 = Under 2.5, 20 = Over 2.5
 function extractOU25Odds(eventData) {
   const markets = _getMarkets(eventData)
   const ouMarket = markets.find(m => {
@@ -324,13 +323,15 @@ function extractOU25Odds(eventData) {
         && !n.includes('away') && !n.includes('&')
   })
   if (!ouMarket) return null
+  const [under, over] = _runnersByOrder(ouMarket)
   return {
-    backOver:  _runnerOdds(ouMarket, 'over'),
-    backUnder: _runnerOdds(ouMarket, 'under'),
+    backOver:  _oddsFromRunner(over),
+    backUnder: _oddsFromRunner(under),
   }
 }
 
-// O/U 3.0 — market 'Over/Under Total Goals 3.0' (runners: Over 3.0 / Under 3.0)
+// O/U 3.0 — market 'Over/Under Total Goals 3.0'
+// runnerOrder 10 = Under 3.0, 20 = Over 3.0
 function extractOU30Odds(eventData) {
   const markets = _getMarkets(eventData)
   const ouMarket = markets.find(m => {
@@ -339,64 +340,63 @@ function extractOU30Odds(eventData) {
         && !n.includes('away') && !n.includes('&')
   })
   if (!ouMarket) return null
+  const [under, over] = _runnersByOrder(ouMarket)
   return {
-    backOver:  _runnerOdds(ouMarket, 'over'),
-    backUnder: _runnerOdds(ouMarket, 'under'),
+    backOver:  _oddsFromRunner(over),
+    backUnder: _oddsFromRunner(under),
   }
 }
 
-// O/U 2.25 — dve samostatné markets: 'Over 2.0 & 2.5' a 'Under 2.0 & 2.5'
+// O/U 2.25 — dve samostatné markety, každý s jedným runnerom
+// 'Over 2.0 & 2.5' → backOver, 'Under 2.0 & 2.5' → backUnder
 function extractOU225Odds(eventData) {
   const markets = _getMarkets(eventData)
-  const findSingle = (namePart) =>
-    markets.find(m => _marketName(m).toLowerCase().includes(namePart.toLowerCase()))
-  const overMkt  = findSingle('over 2.0 & 2.5')  ?? findSingle('over 2.0&2.5')
-  const underMkt = findSingle('under 2.0 & 2.5') ?? findSingle('under 2.0&2.5')
+  const find = (s) => markets.find(m => _marketName(m).toLowerCase().includes(s))
+  const overMkt  = find('over 2.0 & 2.5')  ?? find('over 2.0&2.5')
+  const underMkt = find('under 2.0 & 2.5') ?? find('under 2.0&2.5')
   if (!overMkt && !underMkt) return null
-  // pre tieto markety je cena na prvom runneri (single-runner market)
-  function firstOdds(mkt) {
+  const singleOdds = (mkt) => {
     if (!mkt) return null
     const runners = mkt.runnerDetails ?? mkt.runners ?? []
-    const val = +(runners[0]?.runnerOdds?.decimalDisplayOdds?.decimalOdds ?? 0)
-    return val > 1 ? val : null
+    return _oddsFromRunner(runners[0])
   }
   return {
-    backOver:  firstOdds(overMkt),
-    backUnder: firstOdds(underMkt),
+    backOver:  singleOdds(overMkt),
+    backUnder: singleOdds(underMkt),
   }
 }
 
-// O/U 2.75 — dve samostatné markets: 'Over 2.5 & 3.0' a 'Under 2.5 & 3.0'
+// O/U 2.75 — dve samostatné markety, každý s jedným runnerom
+// 'Over 2.5 & 3.0' → backOver, 'Under 2.5 & 3.0' → backUnder
 function extractOU275Odds(eventData) {
   const markets = _getMarkets(eventData)
-  const findSingle = (namePart) =>
-    markets.find(m => _marketName(m).toLowerCase().includes(namePart.toLowerCase()))
-  const overMkt  = findSingle('over 2.5 & 3.0')  ?? findSingle('over 2.5&3.0')
-  const underMkt = findSingle('under 2.5 & 3.0') ?? findSingle('under 2.5&3.0')
+  const find = (s) => markets.find(m => _marketName(m).toLowerCase().includes(s))
+  const overMkt  = find('over 2.5 & 3.0')  ?? find('over 2.5&3.0')
+  const underMkt = find('under 2.5 & 3.0') ?? find('under 2.5&3.0')
   if (!overMkt && !underMkt) return null
-  function firstOdds(mkt) {
+  const singleOdds = (mkt) => {
     if (!mkt) return null
     const runners = mkt.runnerDetails ?? mkt.runners ?? []
-    const val = +(runners[0]?.runnerOdds?.decimalDisplayOdds?.decimalOdds ?? 0)
-    return val > 1 ? val : null
+    return _oddsFromRunner(runners[0])
   }
   return {
-    backOver:  firstOdds(overMkt),
-    backUnder: firstOdds(underMkt),
+    backOver:  singleOdds(overMkt),
+    backUnder: singleOdds(underMkt),
   }
 }
 
-// BTTS — market 'Both Teams To Score' alebo 'Both teams to Score?' (runners: Yes / No)
+// BTTS — market 'Both Teams To Score' alebo 'Both teams to Score?'
+// runnerOrder 10 = No, 20 = Yes
 function extractBTTSOdds(eventData) {
   const markets = _getMarkets(eventData)
-  const bttsMarket = markets.find(m => {
-    const n = _marketName(m).toLowerCase()
-    return n.includes('both teams to score')
-  })
+  const bttsMarket = markets.find(m =>
+    _marketName(m).toLowerCase().includes('both teams to score')
+  )
   if (!bttsMarket) return null
+  const [no, yes] = _runnersByOrder(bttsMarket)
   return {
-    backYes: _runnerOdds(bttsMarket, 'yes'),
-    backNo:  _runnerOdds(bttsMarket, 'no'),
+    backYes: _oddsFromRunner(yes),
+    backNo:  _oddsFromRunner(no),
   }
 }
 
