@@ -414,74 +414,49 @@ function _logRunners(label, market) {
   })))
 }
 
-// O/U 2.5 — selectionId 47972 = Over 2.5, 47973 = Under 2.5
+// Goal Lines market helper — nájde runner podľa handicap + runnerName,
+// cena z exchange.availableToBack[0].price
+function _goalLinesOdds(eventData, handicap) {
+  const markets = _getMarkets(eventData)
+  const glMarket = markets.find(m => _marketName(m).toLowerCase().includes('goal lines'))
+  if (!glMarket) return null
+  const runners = glMarket.runners ?? glMarket.runnerDetails ?? []
+  const find = (name) => runners.find(r =>
+    r.description?.handicap === handicap &&
+    r.description?.runnerName?.toLowerCase() === name
+  )
+  const toOdds = (r) => {
+    const p = r?.exchange?.availableToBack?.[0]?.price ?? null
+    return p && p > 1 ? p : null
+  }
+  console.log(`[_goalLinesOdds] handicap=${handicap} runners:`, runners.map(r => ({
+    name: r.description?.runnerName, handicap: r.description?.handicap,
+    back: r.exchange?.availableToBack?.[0]?.price,
+  })))
+  return {
+    backOver:  toOdds(find('over')),
+    backUnder: toOdds(find('under')),
+  }
+}
+
+// O/U 2.5 — Goal Lines market, handicap 2.5
 function extractOU25Odds(eventData) {
-  const markets = _getMarkets(eventData)
-  const ouMarket = markets.find(m => {
-    const n = m.market?.marketName ?? ''
-    return n === 'Over/Under 2.5 Goals' || n === 'Over/Under Total Goals 2.5'
-  })
-  if (!ouMarket) return null
-  return {
-    backOver:  _oddsFromRunner(_runnerById(ouMarket, 47972)),
-    backUnder: _oddsFromRunner(_runnerById(ouMarket, 47973)),
-  }
+  return _goalLinesOdds(eventData, 2.5)
 }
 
-// O/U 3.0 — selectionId zistiť cez konzolu
-function extractOU30Odds(eventData) {
-  const markets = _getMarkets(eventData)
-  const ouMarket = markets.find(m => {
-    const n = _marketName(m).toLowerCase()
-    return n.includes('3.0') && !n.includes('half') && !n.includes('home')
-        && !n.includes('away') && !n.includes('&')
-  })
-  if (!ouMarket) return null
-  _logRunners('extractOU30Odds', ouMarket)
-  const runners = [...(ouMarket.runnerDetails ?? ouMarket.runners ?? [])]
-    .sort((a, b) => (a.runnerOrder ?? 0) - (b.runnerOrder ?? 0))
-  return {
-    backOver:  _oddsFromRunner(runners[0]),
-    backUnder: _oddsFromRunner(runners[1]),
-  }
-}
-
-// O/U 2.25 — dve samostatné markety, každý s jedným runnerom
-// 'Over 2.0 & 2.5' → backOver, 'Under 2.0 & 2.5' → backUnder
+// O/U 2.25 — Goal Lines market, handicap 2.25
 function extractOU225Odds(eventData) {
-  const markets = _getMarkets(eventData)
-  const find = (s) => markets.find(m => _marketName(m).toLowerCase().includes(s))
-  const overMkt  = find('over 2.0 & 2.5')  ?? find('over 2.0&2.5')
-  const underMkt = find('under 2.0 & 2.5') ?? find('under 2.0&2.5')
-  if (!overMkt && !underMkt) return null
-  const singleOdds = (mkt) => {
-    if (!mkt) return null
-    const runners = mkt.runnerDetails ?? mkt.runners ?? []
-    return _oddsFromRunner(runners[0])
-  }
-  return {
-    backOver:  singleOdds(overMkt),
-    backUnder: singleOdds(underMkt),
-  }
+  return _goalLinesOdds(eventData, 2.25)
 }
 
-// O/U 2.75 — dve samostatné markety, každý s jedným runnerom
-// 'Over 2.5 & 3.0' → backOver, 'Under 2.5 & 3.0' → backUnder
+// O/U 2.75 — Goal Lines market, handicap 2.75
 function extractOU275Odds(eventData) {
-  const markets = _getMarkets(eventData)
-  const find = (s) => markets.find(m => _marketName(m).toLowerCase().includes(s))
-  const overMkt  = find('over 2.5 & 3.0')  ?? find('over 2.5&3.0')
-  const underMkt = find('under 2.5 & 3.0') ?? find('under 2.5&3.0')
-  if (!overMkt && !underMkt) return null
-  const singleOdds = (mkt) => {
-    if (!mkt) return null
-    const runners = mkt.runnerDetails ?? mkt.runners ?? []
-    return _oddsFromRunner(runners[0])
-  }
-  return {
-    backOver:  singleOdds(overMkt),
-    backUnder: singleOdds(underMkt),
-  }
+  return _goalLinesOdds(eventData, 2.75)
+}
+
+// O/U 3.0 — Goal Lines market, handicap 3.0
+function extractOU30Odds(eventData) {
+  return _goalLinesOdds(eventData, 3.0)
 }
 
 // BTTS — selectionId zistiť cez konzolu
