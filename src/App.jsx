@@ -1123,12 +1123,13 @@ export default function App() {
       ? calcCLV(bet.pinnacle_open, pinnClose)
       : null
     console.log('saving pinnClose:', pinnClose, 'settlePinnClose:', settlePinnClose)
-    await supabase.from('bets').update({
+    const { error: clvError } = await supabase.from('bets').update({
       odds_close: oc,
       clv,
       pinnacle_close: pinnClose > 1 ? pinnClose : null,
       pinnacle_clv: pinnCLV,
     }).eq('id', id)
+    if (clvError) { console.error('CLV update error:', clvError); alert('Chyba pri ukladaní CLV: ' + clvError.message); return }
     setSettleMode('result')
     await loadBets()
   }
@@ -1172,7 +1173,7 @@ export default function App() {
       if (xgOutcome !== null && bet.sel_prob != null) xgBrier = brierScore(bet.sel_prob, xgOutcome)
     }
 
-    await supabase.from('bets').update({
+    const { error: settleError } = await supabase.from('bets').update({
       result: res, pnl,
       brier: [2, 3, 4].includes(res) ? null : brierScore(bet.sel_prob, res),
       log_loss: [2, 3, 4].includes(res) ? null : logLoss(bet.sel_prob, res),
@@ -1182,6 +1183,7 @@ export default function App() {
       xg_away_real: xgA > 0 ? xgA : null,
       xg_brier: xgBrier,
     }).eq('id', id)
+    if (settleError) { console.error('Settle update error:', settleError); alert('Chyba pri ukladaní výsledku: ' + settleError.message); return }
     setSettlingId(null); setSettleResult(''); setSettleClose(''); setSettleMode('clv')
     setSettlePinnClose(''); setSettleXgHome(''); setSettleXgAway('')
     await loadBets()
