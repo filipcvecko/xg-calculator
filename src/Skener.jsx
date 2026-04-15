@@ -416,23 +416,27 @@ function _logRunners(label, market) {
 
 // Goal Lines market helper — nájde runner podľa handicap + runnerName,
 // cena z exchange.availableToBack[0].price
+// Betfair ex/event API dáva handicap/runnerName buď priamo na runnerovi
+// alebo zanorené v description — čítame obe miesta.
 function _goalLinesOdds(eventData, handicap) {
   const markets = _getMarkets(eventData)
   const glMarket = markets.find(m => _marketName(m).toLowerCase().includes('goal lines'))
   if (!glMarket) return null
   const runners = glMarket.runners ?? glMarket.runnerDetails ?? []
+  const getHandicap = (r) => r.handicap ?? r.description?.handicap
+  const getName     = (r) => (r.runnerName ?? r.description?.runnerName ?? '').toLowerCase()
+  console.log(`[_goalLinesOdds] handicap=${handicap} runners:`, runners.map(r => ({
+    runnerName: r.runnerName, 'description.runnerName': r.description?.runnerName,
+    handicap: r.handicap, 'description.handicap': r.description?.handicap,
+    back: r.exchange?.availableToBack?.[0]?.price,
+  })))
   const find = (name) => runners.find(r =>
-    r.description?.handicap === handicap &&
-    r.description?.runnerName?.toLowerCase() === name
+    getHandicap(r) === handicap && getName(r) === name
   )
   const toOdds = (r) => {
     const p = r?.exchange?.availableToBack?.[0]?.price ?? null
     return p && p > 1 ? p : null
   }
-  console.log(`[_goalLinesOdds] handicap=${handicap} runners:`, runners.map(r => ({
-    name: r.description?.runnerName, handicap: r.description?.handicap,
-    back: r.exchange?.availableToBack?.[0]?.price,
-  })))
   return {
     backOver:  toOdds(find('over')),
     backUnder: toOdds(find('under')),
