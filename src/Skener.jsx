@@ -619,8 +619,8 @@ function MarketCard({ mkey, label, prob, ferOdds, color, inputs, setInputs, onBe
         : 1 / backOdds)
     : null
   const pBlend = pMkt != null ? MARKET_WEIGHT * prob + (1 - MARKET_WEIGHT) * pMkt : null
-  // Asian lines (calcEVFn) používajú vlastný EV vzorec s push mechanikou
-  const ev     = backOdds ? (calcEVFn ? calcEVFn(backOdds) : (pBlend ? calcBackEV(pBlend, backOdds, COMM) : null)) : null
+  // Asian lines (calcEVFn): keď je pBlend dostupný (de-vig), škáluje probs; inak model-only
+  const ev     = backOdds ? (calcEVFn ? calcEVFn(backOdds, pBlend) : (pBlend ? calcBackEV(pBlend, backOdds, COMM) : null)) : null
   const ferBlend = pBlend ? fairOdds(pBlend) : null
   const clv    = backOdds && pinnOdds ? (backOdds / pinnOdds - 1) * 100 : null
 
@@ -717,15 +717,43 @@ function MatchCard({ match, calc, bfOdds, evOver, evUnder, isWatched, isSaving, 
     { mkey: 'under25', label: 'Under 2.5', prob: calc.pUnder,       ferOdds: calc.ferUnder,            color: 'var(--green)',   pairMkey: 'over25' },
     ...(calc.ou225 ? [
       { mkey: 'over225',  label: 'Over 2.25',  prob: calc.ou225.pOver225,  ferOdds: calc.ou225.fairOver,  color: '#fdcb6e', pairMkey: 'under225',
-        calcEVFn: odds => calcEVOU225(true,  calc.ou225.p0_1, calc.ou225.p2, calc.ou225.p3plus, odds, COMM) },
+        calcEVFn: (odds, pBlend) => {
+          if (pBlend != null) {
+            const p3eff = Math.max(0, pBlend - 0.5 * calc.ou225.p2)
+            const p0eff = Math.max(0, 1 - pBlend - 0.5 * calc.ou225.p2)
+            return calcEVOU225(true,  p0eff, calc.ou225.p2, p3eff, odds, COMM)
+          }
+          return calcEVOU225(true,  calc.ou225.p0_1, calc.ou225.p2, calc.ou225.p3plus, odds, COMM)
+        } },
       { mkey: 'under225', label: 'Under 2.25', prob: calc.ou225.pUnder225, ferOdds: calc.ou225.fairUnder, color: '#e17055', pairMkey: 'over225',
-        calcEVFn: odds => calcEVOU225(false, calc.ou225.p0_1, calc.ou225.p2, calc.ou225.p3plus, odds, COMM) },
+        calcEVFn: (odds, pBlend) => {
+          if (pBlend != null) {
+            const p0eff = Math.max(0, pBlend - 0.5 * calc.ou225.p2)
+            const p3eff = Math.max(0, 1 - pBlend - 0.5 * calc.ou225.p2)
+            return calcEVOU225(false, p0eff, calc.ou225.p2, p3eff, odds, COMM)
+          }
+          return calcEVOU225(false, calc.ou225.p0_1, calc.ou225.p2, calc.ou225.p3plus, odds, COMM)
+        } },
     ] : []),
     ...(calc.ou275 ? [
       { mkey: 'over275',  label: 'Over 2.75',  prob: calc.ou275.pOver275,  ferOdds: calc.ou275.fairOver,  color: '#a29bfe', pairMkey: 'under275',
-        calcEVFn: odds => calcEVOU275(true,  calc.ou275.p0_2, calc.ou275.p3, calc.ou275.p4plus, odds, COMM) },
+        calcEVFn: (odds, pBlend) => {
+          if (pBlend != null) {
+            const p4eff = Math.max(0, pBlend - 0.5 * calc.ou275.p3)
+            const p0eff = Math.max(0, 1 - pBlend - 0.5 * calc.ou275.p3)
+            return calcEVOU275(true,  p0eff, calc.ou275.p3, p4eff, odds, COMM)
+          }
+          return calcEVOU275(true,  calc.ou275.p0_2, calc.ou275.p3, calc.ou275.p4plus, odds, COMM)
+        } },
       { mkey: 'under275', label: 'Under 2.75', prob: calc.ou275.pUnder275, ferOdds: calc.ou275.fairUnder, color: '#00b894', pairMkey: 'over275',
-        calcEVFn: odds => calcEVOU275(false, calc.ou275.p0_2, calc.ou275.p3, calc.ou275.p4plus, odds, COMM) },
+        calcEVFn: (odds, pBlend) => {
+          if (pBlend != null) {
+            const p0eff = Math.max(0, pBlend - 0.5 * calc.ou275.p3)
+            const p4eff = Math.max(0, 1 - pBlend - 0.5 * calc.ou275.p3)
+            return calcEVOU275(false, p0eff, calc.ou275.p3, p4eff, odds, COMM)
+          }
+          return calcEVOU275(false, calc.ou275.p0_2, calc.ou275.p3, calc.ou275.p4plus, odds, COMM)
+        } },
     ] : []),
     { mkey: 'over30',  label: 'Over 3.0',  prob: calc.ou30.pOver3,  ferOdds: calc.ou30.fairOver,       color: '#74b9ff', pairMkey: 'under30' },
     { mkey: 'under30', label: 'Under 3.0', prob: calc.ou30.pUnder2, ferOdds: calc.ou30.fairUnder,      color: '#55efc4', pairMkey: 'over30' },
