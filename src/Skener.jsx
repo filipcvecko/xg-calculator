@@ -835,8 +835,8 @@ function MatchCard({ match, calc, bfOdds, evOver, evUnder, isWatched, isSaving, 
             </div>
           </div>
 
-          {/* Market karty — 2 stĺpce, 3 riadky */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          {/* Market karty — 2 stĺpce, 3 riadky; 1 stĺpec na mobile */}
+          <div className="skener-markets" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             {MARKETS.map(m => (
               <MarketCard
                 key={m.mkey}

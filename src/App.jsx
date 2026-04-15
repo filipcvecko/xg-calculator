@@ -301,7 +301,7 @@ const css = `
   .prob-box { background: var(--bg3); border-radius: 6px; padding: 8px 10px; }
   .prob-box-label { font-size: 9px; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 3px; }
   .prob-box-val { font-weight: 700; font-size: 14px; }
-  @media(max-width:520px){ .markets-grid{grid-template-columns:1fr;} .grid3{grid-template-columns:1fr 1fr;} .grid4{grid-template-columns:1fr 1fr;} .tab{padding:10px 8px;font-size:10px;} }
+  @media(max-width:520px){ .markets-grid{grid-template-columns:1fr;} .grid3{grid-template-columns:1fr 1fr;} .grid4{grid-template-columns:1fr 1fr;} .tab{padding:10px 8px;font-size:10px;} .skener-markets{grid-template-columns:1fr !important;} }
 `
 
 const INITIAL_BANKROLL = 132.80
