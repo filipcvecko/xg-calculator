@@ -266,7 +266,10 @@ async function fetchLeagueNameMap() {
     const leagues = json?.data ?? []
     const map = {}
     for (const l of leagues) {
-      const fullName = [l.country, l.name].filter(Boolean).join(' ')
+      const country = l.country ?? ''
+      const name    = l.name    ?? ''
+      const alreadyHasCountry = country && name.toLowerCase().startsWith(country.toLowerCase())
+      const fullName = (country && !alreadyHasCountry) ? `${country} ${name}` : name
       for (const s of (l.season ?? [])) {
         if (s.id) map[String(s.id)] = fullName
       }
