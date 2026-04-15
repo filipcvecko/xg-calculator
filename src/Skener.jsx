@@ -257,6 +257,24 @@ async function fetchTodaysMatches(dateStr) {
 }
 
 
+// Fetch league-list and build seasonId → "Country Name" map
+async function fetchLeagueNameMap() {
+  try {
+    const res  = await fetch('/api/footystats?endpoint=league-list&chosen_leagues_only=true')
+    if (!res.ok) return {}
+    const json = await res.json()
+    const leagues = json?.data ?? []
+    const map = {}
+    for (const l of leagues) {
+      const fullName = [l.country, l.name].filter(Boolean).join(' ')
+      for (const s of (l.season ?? [])) {
+        if (s.id) map[String(s.id)] = fullName
+      }
+    }
+    return map
+  } catch { return {} }
+}
+
 async function fetchLeagueAvg(seasonId) {
   try {
     const res  = await fetch(`/api/footystats?endpoint=league-season&season_id=${seasonId}&stats=true`)
@@ -264,7 +282,6 @@ async function fetchLeagueAvg(seasonId) {
     const json = await res.json()
     const data = Array.isArray(json?.data) ? json.data[0] : json?.data
     if (!data) return null
-    console.log('[fetchLeagueAvg] data keys:', Object.keys(data), '| name:', data.name, '| country:', data.country, '| full_name:', data.full_name, '| league_name:', data.league_name)
     const avgHome = data.seasonAVG_home ?? data.avg_goals_home ?? data.avgGoalsPerMatch_home ?? null
     const avgAway = data.seasonAVG_away ?? data.avg_goals_away ?? data.avgGoalsPerMatch_away ?? null
     const name = data.full_name ?? data.name ?? data.league_name ?? data.competition_name ?? null
@@ -882,12 +899,19 @@ export default function Skener({ onBetSaved }) {
         const raw     = cached.matches
         setMatches(raw)
         setResults(cachedR)
-        if (cached.lgNameMap) setLgNameMap(cached.lgNameMap)
         setProgress({ done: raw.length, total: raw.length })
         setLoading(false)
 
-        // still fetch live Betfair odds (fast, 1-2 calls)
-        const bfUpcoming = await fetchBetfairUpcoming()
+        // fetch full league names and live Betfair odds in parallel
+        const [lgFullNameMap, bfUpcoming] = await Promise.all([
+          fetchLeagueNameMap(),
+          fetchBetfairUpcoming(),
+        ])
+        const mergedNameMap = { ...(cached.lgNameMap ?? {}) }
+        for (const [sid, fullName] of Object.entries(lgFullNameMap)) {
+          if (fullName) mergedNameMap[sid] = fullName
+        }
+        setLgNameMap(mergedNameMap)
         console.log('[bfUpcoming] count:', bfUpcoming?.length, 'first entry:', JSON.stringify(bfUpcoming?.[0]).slice(0, 200))
         if (abortRef.current) return
         const newBfMap = buildBfMap(bfUpcoming, raw)
@@ -917,22 +941,27 @@ export default function Skener({ onBetSaved }) {
     console.log('[Skener] competition_ids (season_ids):', seasonIds.length, seasonIds.slice(0, 3))
     console.log('[Skener] first match homeID/awayID:', raw[0]?.homeID, raw[0]?.awayID, 'competition_id:', raw[0]?.competition_id)
 
-    // parallel: league avgs + betfair upcoming + team stats + lastX
-    const [lgRawMap, bfUpcoming, { statsMap: teamCache, teamLeagueNames }, lastXCache] = await Promise.all([
+    // parallel: league avgs + betfair upcoming + team stats + lastX + league name map
+    const [lgRawMap, bfUpcoming, { statsMap: teamCache, teamLeagueNames }, lastXCache, lgFullNameMap] = await Promise.all([
       Promise.all(seasonIds.map(async sid => [sid, await fetchLeagueAvg(sid)])).then(Object.fromEntries),
       fetchBetfairUpcoming(),
       fetchAllTeamStats(raw),
       fetchAllLastX(raw),
+      fetchLeagueNameMap(),
     ])
     if (abortRef.current) return
 
-    // split lgRawMap into avg map and name map; fallback to team-object league names
+    // build name map: league-list full names win, fallback to team/season names
     const lgAvgMap  = {}
     const newNameMap = { ...teamLeagueNames }
     for (const [sid, entry] of Object.entries(lgRawMap)) {
       if (!entry) continue
       if (entry.avg)  lgAvgMap[sid]   = entry.avg
-      if (entry.name) newNameMap[sid]  = entry.name   // league-season name wins if present
+      if (entry.name) newNameMap[sid]  = entry.name
+    }
+    // league-list "Country Name" overrides everything
+    for (const [sid, fullName] of Object.entries(lgFullNameMap)) {
+      if (fullName) newNameMap[sid] = fullName
     }
     console.log('[Skener] newNameMap:', newNameMap)
     setLgNameMap(newNameMap)
