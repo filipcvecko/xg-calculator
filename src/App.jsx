@@ -1198,9 +1198,9 @@ export default function App() {
   }
 
   const OU25_MARKETS  = ['over2.5', 'under2.5', 'Over 2.5', 'Under 2.5']
-  const OU225_MARKETS = ['over2.25', 'under2.25']
-  const OU275_MARKETS = ['over2.75', 'under2.75']
-  const OU30_MARKETS  = ['over3.0', 'under3.0']
+  const OU225_MARKETS = ['over2.25', 'under2.25', 'Over 2.25', 'Under 2.25']
+  const OU275_MARKETS = ['over2.75', 'under2.75', 'Over 2.75', 'Under 2.75']
+  const OU30_MARKETS  = ['over3.0', 'under3.0', 'Over 3.0', 'Under 3.0']
   const BTTS_MARKETS  = ['BTTS Yes', 'BTTS No', 'btts-yes', 'btts-no']
   const EXCLUDED_MARKETS = [...OU225_MARKETS, ...OU275_MARKETS]
   const activeBets = bets.filter(b => !b.is_archived)
@@ -2767,7 +2767,7 @@ export default function App() {
           <div style={{ padding: '8px 16px 0' }}>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 600, letterSpacing: 1 }}>MARKET:</span>
-              {[['all', 'Všetky'], ['over25', 'Over 2.5'], ['under25', 'Under 2.5'], ['ou30', 'O/U 3.0'], ['btts', 'BTTS']].map(([id, lbl]) => (
+              {[['all', 'Všetky'], ['over25', 'Over 2.5'], ['under25', 'Under 2.5'], ['ou225', 'O/U 2.25'], ['ou275', 'O/U 2.75'], ['ou30', 'O/U 3.0'], ['btts', 'BTTS']].map(([id, lbl]) => (
                 <button key={id} onClick={() => setStatsMarket(id)} style={{
                   fontSize: 11, padding: '3px 10px', borderRadius: 6, border: '1px solid',
                   borderColor: statsMarket === id ? 'var(--green)' : 'var(--border)',
