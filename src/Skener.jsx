@@ -645,7 +645,7 @@ function MarketCard({ mkey, label, prob, ferOdds, color, inputs, setInputs, onBe
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
         <div>
           <div style={{ fontSize: 9, color: 'var(--text3)', marginBottom: 2 }}>Back odds</div>
-          <input className="inp inp-sm" type="number" step="0.01" placeholder="napr. 2.10"
+          <input className="inp inp-sm" type="number" inputMode="decimal" step="0.01" placeholder="napr. 2.10"
             value={back} onChange={e => set('back', e.target.value)} style={{ width: '100%' }} />
           {ev != null && (
             <div style={{ fontSize: 9, marginTop: 3, color: 'var(--text3)' }}>
@@ -655,7 +655,7 @@ function MarketCard({ mkey, label, prob, ferOdds, color, inputs, setInputs, onBe
         </div>
         <div>
           <div style={{ fontSize: 9, color: 'var(--text3)', marginBottom: 2 }}>Pinnacle Open</div>
-          <input className="inp inp-sm" type="number" step="0.001" placeholder="napr. 2.050"
+          <input className="inp inp-sm" type="number" inputMode="decimal" step="0.001" placeholder="napr. 2.050"
             value={pinn} onChange={e => set('pinn', e.target.value)} style={{ width: '100%' }} />
           {clv != null && (
             <div style={{ fontSize: 10, fontWeight: 700, marginTop: 2, color: clv >= 0 ? 'var(--green)' : 'var(--red)' }}>
