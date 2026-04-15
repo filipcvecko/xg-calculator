@@ -137,7 +137,7 @@ function calcMatchFromStats(homeRaw, awayRaw, lgAvg, homeLastXRaw = null, awayLa
   const { pOver: pOverRaw, pUnder: pUnderRaw } = calcOverUnder(lH, lA, rhoVal)
   const ou30       = calcOU30(lH, lA, rhoVal)
   const pOver      = plattCalibrate(pOverRaw)
-  const pUnder     = plattCalibrate(pUnderRaw)
+  const pUnder     = 1 - pOver
 
   if (_label) {
     const hxRaw = homeLastXRaw?.data?.[0]?.stats
@@ -604,14 +604,20 @@ function EVRow({ label, ev, odds, p, fairO }) {
 
 const MARKET_WEIGHT = 0.50
 
-function MarketCard({ mkey, label, prob, ferOdds, color, inputs, setInputs, onBet, isSaving, calcEVFn }) {
+function MarketCard({ mkey, label, prob, ferOdds, color, inputs, setInputs, onBet, isSaving, calcEVFn, pairMkey }) {
   const pf = v => { const n = parseFloat(v); return n > 1 ? n : null }
   const back = inputs[mkey]?.back ?? ''
   const pinn = inputs[mkey]?.pinn ?? ''
-  const backOdds = pf(back)
-  const pinnOdds = pf(pinn)
+  const backOdds    = pf(back)
+  const pinnOdds    = pf(pinn)
+  const opposingOdds = pairMkey ? pf(inputs[pairMkey]?.back ?? '') : null
 
-  const pMkt   = backOdds ? 1 / backOdds : null
+  // De-vig: use both sides if available, otherwise raw implied prob
+  const pMkt = backOdds
+    ? (opposingOdds
+        ? (1 / backOdds) / (1 / backOdds + 1 / opposingOdds)
+        : 1 / backOdds)
+    : null
   const pBlend = pMkt != null ? MARKET_WEIGHT * prob + (1 - MARKET_WEIGHT) * pMkt : null
   // Asian lines (calcEVFn) používajú vlastný EV vzorec s push mechanikou
   const ev     = backOdds ? (calcEVFn ? calcEVFn(backOdds) : (pBlend ? calcBackEV(pBlend, backOdds, COMM) : null)) : null
@@ -707,25 +713,25 @@ function MatchCard({ match, calc, bfOdds, evOver, evUnder, isWatched, isSaving, 
   const hasEV    = (evOver != null && evOver >= EV_MIN) || (evUnder != null && evUnder >= EV_MIN)
 
   const MARKETS = calc ? [
-    { mkey: 'over25',  label: 'Over 2.5',  prob: calc.pOver,        ferOdds: calc.ferOver,             color: 'var(--accent2)' },
-    { mkey: 'under25', label: 'Under 2.5', prob: calc.pUnder,       ferOdds: calc.ferUnder,            color: 'var(--green)' },
+    { mkey: 'over25',  label: 'Over 2.5',  prob: calc.pOver,        ferOdds: calc.ferOver,             color: 'var(--accent2)', pairMkey: 'under25' },
+    { mkey: 'under25', label: 'Under 2.5', prob: calc.pUnder,       ferOdds: calc.ferUnder,            color: 'var(--green)',   pairMkey: 'over25' },
     ...(calc.ou225 ? [
-      { mkey: 'over225',  label: 'Over 2.25',  prob: calc.ou225.pOver225,  ferOdds: calc.ou225.fairOver,  color: '#fdcb6e',
+      { mkey: 'over225',  label: 'Over 2.25',  prob: calc.ou225.pOver225,  ferOdds: calc.ou225.fairOver,  color: '#fdcb6e', pairMkey: 'under225',
         calcEVFn: odds => calcEVOU225(true,  calc.ou225.p0_1, calc.ou225.p2, calc.ou225.p3plus, odds, COMM) },
-      { mkey: 'under225', label: 'Under 2.25', prob: calc.ou225.pUnder225, ferOdds: calc.ou225.fairUnder, color: '#e17055',
+      { mkey: 'under225', label: 'Under 2.25', prob: calc.ou225.pUnder225, ferOdds: calc.ou225.fairUnder, color: '#e17055', pairMkey: 'over225',
         calcEVFn: odds => calcEVOU225(false, calc.ou225.p0_1, calc.ou225.p2, calc.ou225.p3plus, odds, COMM) },
     ] : []),
     ...(calc.ou275 ? [
-      { mkey: 'over275',  label: 'Over 2.75',  prob: calc.ou275.pOver275,  ferOdds: calc.ou275.fairOver,  color: '#a29bfe',
+      { mkey: 'over275',  label: 'Over 2.75',  prob: calc.ou275.pOver275,  ferOdds: calc.ou275.fairOver,  color: '#a29bfe', pairMkey: 'under275',
         calcEVFn: odds => calcEVOU275(true,  calc.ou275.p0_2, calc.ou275.p3, calc.ou275.p4plus, odds, COMM) },
-      { mkey: 'under275', label: 'Under 2.75', prob: calc.ou275.pUnder275, ferOdds: calc.ou275.fairUnder, color: '#00b894',
+      { mkey: 'under275', label: 'Under 2.75', prob: calc.ou275.pUnder275, ferOdds: calc.ou275.fairUnder, color: '#00b894', pairMkey: 'over275',
         calcEVFn: odds => calcEVOU275(false, calc.ou275.p0_2, calc.ou275.p3, calc.ou275.p4plus, odds, COMM) },
     ] : []),
-    { mkey: 'over30',  label: 'Over 3.0',  prob: calc.ou30.pOver3,  ferOdds: calc.ou30.fairOver,       color: '#74b9ff' },
-    { mkey: 'under30', label: 'Under 3.0', prob: calc.ou30.pUnder2, ferOdds: calc.ou30.fairUnder,      color: '#55efc4' },
+    { mkey: 'over30',  label: 'Over 3.0',  prob: calc.ou30.pOver3,  ferOdds: calc.ou30.fairOver,       color: '#74b9ff', pairMkey: 'under30' },
+    { mkey: 'under30', label: 'Under 3.0', prob: calc.ou30.pUnder2, ferOdds: calc.ou30.fairUnder,      color: '#55efc4', pairMkey: 'over30' },
     ...(calc.btts ? [
-      { mkey: 'bttsYes', label: 'BTTS Yes',  prob: calc.btts.pBTTS,   ferOdds: calc.btts.fairOddsBTTS,   color: '#fd79a8' },
-      { mkey: 'bttsNo',  label: 'BTTS No',   prob: calc.btts.pNoBTTS, ferOdds: calc.btts.fairOddsNoBTTS, color: '#fab1a0' },
+      { mkey: 'bttsYes', label: 'BTTS Yes',  prob: calc.btts.pBTTS,   ferOdds: calc.btts.fairOddsBTTS,   color: '#fd79a8', pairMkey: 'bttsNo' },
+      { mkey: 'bttsNo',  label: 'BTTS No',   prob: calc.btts.pNoBTTS, ferOdds: calc.btts.fairOddsNoBTTS, color: '#fab1a0', pairMkey: 'bttsYes' },
     ] : []),
   ] : []
 
