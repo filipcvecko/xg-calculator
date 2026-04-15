@@ -195,7 +195,7 @@ async function fetchLeagueTeams(seasonId) {
       const tid = String(t.id)
       statsMap[`${tid}_${seasonId}`] = t.stats || t
       if (!leagueName) {
-        leagueName = t.league_name ?? t.competition ?? t.league ?? t.season_name ?? t.competition_name ?? null
+        leagueName = t.full_name ?? t.league_name ?? t.competition ?? t.league ?? t.season_name ?? t.competition_name ?? null
       }
     }
     return { statsMap, leagueName }
@@ -266,7 +266,7 @@ async function fetchLeagueAvg(seasonId) {
     if (!data) return null
     const avgHome = data.seasonAVG_home ?? data.avg_goals_home ?? data.avgGoalsPerMatch_home ?? null
     const avgAway = data.seasonAVG_away ?? data.avg_goals_away ?? data.avgGoalsPerMatch_away ?? null
-    const name = data.name ?? data.league_name ?? data.competition_name ?? null
+    const name = data.full_name ?? data.name ?? data.league_name ?? data.competition_name ?? null
     const avg = (avgHome && avgAway) ? { avgHome: +avgHome, avgAway: +avgAway } : null
     return { avg, name }
   } catch { return null }
