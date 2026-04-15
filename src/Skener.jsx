@@ -264,6 +264,7 @@ async function fetchLeagueAvg(seasonId) {
     const json = await res.json()
     const data = Array.isArray(json?.data) ? json.data[0] : json?.data
     if (!data) return null
+    console.log('[fetchLeagueAvg] data keys:', Object.keys(data), '| name:', data.name, '| country:', data.country, '| full_name:', data.full_name, '| league_name:', data.league_name)
     const avgHome = data.seasonAVG_home ?? data.avg_goals_home ?? data.avgGoalsPerMatch_home ?? null
     const avgAway = data.seasonAVG_away ?? data.avg_goals_away ?? data.avgGoalsPerMatch_away ?? null
     const name = data.full_name ?? data.name ?? data.league_name ?? data.competition_name ?? null
