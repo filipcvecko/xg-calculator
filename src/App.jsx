@@ -3029,6 +3029,50 @@ export default function App() {
                 })()}
               </div>
 
+              {[
+                { title: '🔵 O/U 2.25', mkts: [{ key: ['Over 2.25', 'over2.25'], label: '▲ Over 2.25', color: '#fdcb6e', isOver: true }, { key: ['Under 2.25', 'under2.25'], label: '▼ Under 2.25', color: '#e17055', isOver: false }] },
+                { title: '🟣 O/U 2.75', mkts: [{ key: ['Over 2.75', 'over2.75'], label: '▲ Over 2.75', color: '#a29bfe', isOver: true }, { key: ['Under 2.75', 'under2.75'], label: '▼ Under 2.75', color: '#00b894', isOver: false }] },
+                { title: '🟡 O/U 3.0',  mkts: [{ key: ['Over 3.0',  'over3.0'],  label: '▲ Over 3.0',  color: '#74b9ff', isOver: true }, { key: ['Under 3.0',  'under3.0'],  label: '▼ Under 3.0',  color: '#55efc4', isOver: false }] },
+              ].map(({ title, mkts }) => {
+                const hasBets = settled.some(b => mkts.flatMap(m => m.key).includes(b.market))
+                if (!hasBets) return null
+                return (
+                  <div key={title}>
+                    <div className="section-title">{title}</div>
+                    <div className="grid2">
+                      {mkts.map(({ key, label, color }) => {
+                        const mb = settled.filter(b => key.includes(b.market))
+                        if (mb.length === 0) return <div key={label} className="card" style={{ padding: 14, opacity: 0.4 }}><div className="label">{label}</div><div style={{ color: 'var(--text3)', fontSize: 12 }}>Žiadne bety</div></div>
+                        const nonPush = mb.filter(b => b.result !== 2)
+                        const mWins = mb.filter(b => b.result === 1).length + mb.filter(b => b.result === 3).length * 0.5
+                        const mHR = nonPush.length > 0 ? mWins / nonPush.length * 100 : 0
+                        const mPnL = mb.reduce((s, b) => s + (b.pnl || 0), 0)
+                        const mStake = mb.reduce((s, b) => s + b.stake, 0)
+                        const mROI = mStake > 0 ? mPnL / mStake * 100 : null
+                        const mCLV = mb.filter(b => b.clv != null)
+                        const mAvgCLV = mCLV.length > 0 ? mCLV.reduce((s, b) => s + b.clv, 0) / mCLV.length : null
+                        const mAvgProb = mb.reduce((s, b) => s + (b.sel_prob || 0), 0) / mb.length
+                        const mCalib = (mHR / 100 - mAvgProb) * 100
+                        return (
+                          <div key={label} className="card" style={{ padding: 14, borderTop: `3px solid ${color}` }}>
+                            <div className="label" style={{ color, marginBottom: 10 }}>{label}</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 5, fontSize: 12 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text3)' }}>Bety</span><b>{mb.length}</b></div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text3)' }}>Hit Rate</span><b style={{ color: mHR > 50 ? 'var(--green)' : 'var(--text2)' }}>{fmtPct(mHR)}</b></div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text3)' }}>Avg Prob</span><b>{fmtPct(mAvgProb * 100)}</b></div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text3)' }}>Kalibrácia</span><b style={{ color: Math.abs(mCalib) < 5 ? 'var(--green)' : 'var(--red)' }}>{fmtSign(mCalib)}pp</b></div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text3)' }}>Avg CLV</span><b style={{ color: mAvgCLV > 0 ? 'var(--green)' : 'var(--red)' }}>{mAvgCLV != null ? fmtSignPct(mAvgCLV) : '—'}</b></div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border)', paddingTop: 5, marginTop: 2 }}><span style={{ color: 'var(--text3)' }}>ROI</span><b style={{ color: mROI > 0 ? 'var(--green)' : 'var(--red)', fontSize: 14 }}>{mROI != null ? fmtSignPct(mROI) : '—'}</b></div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text3)' }}>PnL</span><b style={{ color: mPnL >= 0 ? 'var(--green)' : 'var(--red)' }}>{fmtSign(mPnL)}€</b></div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })}
+
               <div>
                 <div className="section-title">📐 Odds bucket analýza</div>
                 <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 10 }}>Výkonnosť podľa výšky kurzu. Ukazuje kde model reálne nájde edge.</div>
