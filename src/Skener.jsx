@@ -319,10 +319,26 @@ function namesMatch(a, b) {
   return false
 }
 
-// Build matchId → betfairEventId map by pairing on home+away names and kick-off time (±12h)
-function buildBfMap(bfUpcoming, footyMatches) {
+// Build matchId → betfairEventId map — manual Supabase mappings first, then fuzzy match
+function buildBfMap(bfUpcoming, footyMatches, manualMappings = []) {
   const TWELVE_HOURS = 12 * 60 * 60
   const map = {}
+
+  // 1. Apply manual mappings from team_mappings table
+  for (const mp of manualMappings) {
+    const match = footyMatches.find(m => {
+      const fHome = m.home_name ?? m.homeName
+      const fAway = m.away_name ?? m.awayName
+      return fHome === mp.footy_home_name && fAway === mp.footy_away_name
+    })
+    if (match) {
+      const matchId = String(match.id)
+      map[matchId] = String(mp.bf_event_id)
+      console.log(`[buildBfMap] ✓ manual: "${mp.footy_home_name}" vs "${mp.footy_away_name}" → ${mp.bf_event_id}`)
+    }
+  }
+
+  // 2. Fuzzy match for remaining unmapped
   for (const ev of bfUpcoming) {
     const bfHome = ev.home?.name
     const bfAway = ev.away?.name
@@ -340,14 +356,16 @@ function buildBfMap(bfUpcoming, footyMatches) {
 
     if (match) {
       const matchId = String(match.id)
-      console.log(`[buildBfMap] ✓ paired: "${bfHome}" vs "${bfAway}" → matchId=${matchId}`)
-      map[matchId] = String(ev.id)
+      if (!map[matchId]) {
+        console.log(`[buildBfMap] ✓ paired: "${bfHome}" vs "${bfAway}" → matchId=${matchId}`)
+        map[matchId] = String(ev.id)
+      }
     } else {
       console.log(`[buildBfMap] ✗ no match for BetsAPI: "${bfHome}" vs "${bfAway}" (time=${bfTime})`)
     }
   }
+
   console.log('[buildBfMap] paired', Object.keys(map).length, '/', footyMatches.length, 'matches')
-  // log unpaired FootyStats matches for diagnosis
   const pairedIds = new Set(Object.keys(map))
   footyMatches.forEach(m => {
     if (!pairedIds.has(String(m.id)))
@@ -382,6 +400,13 @@ async function fetchBetfairEvent(eventId) {
     // results is [{event, competitions, markets: [...]}] — return results[0] directly
     return json?.results?.[0] ?? null
   } catch { return null }
+}
+
+async function fetchTeamMappings() {
+  try {
+    const { data } = await supabase.from('team_mappings').select('footy_home_name, footy_away_name, bf_event_id')
+    return data ?? []
+  } catch { return [] }
 }
 
 // ─── Betfair market parsing helpers ──────────────────────────────────────────
@@ -659,7 +684,62 @@ function MarketCard({ mkey, label, prob, ferOdds, color, inputs, setInputs, onBe
   )
 }
 
-function MatchCard({ match, calc, bfOdds, evOver, evUnder, isWatched, isSaving, onWatch, onBack, leagueName }) {
+function MappingDialog({ match, bfUpcoming, onConfirm, onClose }) {
+  const [search, setSearch] = useState('')
+  const [selected, setSelected] = useState(null)
+  const homeName = match.home_name ?? match.homeName ?? '?'
+  const awayName = match.away_name ?? match.awayName ?? '?'
+  const filtered = bfUpcoming.filter(ev => {
+    if (!search.trim()) return true
+    const s = search.toLowerCase()
+    return ((ev.home?.name ?? '') + ' ' + (ev.away?.name ?? '')).toLowerCase().includes(s)
+  })
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div className="card" style={{ width: '100%', maxWidth: 480, padding: 20, display: 'flex', flexDirection: 'column', gap: 12, maxHeight: '80vh' }}>
+        <div className="section-title">🔗 Mapovať Betfair event</div>
+        <div style={{ fontSize: 12, color: 'var(--text2)', background: 'var(--bg3)', padding: '8px 12px', borderRadius: 6 }}>
+          <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 2 }}>FootyStats</div>
+          <b>{homeName}</b> <span style={{ color: 'var(--text3)' }}>vs</span> <b>{awayName}</b>
+        </div>
+        <input
+          className="inp"
+          placeholder="Hľadaj Betfair event..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          autoFocus
+        />
+        <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: 4, minHeight: 120 }}>
+          {filtered.length === 0 && <div style={{ color: 'var(--text3)', fontSize: 12, padding: 8 }}>Žiadne výsledky</div>}
+          {filtered.map(ev => {
+            const isSel = selected?.id === ev.id
+            return (
+              <div key={ev.id} onClick={() => setSelected(ev)} style={{
+                padding: '8px 12px', borderRadius: 6, cursor: 'pointer', fontSize: 12,
+                background: isSel ? 'var(--accent)' : 'var(--bg3)',
+                color: isSel ? '#fff' : 'var(--text2)',
+                border: `1px solid ${isSel ? 'var(--accent)' : 'var(--border)'}`,
+              }}>
+                <b>{ev.home?.name ?? '?'}</b> <span style={{ opacity: 0.6 }}>vs</span> <b>{ev.away?.name ?? '?'}</b>
+                <span style={{ float: 'right', opacity: 0.55, fontSize: 10, fontFamily: 'var(--mono)' }}>{fmtKO(Number(ev.time))}</span>
+              </div>
+            )
+          })}
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={onClose} style={{ flex: 1, padding: '8px 0', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text2)', cursor: 'pointer', fontSize: 12 }}>Zrušiť</button>
+          <button
+            onClick={() => selected && onConfirm(selected)}
+            disabled={!selected}
+            style={{ flex: 1, padding: '8px 0', borderRadius: 6, border: 'none', background: selected ? 'var(--accent)' : 'var(--border)', color: selected ? '#fff' : 'var(--text3)', cursor: selected ? 'pointer' : 'not-allowed', fontSize: 12, fontWeight: 700 }}
+          >Potvrdiť</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function MatchCard({ match, calc, bfOdds, evOver, evUnder, isWatched, isSaving, onWatch, onBack, leagueName, isPaired, onMap }) {
   const [expanded, setExpanded] = useState(false)
   const [inputs, setInputs]     = useState({})
 
@@ -765,6 +845,12 @@ function MatchCard({ match, calc, bfOdds, evOver, evUnder, isWatched, isSaving, 
           })()}
           <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
             {calc && <ModelBadge type={calc.modelType} />}
+            {calc && !isPaired && (
+              <span
+                onClick={e => { e.stopPropagation(); onMap(match) }}
+                style={{ fontSize: 9, padding: '1px 6px', borderRadius: 4, border: '1px solid var(--accent2)', color: 'var(--accent2)', cursor: 'pointer', userSelect: 'none' }}
+              >🔗 Mapovať</span>
+            )}
           </div>
         </div>
 
@@ -852,14 +938,16 @@ export default function Skener({ onBetSaved }) {
   const [date,       setDate]       = useState(todayStr())
   const [matches,    setMatches]    = useState([])
   const [lgNameMap,  setLgNameMap]  = useState({})    // competition_id (str) → league name
-  const [results,    setResults]    = useState({})    // matchId → calc
-  const [bfMap,      setBfMap]      = useState({})    // our_event_id (str) → betfairEventId
-  const [bfOdds,     setBfOdds]     = useState({})    // matchId (str) → {backOver, backUnder}
-  const [notified,   setNotified]   = useState(new Set())
-  const [watched,    setWatched]    = useState(new Set())
-  const [saving,     setSaving]     = useState({})    // matchId → 'over'|'under'
-  const [loading,    setLoading]    = useState(false)
-  const [progress,   setProgress]   = useState({ done: 0, total: 0 })
+  const [results,       setResults]       = useState({})
+  const [bfMap,         setBfMap]         = useState({})
+  const [bfOdds,        setBfOdds]        = useState({})
+  const [notified,      setNotified]      = useState(new Set())
+  const [watched,       setWatched]       = useState(new Set())
+  const [saving,        setSaving]        = useState({})
+  const [loading,       setLoading]       = useState(false)
+  const [progress,      setProgress]      = useState({ done: 0, total: 0 })
+  const [mappingDialog, setMappingDialog] = useState(null)  // { match }
+  const bfUpcomingRef   = useRef([])
 
   // refs for stable closure in interval
   const abortRef   = useRef(false)
@@ -918,11 +1006,13 @@ export default function Skener({ onBetSaved }) {
         setProgress({ done: raw.length, total: raw.length })
         setLoading(false)
 
-        // fetch full league names and live Betfair odds in parallel
-        const [lgFullNameMap, bfUpcoming] = await Promise.all([
+        // fetch full league names, live Betfair odds and manual mappings in parallel
+        const [lgFullNameMap, bfUpcoming, manualMappings] = await Promise.all([
           fetchLeagueNameMap(),
           fetchBetfairUpcoming(),
+          fetchTeamMappings(),
         ])
+        bfUpcomingRef.current = bfUpcoming
         const mergedNameMap = { ...(cached.lgNameMap ?? {}) }
         for (const [sid, fullName] of Object.entries(lgFullNameMap)) {
           if (fullName) mergedNameMap[sid] = fullName
@@ -930,7 +1020,7 @@ export default function Skener({ onBetSaved }) {
         setLgNameMap(mergedNameMap)
         console.log('[bfUpcoming] count:', bfUpcoming?.length, 'first entry:', JSON.stringify(bfUpcoming?.[0]).slice(0, 200))
         if (abortRef.current) return
-        const newBfMap = buildBfMap(bfUpcoming, raw)
+        const newBfMap = buildBfMap(bfUpcoming, raw, manualMappings)
         console.log('[Skener] bfMap (cache path) entries:', Object.keys(newBfMap).length, newBfMap)
         console.log('[Skener] match IDs (cache):', raw.map(m => String(m.id)))
         setBfMap(newBfMap)
@@ -957,14 +1047,16 @@ export default function Skener({ onBetSaved }) {
     console.log('[Skener] competition_ids (season_ids):', seasonIds.length, seasonIds.slice(0, 3))
     console.log('[Skener] first match homeID/awayID:', raw[0]?.homeID, raw[0]?.awayID, 'competition_id:', raw[0]?.competition_id)
 
-    // parallel: league avgs + betfair upcoming + team stats + lastX + league name map
-    const [lgRawMap, bfUpcoming, { statsMap: teamCache, teamLeagueNames }, lastXCache, lgFullNameMap] = await Promise.all([
+    // parallel: league avgs + betfair upcoming + team stats + lastX + league name map + manual mappings
+    const [lgRawMap, bfUpcoming, { statsMap: teamCache, teamLeagueNames }, lastXCache, lgFullNameMap, manualMappings] = await Promise.all([
       Promise.all(seasonIds.map(async sid => [sid, await fetchLeagueAvg(sid)])).then(Object.fromEntries),
       fetchBetfairUpcoming(),
       fetchAllTeamStats(raw),
       fetchAllLastX(raw),
       fetchLeagueNameMap(),
+      fetchTeamMappings(),
     ])
+    bfUpcomingRef.current = bfUpcoming
     if (abortRef.current) return
 
     // build name map: league-list full names win, fallback to team/season names
@@ -983,7 +1075,7 @@ export default function Skener({ onBetSaved }) {
     setLgNameMap(newNameMap)
 
     // build matchId → betfairEventId map via home/away name + time matching
-    const newBfMap = buildBfMap(bfUpcoming, raw)
+    const newBfMap = buildBfMap(bfUpcoming, raw, manualMappings)
     console.log('[Skener] bfMap entries:', Object.keys(newBfMap).length, newBfMap)
     console.log('[Skener] match IDs:', raw.map(m => String(m.id)))
     setBfMap(newBfMap)
@@ -1074,6 +1166,23 @@ export default function Skener({ onBetSaved }) {
       const calc = currentResults[matchId]
       await fetchAndApplyOdds(matchId, bfEventId, calc ?? null, true)
     }))
+  }
+
+  // ── manual mapping ────────────────────────────────────────────────────────
+  async function handleConfirmMapping(match, bfEvent) {
+    const footyHome = match.home_name ?? match.homeName
+    const footyAway = match.away_name ?? match.awayName
+    const { error } = await supabase.from('team_mappings').insert({
+      footy_home_name: footyHome,
+      footy_away_name: footyAway,
+      bf_event_id: String(bfEvent.id),
+    })
+    if (error) { alert('Chyba pri ukladaní mapovania: ' + error.message); return }
+    const matchId = String(match.id)
+    setBfMap(prev => ({ ...prev, [matchId]: String(bfEvent.id) }))
+    setMappingDialog(null)
+    const calc = resultsRef.current[matchId]
+    if (calc) await fetchAndApplyOdds(matchId, String(bfEvent.id), calc, false)
   }
 
   // ── actions ────────────────────────────────────────────────────────────────
@@ -1208,6 +1317,15 @@ export default function Skener({ onBetSaved }) {
         </div>
       )}
 
+      {mappingDialog && (
+        <MappingDialog
+          match={mappingDialog.match}
+          bfUpcoming={bfUpcomingRef.current}
+          onConfirm={ev => handleConfirmMapping(mappingDialog.match, ev)}
+          onClose={() => setMappingDialog(null)}
+        />
+      )}
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {matches.map(m => {
           const id    = String(m.id)
@@ -1228,6 +1346,8 @@ export default function Skener({ onBetSaved }) {
               onWatch={toggleWatch}
               onBack={handleBack}
               leagueName={lgNameMap[String(m.competition_id)] ?? null}
+              isPaired={!!bfMap[id]}
+              onMap={match => setMappingDialog({ match })}
             />
           )
         })}
