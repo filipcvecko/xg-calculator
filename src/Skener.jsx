@@ -398,6 +398,9 @@ async function fetchBetfairEvent(eventId) {
     const res  = await fetch(`/api/betsapi?endpoint=betfair%2Fevent&event_id=${eventId}`)
     if (!res.ok) return null
     const json = await res.json()
+    console.log('[fetchBetfairEvent] json top-level keys:', Object.keys(json ?? {}))
+    console.log('[fetchBetfairEvent] results[0] keys:', Object.keys(json?.results?.[0] ?? {}))
+    console.log('[fetchBetfairEvent] results[0].markets length:', json?.results?.[0]?.markets?.length, 'first market keys:', Object.keys(json?.results?.[0]?.markets?.[0] ?? {}))
     // results is [{event, competitions, markets: [...]}] — return results[0] directly
     return json?.results?.[0] ?? null
   } catch { return null }
@@ -414,7 +417,9 @@ async function fetchTeamMappings() {
 
 function _getMarkets(eventData) {
   // eventData is results[0]: {event, competitions, markets: [...]}
-  return eventData?.markets ?? eventData?.mc ?? []
+  const result = eventData?.markets ?? eventData?.mc ?? []
+  console.log('[_getMarkets] eventData keys:', Object.keys(eventData ?? {}), '→ markets length:', result.length)
+  return result
 }
 
 function _marketName(m) {
