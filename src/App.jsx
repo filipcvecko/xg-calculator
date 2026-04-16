@@ -1166,10 +1166,10 @@ export default function App() {
       const xgTotal = xgH + xgA
       const mkt = bet.market
       let xgOutcome = null
-      if (mkt === 'over2.5' || mkt === 'under2.5') { xgOutcome = xgTotal > 2.5 ? 1 : 0; if (mkt === 'under2.5') xgOutcome = 1 - xgOutcome }
-      else if (mkt === 'over3.0' || mkt === 'under3.0') { xgOutcome = xgTotal > 3.0 ? 1 : 0; if (mkt === 'under3.0') xgOutcome = 1 - xgOutcome }
-      else if (mkt === 'over2.75' || mkt === 'under2.75') { xgOutcome = xgTotal > 2.75 ? 1 : 0; if (mkt === 'under2.75') xgOutcome = 1 - xgOutcome }
-      else if (mkt === 'over2.25' || mkt === 'under2.25') { xgOutcome = xgTotal > 2.25 ? 1 : 0; if (mkt === 'under2.25') xgOutcome = 1 - xgOutcome }
+      if (mkt === 'Over 2.5' || mkt === 'Under 2.5') { xgOutcome = xgTotal > 2.5 ? 1 : 0; if (mkt === 'Under 2.5') xgOutcome = 1 - xgOutcome }
+      else if (mkt === 'Over 3.0' || mkt === 'Under 3.0') { xgOutcome = xgTotal > 3.0 ? 1 : 0; if (mkt === 'Under 3.0') xgOutcome = 1 - xgOutcome }
+      else if (mkt === 'Over 2.75' || mkt === 'Under 2.75') { xgOutcome = xgTotal > 2.75 ? 1 : 0; if (mkt === 'Under 2.75') xgOutcome = 1 - xgOutcome }
+      else if (mkt === 'Over 2.25' || mkt === 'Under 2.25') { xgOutcome = xgTotal > 2.25 ? 1 : 0; if (mkt === 'Under 2.25') xgOutcome = 1 - xgOutcome }
       if (xgOutcome !== null && bet.sel_prob != null) xgBrier = brierScore(bet.sel_prob, xgOutcome)
     }
 
