@@ -380,13 +380,15 @@ async function fetchBetfairUpcoming() {
     const all = []
     let page = 1
     while (true) {
-      const res  = await fetch(`/api/betsapi?endpoint=betfair%2Fupcoming&sport_id=1&page=${page}`)
+      const res  = await fetch(`/api/betsapi?endpoint=betfair%2Fupcoming&sport_id=1&page=${page}&per_page=100`)
       if (!res.ok) break
       const json = await res.json()
       const results = json?.results ?? []
       all.push(...results)
-      const pager = json?.pager
-      if (!pager || page >= (pager.max_page ?? 1)) break
+      const pager = json?.pager ?? json?.pagination ?? json?.meta?.pagination
+      const maxPage = pager?.max_page ?? pager?.total_pages ?? pager?.pageCount ?? 1
+      console.log(`[fetchBetfairUpcoming] page=${page}/${maxPage} fetched=${results.length} total=${all.length}`)
+      if (results.length === 0 || page >= maxPage) break
       page++
     }
     return all
