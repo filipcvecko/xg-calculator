@@ -1204,7 +1204,7 @@ export default function App() {
   const OU275_MARKETS = ['over2.75', 'under2.75', 'Over 2.75', 'Under 2.75']
   const OU30_MARKETS  = ['over3.0', 'under3.0', 'Over 3.0', 'Under 3.0']
   const BTTS_MARKETS  = ['BTTS Yes', 'BTTS No', 'btts-yes', 'btts-no']
-  const EXCLUDED_MARKETS = [...OU225_MARKETS, ...OU275_MARKETS]
+  const EXCLUDED_MARKETS = []
   const activeBets = bets.filter(b => !b.is_archived)
   const archivedBets = bets.filter(b => b.is_archived)
   const settled_all = activeBets.filter(b => b.result != null)
