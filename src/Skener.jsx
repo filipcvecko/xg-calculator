@@ -388,8 +388,9 @@ async function fetchBetfairUpcoming(date) {
       const results = json?.results ?? []
       all.push(...results)
       const pager = json?.pager ?? json?.pagination ?? json?.meta?.pagination
-      const maxPage = pager?.max_page ?? pager?.total_pages ?? pager?.pageCount ?? 1
-      console.log(`[fetchBetfairUpcoming] date=${date ?? 'today'} page=${page}/${maxPage} fetched=${results.length} total=${all.length}`)
+      const maxPage = pager?.max_page ?? pager?.total_pages ?? pager?.pageCount
+        ?? (pager?.total ? Math.ceil(pager.total / 100) : 1)
+      console.log(`[fetchBetfairUpcoming] date=${date ?? 'today'} page=${page}/${maxPage} fetched=${results.length} total=${all.length} pager=${JSON.stringify(pager)}`)
       if (results.length === 0 || page >= maxPage) break
       page++
     }
