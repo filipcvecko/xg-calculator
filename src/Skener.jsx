@@ -418,7 +418,7 @@ function _getMarkets(eventData) {
 }
 
 function _marketName(m) {
-  return String(m.market?.marketName ?? m.marketName ?? m.marketCatalogue?.marketName ?? '')
+  return String(m.market?.marketName ?? m.marketName ?? m.marketCatalogue?.marketName ?? m.description?.marketName ?? m.marketType ?? '')
 }
 
 function _oddsFromRunner(r) {
@@ -447,7 +447,7 @@ function _logRunners(label, market) {
 function _goalLinesOdds(eventData, handicap) {
   const markets = _getMarkets(eventData)
   const glMarket = markets.find(m => _marketName(m).toLowerCase().includes('goal lines'))
-  console.log('[_goalLinesOdds] called, handicap=', handicap, 'markets count=', markets?.length, 'gl found=', !!glMarket)
+  console.log('[_goalLinesOdds] called, handicap=', handicap, 'markets count=', markets?.length, 'gl found=', !!glMarket, 'market names=', markets.map(m => _marketName(m)))
   if (!glMarket) return null
   const runners = glMarket.runners ?? glMarket.runnerDetails ?? []
   console.log('[_goalLinesOdds] runners sample=', runners.slice(0, 2).map(r => ({ h: r.handicap, type: typeof r.handicap, name: r.description?.runnerName })))
