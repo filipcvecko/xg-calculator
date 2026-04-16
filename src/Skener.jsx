@@ -495,19 +495,23 @@ function extractOU30Odds(eventData) {
   return _goalLinesOdds(eventData, 3.0)
 }
 
-// BTTS — selectionId zistiť cez konzolu
+// BTTS — Exchange štruktúra: runners + exchange.availableToBack[0].price
 function extractBTTSOdds(eventData) {
   const markets = _getMarkets(eventData)
   const bttsMarket = markets.find(m =>
     _marketName(m).toLowerCase().includes('both teams to score')
   )
   if (!bttsMarket) return null
-  _logRunners('extractBTTSOdds', bttsMarket)
-  const runners = [...(bttsMarket.runnerDetails ?? bttsMarket.runners ?? [])]
-    .sort((a, b) => (a.runnerOrder ?? 0) - (b.runnerOrder ?? 0))
+  const runners = [...(bttsMarket.runners ?? bttsMarket.runnerDetails ?? [])]
+    .sort((a, b) => (a.sort ?? a.runnerOrder ?? 0) - (b.sort ?? b.runnerOrder ?? 0))
+  const toOdds = (r) => {
+    const p = r?.exchange?.availableToBack?.[0]?.price ?? null
+    return p && p > 1 ? p : null
+  }
+  console.log('[extractBTTSOdds] runners:', runners.map(r => ({ name: r.description?.runnerName, back: r.exchange?.availableToBack?.[0]?.price })))
   return {
-    backYes: _oddsFromRunner(runners[0]),
-    backNo:  _oddsFromRunner(runners[1]),
+    backYes: toOdds(runners[0]),
+    backNo:  toOdds(runners[1]),
   }
 }
 
