@@ -537,7 +537,8 @@ function todayStr() {
 
 function fmtKO(unix) {
   if (!unix) return '—'
-  return new Date(unix * 1000).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' })
+  const d = new Date(unix * 1000)
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
 function evColor(ev) {
