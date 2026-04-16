@@ -302,7 +302,8 @@ function cleanName(s) {
     .toLowerCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')   // strip diacritics
     .replace(/\bu\s?21\b|\bu\s?23\b|\bu\s?18\b|\bu\s?19\b|\bu\s?20\b/g, '')  // age groups
-    .replace(/\bfc\b|\baf\b|\bsc\b|\bac\b|\bfk\b|\bsk\b|\bif\b|\bbk\b|\bvfb\b|\bsv\b|\brcd\b|\bnk\b|\bkf\b|\bcd\b|\bsd\b|\bcf\b|\brc\b/g, '')
+    .replace(/\b\d{4}\b/g, '')  // year suffixes like "1918", "1906"
+    .replace(/\bfc\b|\baf\b|\bsc\b|\bac\b|\bfk\b|\bsk\b|\bif\b|\bbk\b|\bvfb\b|\bsv\b|\brcd\b|\bnk\b|\bkf\b|\bcd\b|\bsd\b|\bcf\b|\brc\b|\bofk\b|\bgfk\b|\brfk\b|\bmfk\b|\bpfc\b|\bfbk\b|\btsk\b|\bik\b|\bhk\b|\bgd\b|\bud\b|\bce\b|\bse\b|\bae\b/g, '')
     .replace(/[^a-z0-9 ]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
