@@ -395,7 +395,7 @@ async function fetchBetfairUpcoming() {
 
 async function fetchBetfairEvent(eventId) {
   try {
-    const res  = await fetch(`/api/betsapi?endpoint=betfair%2Fevent&event_id=${eventId}`)
+    const res  = await fetch(`/api/betsapi?endpoint=betfair%2Fex%2Fevent&event_id=${eventId}`)
     if (!res.ok) return null
     const json = await res.json()
     console.log('[fetchBetfairEvent] json top-level keys:', Object.keys(json ?? {}))
