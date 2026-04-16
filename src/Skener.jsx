@@ -423,7 +423,7 @@ function _goalLinesOdds(eventData, handicap) {
   const glMarket = markets.find(m => _marketName(m).toLowerCase().includes('goal lines'))
   if (!glMarket) return null
   const runners = glMarket.runners ?? glMarket.runnerDetails ?? []
-  const getHandicap = (r) => r.handicap
+  const getHandicap = (r) => Number(r.handicap)
   const getName     = (r) => (r.description?.runnerName ?? '').toLowerCase()
   console.log(`[_goalLinesOdds] handicap=${handicap} runners:`, runners.map(r => ({
     handicap: r.handicap, runnerName: r.description?.runnerName,
