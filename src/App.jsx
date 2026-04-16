@@ -2731,16 +2731,16 @@ export default function App() {
                       <option value="">— vyber výsledok —</option>
                       <option value="1">{b.bet_type === 'lay' ? '✅ Lay Won (event NOT happened)' : '✅ Back Won'}</option>
                       <option value="0">{b.bet_type === 'lay' ? '❌ Lay Lost (event happened)' : '❌ Back Lost'}</option>
-                      {(b.market === 'over3.0' || b.market === 'under3.0') && (
+                      {(['over3.0', 'under3.0', 'Over 3.0', 'Under 3.0'].includes(b.market)) && (
                         <option value="2">↩️ Push (presne 3 góly — stake sa vráti)</option>
                       )}
-                      {(b.market === 'over2.75' || b.market === 'under2.75') && (<>
-                        <option value="3">½ Win (3 góly — {b.market === 'under2.75' ? 'Under half win' : 'Over half lose'} — 50% výhra)</option>
-                        <option value="4">½ Lose (3 góly — {b.market === 'over2.75' ? 'Over half lose' : 'Under half win'} — 50% strata)</option>
+                      {(['over2.75', 'under2.75', 'Over 2.75', 'Under 2.75'].includes(b.market)) && (<>
+                        <option value="3">½ Win (3 góly — {['under2.75', 'Under 2.75'].includes(b.market) ? 'Under half win' : 'Over half lose'} — 50% výhra)</option>
+                        <option value="4">½ Lose (3 góly — {['over2.75', 'Over 2.75'].includes(b.market) ? 'Over half lose' : 'Under half win'} — 50% strata)</option>
                       </>)}
-                      {(b.market === 'over2.25' || b.market === 'under2.25') && (<>
-                        <option value="3">½ Win (2 góly — {b.market === 'over2.25' ? 'Over half win' : 'Under half lose'} — 50% výhra)</option>
-                        <option value="4">½ Lose (2 góly — {b.market === 'under2.25' ? 'Under half lose' : 'Over half win'} — 50% strata)</option>
+                      {(['over2.25', 'under2.25', 'Over 2.25', 'Under 2.25'].includes(b.market)) && (<>
+                        <option value="3">½ Win (2 góly — {['over2.25', 'Over 2.25'].includes(b.market) ? 'Over half win' : 'Under half lose'} — 50% výhra)</option>
+                        <option value="4">½ Lose (2 góly — {['under2.25', 'Under 2.25'].includes(b.market) ? 'Under half lose' : 'Over half win'} — 50% strata)</option>
                       </>)}
                     </select>
                     {b.pinnacle_open != null && b.pinnacle_close == null && (
