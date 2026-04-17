@@ -398,7 +398,7 @@ export default function App() {
   const [rho, setRho] = useState('-0.10')
   const [marketOddsOver, setMarketOddsOver] = useState('')
   const [marketOddsUnder, setMarketOddsUnder] = useState('')
-  const [marketWeight, setMarketWeight] = useState('0.50')
+  const [marketWeight, setMarketWeight] = useState('0.80')
   const [calibK, setCalibK] = useState('0.85')
   const [evMin, setEvMin] = useState('12')
   const [oddsLow, setOddsLow] = useState('1.4')
@@ -917,7 +917,7 @@ export default function App() {
     const pOverCalib = plattCalibrate(pOverRaw)
     const pUnderCalib = plattCalibrate(pUnderRaw)
 
-    const mw = pf(marketWeight) || 0.50
+    const mw = pf(marketWeight) || 0.80
     const moOver = pf(marketOddsOver)
     const moUnder = pf(marketOddsUnder)
     const pOverFinal = moOver > 1 ? marketCalibration(pOverCalib, moOver, mw) : pOverCalib
@@ -2121,7 +2121,7 @@ export default function App() {
                     </div>
                     <div>
                       <div className="label">w — váha modelu <span style={{ color: 'var(--accent2)' }}>(0.50 = 50% model, 50% market)</span></div>
-                      <input className="inp" inputMode="decimal" placeholder="0.50" value={marketWeight} onChange={e => setMarketWeight(e.target.value)} />
+                      <input className="inp" inputMode="decimal" placeholder="0.80" value={marketWeight} onChange={e => setMarketWeight(e.target.value)} />
                     </div>
                   </div>
                   <div>
