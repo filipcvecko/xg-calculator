@@ -428,6 +428,8 @@ export default function App() {
   const [settlePinnClose, setSettlePinnClose] = useState('')
   const [settleXgHome, setSettleXgHome] = useState('')
   const [settleXgAway, setSettleXgAway] = useState('')
+  const [settleHomeGoals, setSettleHomeGoals] = useState('')
+  const [settleAwayGoals, setSettleAwayGoals] = useState('')
   const [bankroll, setBankroll] = useState(() => {
     try { const v = localStorage.getItem(BANKROLL_KEY); return v ? parseFloat(v) : INITIAL_BANKROLL } catch { return INITIAL_BANKROLL }
   })
@@ -1182,10 +1184,13 @@ export default function App() {
       xg_home_real: xgH > 0 ? xgH : null,
       xg_away_real: xgA > 0 ? xgA : null,
       xg_brier: xgBrier,
+      home_goals: settleHomeGoals !== '' ? parseInt(settleHomeGoals, 10) : null,
+      away_goals: settleAwayGoals !== '' ? parseInt(settleAwayGoals, 10) : null,
     }).eq('id', id)
     if (settleError) { console.error('Settle update error:', settleError); alert('Chyba pri ukladaní výsledku: ' + settleError.message); return }
     setSettlingId(null); setSettleResult(''); setSettleClose(''); setSettleMode('clv')
     setSettlePinnClose(''); setSettleXgHome(''); setSettleXgAway('')
+    setSettleHomeGoals(''); setSettleAwayGoals('')
     await loadBets()
   }
 
@@ -2749,6 +2754,13 @@ export default function App() {
                         <input className='inp' inputMode="decimal" placeholder='Pinnacle closing (napr. 1.78)' value={settlePinnClose} onChange={e => setSettlePinnClose(e.target.value)} />
                       </div>
                     )}
+                    <div style={{ marginBottom: 8 }}>
+                      <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 4 }}>⚽ Výsledok zápasu — góly</div>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <input className="inp" inputMode="numeric" pattern="[0-9]*" placeholder="Góly domáci" value={settleHomeGoals} onChange={e => setSettleHomeGoals(e.target.value)} style={{ flex: 1 }} />
+                        <input className="inp" inputMode="numeric" pattern="[0-9]*" placeholder="Góly hostia" value={settleAwayGoals} onChange={e => setSettleAwayGoals(e.target.value)} style={{ flex: 1 }} />
+                      </div>
+                    </div>
                     <div style={{ marginBottom: 8 }}>
                       <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 4 }}>🔬 xG Brier (opt) — zadaj skutočné xG zo zápasu</div>
                       <div style={{ display: 'flex', gap: 8 }}>

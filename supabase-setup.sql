@@ -1,4 +1,9 @@
 -- Spusti tento SQL v Supabase > SQL Editor
+-- Migrácia: home_goals / away_goals
+ALTER TABLE bets ADD COLUMN IF NOT EXISTS home_goals integer;
+ALTER TABLE bets ADD COLUMN IF NOT EXISTS away_goals integer;
+
+
 
 create table bets (
   id uuid default gen_random_uuid() primary key,
