@@ -3615,6 +3615,58 @@ export default function App() {
                 })()}
               </div>
 
+              {(() => {
+                const goalBets = settled.filter(b => b.home_goals != null && b.away_goals != null)
+                if (goalBets.length === 0) return null
+                // deduplicate: one entry per unique match (match_name + match_time)
+                const matchMap = new Map()
+                for (const b of goalBets) {
+                  const key = `${b.match_name}|${b.match_time ?? ''}`
+                  if (!matchMap.has(key)) matchMap.set(key, b)
+                }
+                const uniq = [...matchMap.values()]
+                const BUCKETS = [
+                  { label: '0–1', test: t => t <= 1 },
+                  { label: '2',   test: t => t === 2 },
+                  { label: '3+',  test: t => t >= 3 },
+                ]
+                return (
+                  <div className="card">
+                    <div className="section-title">⚽ Bucket analýza — skutočné góly ({uniq.length} zápasov)</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '52px 1fr 1fr 1fr', gap: '0 8px', marginBottom: 4 }}>
+                      {['BUCKET', 'ZÁPASY', 'AVG λ H+A', 'O2.5 HIT%'].map(h => (
+                        <div key={h} style={{ fontSize: 9, color: 'var(--text3)', letterSpacing: '0.1em', textAlign: h === 'BUCKET' ? 'left' : 'right' }}>{h}</div>
+                      ))}
+                    </div>
+                    {BUCKETS.map(({ label, test }) => {
+                      const grp = uniq.filter(m => test(m.home_goals + m.away_goals))
+                      const avgLambda = grp.length
+                        ? grp.reduce((s, m) => s + (m.lambda_h || 0) + (m.lambda_a || 0), 0) / grp.length
+                        : null
+                      const hitRate = grp.length
+                        ? grp.filter(m => m.home_goals + m.away_goals > 2).length / grp.length
+                        : null
+                      const sharePct = uniq.length ? grp.length / uniq.length : 0
+                      return (
+                        <div key={label} style={{ display: 'grid', gridTemplateColumns: '52px 1fr 1fr 1fr', gap: '0 8px', padding: '9px 0', borderTop: '1px solid var(--border)', alignItems: 'center' }}>
+                          <div style={{ fontFamily: 'var(--mono)', fontSize: 15, fontWeight: 800, color: 'var(--text)' }}>{label}</div>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontFamily: 'var(--mono)', fontWeight: 700, color: 'var(--text2)' }}>{grp.length}</div>
+                            <div style={{ fontSize: 9, color: 'var(--text3)' }}>{fmtPct(sharePct * 100)}</div>
+                          </div>
+                          <div style={{ textAlign: 'right', fontFamily: 'var(--display)', fontSize: 15, fontWeight: 800, color: avgLambda != null ? 'var(--accent2)' : 'var(--text3)' }}>
+                            {avgLambda != null ? avgLambda.toFixed(2) : '—'}
+                          </div>
+                          <div style={{ textAlign: 'right', fontFamily: 'var(--display)', fontSize: 15, fontWeight: 800, color: hitRate != null && hitRate >= 0.5 ? 'var(--green)' : hitRate != null ? 'var(--text2)' : 'var(--text3)' }}>
+                            {hitRate != null ? fmtPct(hitRate * 100) : '—'}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )
+              })()}
+
               <div className="card">
                 <div className="label" style={{ marginBottom: 12 }}>PnL timeline</div>
                 <div className="pnl-bar-wrap">
