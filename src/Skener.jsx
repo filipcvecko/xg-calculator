@@ -652,7 +652,7 @@ function MarketCard({ mkey, label, prob, ferOdds, color, inputs, setInputs, onBe
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
         <div>
           <div style={{ fontSize: 9, color: 'var(--text3)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{label}</div>
-          <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text2)', fontFamily: 'var(--display)' }}>{fmtPct(prob * 100)}</div>
+          <div className="skener-market-prob">{fmtPct(prob * 100)}</div>
           <div style={{ fontSize: 10, color: 'var(--text3)' }}>fair {ferOdds ? fmt2(ferOdds) : '—'}</div>
         </div>
         {ev != null && (
@@ -663,7 +663,7 @@ function MarketCard({ mkey, label, prob, ferOdds, color, inputs, setInputs, onBe
           </div>
         )}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+      <div className="skener-market-inputs">
         <div>
           <div style={{ fontSize: 9, color: 'var(--text3)', marginBottom: 2 }}>Back odds</div>
           <input className="inp inp-sm" type="number" inputMode="decimal" step="0.01" placeholder="napr. 2.10"
@@ -687,8 +687,8 @@ function MarketCard({ mkey, label, prob, ferOdds, color, inputs, setInputs, onBe
       </div>
       {backOdds && (
         <button
-          className="btn-save-back"
-          style={{ width: '100%', marginTop: 8, fontSize: 10, padding: '7px 0',
+          className="btn-save-back skener-bet-btn"
+          style={{ width: '100%', marginTop: 8,
             opacity: isSaving === mkey ? 0.5 : 1,
             background: ev != null && ev >= EV_MIN ? undefined : 'rgba(108,92,231,0.3)' }}
           disabled={isSaving != null}
@@ -843,12 +843,12 @@ function MatchCard({ match, calc, bfOdds, evOver, evUnder, isWatched, isSaving, 
     <div className="card" style={{ padding: 0, overflow: 'hidden', borderLeft: hasEV ? '3px solid var(--green)' : undefined }}>
       {/* header row */}
       <div
-        style={{ padding: '12px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}
+        className="skener-match-header"
         onClick={() => setExpanded(e => !e)}
       >
         <div style={{ fontSize: 10, color: 'var(--text3)', minWidth: 32, fontFamily: 'var(--mono)' }}>{koTime}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div className="skener-team-name">
             {homeName} <span style={{ color: 'var(--text3)' }}>vs</span> {awayName}
             {isWatched && <span style={{ fontSize: 9, marginLeft: 8, color: '#fdcb6e', fontFamily: 'var(--mono)' }}>● LIVE</span>}
           </div>
@@ -874,7 +874,7 @@ function MatchCard({ match, calc, bfOdds, evOver, evUnder, isWatched, isSaving, 
         {/* quick stats */}
         {!calc && <div style={{ fontSize: 10, color: 'var(--text3)', fontFamily: 'var(--mono)' }}>načítavam…</div>}
         {calc && (
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <div className="skener-quick-stats">
             <div style={{ textAlign: 'right' }}>
               <div style={{ fontSize: 9, color: 'var(--text3)' }}>O2.5</div>
               <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--accent2)', fontFamily: 'var(--display)' }}>{fmtPct(calc.pOver * 100)}</div>
@@ -918,7 +918,7 @@ function MatchCard({ match, calc, bfOdds, evOver, evUnder, isWatched, isSaving, 
           </div>
 
           {/* Market karty — 2 stĺpce, 3 riadky; 1 stĺpec na mobile */}
-          <div className="skener-markets" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          <div className="skener-markets">
             {MARKETS.map(m => (
               <MarketCard
                 key={m.mkey}
