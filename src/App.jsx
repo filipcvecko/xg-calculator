@@ -3633,8 +3633,8 @@ export default function App() {
                 return (
                   <div className="card">
                     <div className="section-title">⚽ Bucket analýza — skutočné góly ({uniq.length} zápasov)</div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '52px 1fr 1fr 1fr', gap: '0 8px', marginBottom: 4 }}>
-                      {['BUCKET', 'ZÁPASY', 'AVG λ H+A', 'O2.5 HIT%'].map(h => (
+                    <div style={{ display: 'grid', gridTemplateColumns: '52px 1fr 1fr 1fr 1fr', gap: '0 8px', marginBottom: 4 }}>
+                      {['BUCKET', 'ZÁPASY', 'AVG λ H+A', 'AVG MODEL P', 'REAL OVER%'].map(h => (
                         <div key={h} style={{ fontSize: 9, color: 'var(--text3)', letterSpacing: '0.1em', textAlign: h === 'BUCKET' ? 'left' : 'right' }}>{h}</div>
                       ))}
                     </div>
@@ -3643,12 +3643,16 @@ export default function App() {
                       const avgLambda = grp.length
                         ? grp.reduce((s, m) => s + (m.lambda_h || 0) + (m.lambda_a || 0), 0) / grp.length
                         : null
+                      const grpWithP = grp.filter(m => m.p_over != null)
+                      const avgModelP = grpWithP.length
+                        ? grpWithP.reduce((s, m) => s + m.p_over, 0) / grpWithP.length
+                        : null
                       const hitRate = grp.length
                         ? grp.filter(m => m.home_goals + m.away_goals > 2).length / grp.length
                         : null
                       const sharePct = uniq.length ? grp.length / uniq.length : 0
                       return (
-                        <div key={label} style={{ display: 'grid', gridTemplateColumns: '52px 1fr 1fr 1fr', gap: '0 8px', padding: '9px 0', borderTop: '1px solid var(--border)', alignItems: 'center' }}>
+                        <div key={label} style={{ display: 'grid', gridTemplateColumns: '52px 1fr 1fr 1fr 1fr', gap: '0 8px', padding: '9px 0', borderTop: '1px solid var(--border)', alignItems: 'center' }}>
                           <div style={{ fontFamily: 'var(--mono)', fontSize: 15, fontWeight: 800, color: 'var(--text)' }}>{label}</div>
                           <div style={{ textAlign: 'right' }}>
                             <div style={{ fontFamily: 'var(--mono)', fontWeight: 700, color: 'var(--text2)' }}>{grp.length}</div>
@@ -3656,6 +3660,9 @@ export default function App() {
                           </div>
                           <div style={{ textAlign: 'right', fontFamily: 'var(--display)', fontSize: 15, fontWeight: 800, color: avgLambda != null ? 'var(--accent2)' : 'var(--text3)' }}>
                             {avgLambda != null ? avgLambda.toFixed(2) : '—'}
+                          </div>
+                          <div style={{ textAlign: 'right', fontFamily: 'var(--display)', fontSize: 15, fontWeight: 800, color: avgModelP != null ? 'var(--accent2)' : 'var(--text3)' }}>
+                            {avgModelP != null ? fmtPct(avgModelP * 100) : '—'}
                           </div>
                           <div style={{ textAlign: 'right', fontFamily: 'var(--display)', fontSize: 15, fontWeight: 800, color: hitRate != null && hitRate >= 0.5 ? 'var(--green)' : hitRate != null ? 'var(--text2)' : 'var(--text3)' }}>
                             {hitRate != null ? fmtPct(hitRate * 100) : '—'}
