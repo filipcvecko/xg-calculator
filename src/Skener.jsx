@@ -962,6 +962,7 @@ export default function Skener({ onBetSaved }) {
   const [watched,       setWatched]       = useState(new Set())
   const [saving,        setSaving]        = useState({})
   const [loading,       setLoading]       = useState(false)
+  const [bfRefreshing,  setBfRefreshing]  = useState(false)
   const [progress,      setProgress]      = useState({ done: 0, total: 0 })
   const [mappingDialog, setMappingDialog] = useState(null)  // { match }
   const bfUpcomingRef   = useRef([])
@@ -1108,6 +1109,19 @@ export default function Skener({ onBetSaved }) {
   function handleRefresh() {
     clearCache(date)
     run(date, true)
+  }
+
+  async function handleRefreshBfOdds() {
+    setBfRefreshing(true)
+    const currentBfMap   = bfMapRef.current
+    const currentResults = resultsRef.current
+    await Promise.all(
+      Object.entries(currentBfMap).map(([matchId, bfEventId]) => {
+        const calc = currentResults[matchId] ?? null
+        return fetchAndApplyOdds(matchId, bfEventId, calc, false)
+      })
+    )
+    setBfRefreshing(false)
   }
 
   async function processMatch(m, lgAvgMap, bfMapSnapshot, teamCache, lastXCache) {
@@ -1318,6 +1332,15 @@ export default function Skener({ onBetSaved }) {
             {watchCount > 0 && <span style={{ color: '#fdcb6e', marginLeft: 10 }}>● sledujem {watchCount}</span>}
           </div>
         )}
+        <button
+          className="btn btn-sm"
+          style={{ background: 'rgba(108,92,231,0.2)', color: 'var(--accent2)', border: '1px solid rgba(108,92,231,0.4)' }}
+          onClick={handleRefreshBfOdds}
+          disabled={bfRefreshing || Object.keys(bfMap).length === 0}
+          title={Object.keys(bfMap).length === 0 ? 'Žiadne spárované zápasy' : `Obnoví BF odds pre ${Object.keys(bfMap).length} spárovaných zápasov`}
+        >
+          {bfRefreshing ? '…' : 'Obnoviť BF odds'}
+        </button>
         <button className="btn btn-primary btn-sm" onClick={handleRefresh}>Obnoviť</button>
       </div>
 
