@@ -2616,7 +2616,9 @@ export default function App() {
           </div>
         )}
 
-        {tab === 'skener' && <Skener onBetSaved={loadBets} />}
+        <div style={{ display: tab === 'skener' ? undefined : 'none' }}>
+          <Skener onBetSaved={loadBets} />
+        </div>
 
         {tab === 'history' && (
           <div>
