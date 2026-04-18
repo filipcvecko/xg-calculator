@@ -1011,20 +1011,24 @@ export default function Skener({ onBetSaved }) {
     if (!forceRefresh) {
       const cached = loadCache(d)
       if (cached) {
-        // Invalidate cache if calc objects are missing btts (old format)
-        const cachedR = cached.results
-        const isStale = Object.values(cachedR).some(c => c && (!c.btts || !c.ou275 || !c.ou225))
-        if (isStale) {
-          console.log('[Skener] cache stale (chýba btts) — ignorujem')
-        } else {
-        console.log('[Skener] cache hit pre', d, '— preskakujem FootyStats API')
-        const raw     = cached.matches
+        const cachedR      = cached.results
+        const raw          = cached.matches
+
+        // find only matches missing new fields (old cache format) — keep the rest
+        const staleIds = new Set(
+          Object.entries(cachedR)
+            .filter(([, c]) => c && (!c.btts || !c.ou275 || !c.ou225))
+            .map(([id]) => id)
+        )
+        const staleMatches = raw.filter(m => staleIds.has(String(m.id)))
+
+        console.log(`[Skener] cache hit pre ${d} — ${staleMatches.length} stale, ${raw.length - staleMatches.length} fresh`)
+
         setMatches(raw)
         setResults(cachedR)
         setProgress({ done: raw.length, total: raw.length })
         setLoading(false)
 
-        // fetch full league names, live Betfair odds and manual mappings in parallel
         const [lgFullNameMap, bfUpcoming, manualMappings] = await Promise.all([
           fetchLeagueNameMap(),
           fetchBetfairUpcoming(d),
@@ -1042,15 +1046,40 @@ export default function Skener({ onBetSaved }) {
         console.log('[Skener] bfMap (cache path) entries:', Object.keys(newBfMap).length, newBfMap)
         console.log('[Skener] match IDs (cache):', raw.map(m => String(m.id)))
         setBfMap(newBfMap)
-        await Promise.all(raw.map(m => {
-          const id        = String(m.id)
-          const calc      = cachedR[id] ?? null
+
+        // Betfair odds for fresh matches — start in parallel with stale re-processing
+        const freshOddsPromise = Promise.all(raw.map(m => {
+          const id = String(m.id)
+          if (staleIds.has(id)) return Promise.resolve()
           const bfEventId = newBfMap[id]
+          const calc      = cachedR[id] ?? null
           if (bfEventId && calc) return fetchAndApplyOdds(id, bfEventId, calc, false)
           return Promise.resolve()
         }))
+
+        if (staleMatches.length > 0) {
+          const staleSeasonIds = [...new Set(staleMatches.map(m => m.competition_id).filter(Boolean))]
+          const [lgRawMap, { statsMap: teamCache }, lastXCache] = await Promise.all([
+            Promise.all(staleSeasonIds.map(async sid => [sid, await fetchLeagueAvg(sid)])).then(Object.fromEntries),
+            fetchAllTeamStats(staleMatches),
+            fetchAllLastX(staleMatches),
+          ])
+          const lgAvgMap = {}
+          for (const [sid, entry] of Object.entries(lgRawMap)) {
+            if (entry?.avg) lgAvgMap[sid] = entry.avg
+          }
+          const staleEntries = (await Promise.all(
+            staleMatches.map(m => processMatch(m, lgAvgMap, newBfMap, teamCache, lastXCache))
+          )).filter(Boolean)
+          const updatedResults = { ...cachedR }
+          for (const [id, calc] of staleEntries) {
+            updatedResults[id] = calc
+          }
+          saveCache(d, raw, updatedResults, mergedNameMap)
+        }
+
+        await freshOddsPromise
         return
-        } // end: cache not stale
       }
     }
 
