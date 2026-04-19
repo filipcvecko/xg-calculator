@@ -554,17 +554,31 @@ function cacheKey(date) { return `skener_cache_${date}` }
 function loadCache(date) {
   try {
     const raw = localStorage.getItem(cacheKey(date))
-    if (!raw) return null
+    if (!raw) {
+      console.log(`[loadCache] miss — kľúč=${cacheKey(date)}`)
+      return null
+    }
     const parsed = JSON.parse(raw)
-    if (!parsed?.matches || !parsed?.results) return null
+    if (!parsed?.matches || !parsed?.results) {
+      console.log(`[loadCache] nevalidný formát — kľúč=${cacheKey(date)}`)
+      return null
+    }
+    console.log(`[loadCache] hit — ${parsed.matches.length} matches, ${Object.keys(parsed.results).length} results, kľúč=${cacheKey(date)}`)
     return parsed
-  } catch { return null }
+  } catch (e) {
+    console.log(`[loadCache] chyba — ${e}`)
+    return null
+  }
 }
 
 function saveCache(date, matches, results, lgNameMap) {
   try {
-    localStorage.setItem(cacheKey(date), JSON.stringify({ matches, results, lgNameMap }))
-  } catch {}
+    const payload = JSON.stringify({ matches, results, lgNameMap })
+    localStorage.setItem(cacheKey(date), payload)
+    console.log(`[saveCache] zapísané — ${matches.length} matches, ${Object.keys(results).length} results, ${(payload.length / 1024).toFixed(1)} kB, kľúč=${cacheKey(date)}`)
+  } catch (e) {
+    console.log(`[saveCache] chyba (localStorage plný?) — ${e}`)
+  }
 }
 
 function clearCache(date) {
@@ -1075,6 +1089,7 @@ export default function Skener({ onBetSaved }) {
           for (const [id, calc] of staleEntries) {
             updatedResults[id] = calc
           }
+          console.log(`[run] pred saveCache (stale path) — staleEntries=${staleEntries.length} updatedResults=${Object.keys(updatedResults).length}`)
           saveCache(d, raw, updatedResults, mergedNameMap)
         }
 
@@ -1132,6 +1147,7 @@ export default function Skener({ onBetSaved }) {
 
     // save results to localStorage after all matches processed
     const resultsMap = Object.fromEntries(calcEntries.filter(Boolean))
+    console.log(`[run] pred saveCache (full path) — calcEntries=${calcEntries.length} resultsMap=${Object.keys(resultsMap).length} aborted=${abortRef.current}`)
     saveCache(d, raw, resultsMap, newNameMap)
   }
 

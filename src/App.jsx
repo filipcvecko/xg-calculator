@@ -323,7 +323,7 @@ export default function App() {
   const [gaH, setGaH] = useState('')
   const [gfA, setGfA] = useState('')
   const [gaA, setGaA] = useState('')
-  const [alpha, setAlpha] = useState('0.70')
+  const [alpha, setAlpha] = useState('1.00')
   const [backOver, setBackOver] = useState('')
   const [backUnder, setBackUnder] = useState('')
   const [myOddsOver, setMyOddsOver] = useState('')
@@ -1068,7 +1068,7 @@ export default function App() {
       pinnacle_close: null,
       pinnacle_clv: null,
       is_archived: false,
-      calibration_version: 'v2',
+      calibration_version: 'v3',
       stake_pct_bankroll: currentBankroll > 0 ? Math.round((calc.st / currentBankroll) * 1000) / 10 : null,
     }).select()
     console.log('Supabase result:', { inserted, error })
