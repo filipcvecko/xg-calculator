@@ -323,7 +323,7 @@ export default function App() {
   const [gaH, setGaH] = useState('')
   const [gfA, setGfA] = useState('')
   const [gaA, setGaA] = useState('')
-  const [alpha, setAlpha] = useState('1.00')
+  const [alpha, setAlpha] = useState('0.85')
   const [backOver, setBackOver] = useState('')
   const [backUnder, setBackUnder] = useState('')
   const [myOddsOver, setMyOddsOver] = useState('')
