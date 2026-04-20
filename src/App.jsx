@@ -467,7 +467,7 @@ export default function App() {
   }
 
   async function saveSnapshot(betId, key, field, rawVal, currentSnapshots) {
-    const num = rawVal === '' ? null : parseFloat(rawVal)
+    const num = rawVal === '' ? null : parseFloat(String(rawVal).replace(',', '.'))
     const val = (num == null || isNaN(num)) ? null : num
     const updated = {
       ...(currentSnapshots || {}),
@@ -1688,7 +1688,7 @@ export default function App() {
                   <div className="label">💰 Bankroll</div>
                   {editingBankroll ? (
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 4 }}>
-                      <input className="inp" inputMode="decimal" style={{ width: 120 }} placeholder={String(bankroll)} value={bankrollInput} onChange={e => setBankrollInput(e.target.value)} autoFocus />
+                      <input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" style={{ width: 120 }} placeholder={String(bankroll)} value={bankrollInput} onChange={e => setBankrollInput(e.target.value.replace(',', '.'))} autoFocus />
                       <button className="btn-ghost" onClick={() => { const v = pf(bankrollInput); if (v > 0) saveBankroll(v); setEditingBankroll(false); setBankrollInput('') }}>✓</button>
                       <button className="btn-ghost" onClick={() => { setEditingBankroll(false); setBankrollInput('') }}>✕</button>
                     </div>
@@ -1805,7 +1805,7 @@ export default function App() {
                     className="inp"
                     type="datetime-local"
                     value={matchTime}
-                    onChange={e => setMatchTime(e.target.value)}
+                    onChange={e => setMatchTime(e.target.value.replace(',', '.'))}
                     style={{ colorScheme: 'dark' }}
                   />
                 </div>
@@ -1976,8 +1976,8 @@ export default function App() {
                       </button>
                     ))}
                     <span style={{ fontSize: 11, color: 'var(--text3)', marginLeft: 8 }}>Váha formy:</span>
-                    <input className="inp" inputMode="decimal" style={{ width: 70, padding: '4px 8px', fontSize: 11 }}
-                      placeholder="0.40" value={formWeight} onChange={e => setFormWeight(e.target.value)} />
+                    <input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" style={{ width: 70, padding: '4px 8px', fontSize: 11 }}
+                      placeholder="0.40" value={formWeight} onChange={e => setFormWeight(e.target.value.replace(',', '.'))} />
                     <span style={{ fontSize: 10, color: 'var(--text3)' }}>(0=len sezóna, 1=len forma)</span>
                   </div>
                   <div style={{ display: 'flex', gap: 16, fontSize: 11, flexWrap: 'wrap' }}>
@@ -2012,10 +2012,10 @@ export default function App() {
             <div className="card">
               <div className="label" style={{ marginBottom: 10 }}>xG hodnoty</div>
               <div className="grid2">
-                <div><div className="label">xG Home</div><input className="inp" inputMode="decimal" placeholder="1.45" value={xgH} onChange={e => setXgH(e.target.value)} /></div>
-                <div><div className="label">xG Away</div><input className="inp" inputMode="decimal" placeholder="0.98" value={xgA} onChange={e => setXgA(e.target.value)} /></div>
-                <div><div className="label">xGA Home (opt)</div><input className="inp" inputMode="decimal" placeholder="1.20" value={xgaH} onChange={e => setXgaH(e.target.value)} /></div>
-                <div><div className="label">xGA Away (opt)</div><input className="inp" inputMode="decimal" placeholder="1.10" value={xgaA} onChange={e => setXgaA(e.target.value)} /></div>
+                <div><div className="label">xG Home</div><input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="1.45" value={xgH} onChange={e => setXgH(e.target.value.replace(',', '.'))} /></div>
+                <div><div className="label">xG Away</div><input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="0.98" value={xgA} onChange={e => setXgA(e.target.value.replace(',', '.'))} /></div>
+                <div><div className="label">xGA Home (opt)</div><input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="1.20" value={xgaH} onChange={e => setXgaH(e.target.value.replace(',', '.'))} /></div>
+                <div><div className="label">xGA Away (opt)</div><input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="1.10" value={xgaA} onChange={e => setXgaA(e.target.value.replace(',', '.'))} /></div>
               </div>
             </div>
 
@@ -2024,14 +2024,14 @@ export default function App() {
               <div className="label" style={{ marginBottom: 10 }}>GF / GA — reálne góly (opt)</div>
               <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 10 }}>Priemer gólov na zápas doma / vonku za sezónu</div>
               <div className="grid2">
-                <div><div className="label">GF Home (doma)</div><input className="inp" inputMode="decimal" placeholder="1.60" value={gfH} onChange={e => setGfH(e.target.value)} /></div>
-                <div><div className="label">GA Home (doma)</div><input className="inp" inputMode="decimal" placeholder="1.10" value={gaH} onChange={e => setGaH(e.target.value)} /></div>
-                <div><div className="label">GF Away (vonku)</div><input className="inp" inputMode="decimal" placeholder="1.20" value={gfA} onChange={e => setGfA(e.target.value)} /></div>
-                <div><div className="label">GA Away (vonku)</div><input className="inp" inputMode="decimal" placeholder="1.40" value={gaA} onChange={e => setGaA(e.target.value)} /></div>
+                <div><div className="label">GF Home (doma)</div><input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="1.60" value={gfH} onChange={e => setGfH(e.target.value.replace(',', '.'))} /></div>
+                <div><div className="label">GA Home (doma)</div><input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="1.10" value={gaH} onChange={e => setGaH(e.target.value.replace(',', '.'))} /></div>
+                <div><div className="label">GF Away (vonku)</div><input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="1.20" value={gfA} onChange={e => setGfA(e.target.value.replace(',', '.'))} /></div>
+                <div><div className="label">GA Away (vonku)</div><input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="1.40" value={gaA} onChange={e => setGaA(e.target.value.replace(',', '.'))} /></div>
               </div>
               <div style={{ marginTop: 10 }}>
                 <div className="label">α — váha xG vs góly <span style={{ color: 'var(--accent2)' }}>(0.70 = 70% xG, 30% góly)</span></div>
-                <input className="inp" inputMode="decimal" placeholder="0.70" value={alpha} onChange={e => setAlpha(e.target.value)} />
+                <input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="0.70" value={alpha} onChange={e => setAlpha(e.target.value.replace(',', '.'))} />
               </div>
             </div>
 
@@ -2089,11 +2089,11 @@ export default function App() {
                     <div className="grid2" style={{ marginTop: 8 }}>
                       <div>
                         <div className="label">Avg Home Goals/zápas</div>
-                        <input className="inp" inputMode="decimal" placeholder="napr. 1.45" value={leagueAvgH} onChange={e => setLeagueAvgH(e.target.value)} />
+                        <input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="napr. 1.45" value={leagueAvgH} onChange={e => setLeagueAvgH(e.target.value.replace(',', '.'))} />
                       </div>
                       <div>
                         <div className="label">Avg Away Goals/zápas</div>
-                        <input className="inp" inputMode="decimal" placeholder="napr. 1.20" value={leagueAvgA} onChange={e => setLeagueAvgA(e.target.value)} />
+                        <input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="napr. 1.20" value={leagueAvgA} onChange={e => setLeagueAvgA(e.target.value.replace(',', '.'))} />
                       </div>
                     </div>
                   )}
@@ -2105,12 +2105,12 @@ export default function App() {
                   <div className="grid2">
                     <div>
                       <div className="label">Avg Home Goals/zápas</div>
-                      <input className="inp" inputMode="decimal" placeholder="napr. 1.45" value={leagueAvgH}
+                      <input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="napr. 1.45" value={leagueAvgH}
                         onChange={e => { setLeagueAvgH(e.target.value); setLeagueAvgSource('manual') }} />
                     </div>
                     <div>
                       <div className="label">Avg Away Goals/zápas</div>
-                      <input className="inp" inputMode="decimal" placeholder="napr. 1.20" value={leagueAvgA}
+                      <input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="napr. 1.20" value={leagueAvgA}
                         onChange={e => { setLeagueAvgA(e.target.value); setLeagueAvgSource('manual') }} />
                     </div>
                   </div>
@@ -2119,12 +2119,12 @@ export default function App() {
               {(pf(leagueAvgH) > 0 || pf(leagueAvgA) > 0) && (
                 <div style={{ marginTop: 10 }}>
                   <div className="label">Shrinkage faktor <span style={{ color: 'var(--accent2)', textTransform: 'none', letterSpacing: 0 }}>(0.15 = 15% ťah λ k priemeru ligy)</span></div>
-                  <input className="inp" inputMode="decimal" placeholder="0.15" value={shrinkage} onChange={e => setShrinkage(e.target.value)} />
+                  <input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="0.15" value={shrinkage} onChange={e => setShrinkage(e.target.value.replace(',', '.'))} />
                 </div>
               )}
               <div style={{ marginTop: 10 }}>
                 <div className="label">xG scaler <span style={{ color: 'var(--accent2)', textTransform: 'none', letterSpacing: 0 }}>(0.90 = FootyStats xG × 0.90)</span></div>
-                <input className="inp" inputMode="decimal" placeholder="0.90" value={xgScaler} onChange={e => setXgScaler(e.target.value)} />
+                <input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="0.90" value={xgScaler} onChange={e => setXgScaler(e.target.value.replace(',', '.'))} />
               </div>
             </div>
 
@@ -2142,35 +2142,35 @@ export default function App() {
                   <div className="grid2">
                     <div>
                       <div className="label">Home SoT for <span style={{ color: 'var(--accent2)', textTransform: 'none', letterSpacing: 0 }}>(avg/zápas)</span></div>
-                      <input className="inp" inputMode="decimal" placeholder="napr. 5.2" value={sotHomeFor} onChange={e => setSotHomeFor(e.target.value)} />
+                      <input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="napr. 5.2" value={sotHomeFor} onChange={e => setSotHomeFor(e.target.value.replace(',', '.'))} />
                     </div>
                     <div>
                       <div className="label">Away SoT for <span style={{ color: 'var(--accent2)', textTransform: 'none', letterSpacing: 0 }}>(avg/zápas)</span></div>
-                      <input className="inp" inputMode="decimal" placeholder="napr. 4.1" value={sotAwayFor} onChange={e => setSotAwayFor(e.target.value)} />
+                      <input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="napr. 4.1" value={sotAwayFor} onChange={e => setSotAwayFor(e.target.value.replace(',', '.'))} />
                     </div>
                   </div>
                   <div className="grid2">
                     <div>
                       <div className="label">Home SoT against <span style={{ color: 'var(--text3)', textTransform: 'none', letterSpacing: 0 }}>(voliteľné)</span></div>
-                      <input className="inp" inputMode="decimal" placeholder="napr. 3.8" value={sotHomeAgainst} onChange={e => setSotHomeAgainst(e.target.value)} />
+                      <input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="napr. 3.8" value={sotHomeAgainst} onChange={e => setSotHomeAgainst(e.target.value.replace(',', '.'))} />
                     </div>
                     <div>
                       <div className="label">Away SoT against <span style={{ color: 'var(--text3)', textTransform: 'none', letterSpacing: 0 }}>(voliteľné)</span></div>
-                      <input className="inp" inputMode="decimal" placeholder="napr. 4.6" value={sotAwayAgainst} onChange={e => setSotAwayAgainst(e.target.value)} />
+                      <input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="napr. 4.6" value={sotAwayAgainst} onChange={e => setSotAwayAgainst(e.target.value.replace(',', '.'))} />
                     </div>
                   </div>
                   <div className="grid3">
                     <div>
                       <div className="label">Liga avg SoT</div>
-                      <input className="inp" inputMode="decimal" placeholder="4.5" value={leagueAvgSot} onChange={e => setLeagueAvgSot(e.target.value)} />
+                      <input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="4.5" value={leagueAvgSot} onChange={e => setLeagueAvgSot(e.target.value.replace(',', '.'))} />
                     </div>
                     <div>
                       <div className="label">Weight</div>
-                      <input className="inp" inputMode="decimal" placeholder="0.3" value={sotWeight} onChange={e => setSotWeight(e.target.value)} />
+                      <input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="0.3" value={sotWeight} onChange={e => setSotWeight(e.target.value.replace(',', '.'))} />
                     </div>
                     <div>
                       <div className="label">Max cap %</div>
-                      <input className="inp" inputMode="decimal" placeholder="5" value={sotMaxCap} onChange={e => setSotMaxCap(e.target.value)} />
+                      <input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="5" value={sotMaxCap} onChange={e => setSotMaxCap(e.target.value.replace(',', '.'))} />
                     </div>
                   </div>
                   {calc?.sotInfo && (
@@ -2209,7 +2209,7 @@ export default function App() {
                     <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 8 }}>Upravuje pravdepodobnosti pre nízke skóre (0-0, 1-0, 0-1, 1-1). ρ = 0 vypne korekciu.</div>
                     <div>
                       <div className="label">ρ (rho) — korelačný parameter <span style={{ color: 'var(--accent2)' }}>(-0.05 až -0.15)</span></div>
-                      <input className="inp" inputMode="decimal" placeholder="-0.10" value={rho} onChange={e => setRho(e.target.value)} />
+                      <input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="-0.10" value={rho} onChange={e => setRho(e.target.value.replace(',', '.'))} />
                     </div>
                   </div>
                   <div>
@@ -2218,16 +2218,16 @@ export default function App() {
                     <div className="grid2" style={{ marginBottom: 10 }}>
                       <div>
                         <div className="label">Market kurz Over 2.5</div>
-                        <input className="inp" inputMode="decimal" placeholder="napr. 1.90" value={marketOddsOver} onChange={e => setMarketOddsOver(e.target.value)} />
+                        <input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="napr. 1.90" value={marketOddsOver} onChange={e => setMarketOddsOver(e.target.value.replace(',', '.'))} />
                       </div>
                       <div>
                         <div className="label">Market kurz Under 2.5</div>
-                        <input className="inp" inputMode="decimal" placeholder="napr. 2.00" value={marketOddsUnder} onChange={e => setMarketOddsUnder(e.target.value)} />
+                        <input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="napr. 2.00" value={marketOddsUnder} onChange={e => setMarketOddsUnder(e.target.value.replace(',', '.'))} />
                       </div>
                     </div>
                     <div>
                       <div className="label">w — váha modelu <span style={{ color: 'var(--accent2)' }}>(0.50 = 50% model, 50% market)</span></div>
-                      <input className="inp" inputMode="decimal" placeholder="0.80" value={marketWeight} onChange={e => setMarketWeight(e.target.value)} />
+                      <input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="0.80" value={marketWeight} onChange={e => setMarketWeight(e.target.value.replace(',', '.'))} />
                     </div>
                   </div>
                   <div>
@@ -2235,7 +2235,7 @@ export default function App() {
                     <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 8 }}>Kalibrácia k 50%. k &lt; 1 = stiahni k 50%, k = 1 = bez zmeny, k &gt; 1 = polarizuj.</div>
                     <div>
                       <div className="label">k — kalibračný exponent <span style={{ color: 'var(--accent2)' }}>(default 0.85)</span></div>
-                      <input className="inp" inputMode="decimal" placeholder="0.85" value={calibK} onChange={e => setCalibK(e.target.value)} />
+                      <input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="0.85" value={calibK} onChange={e => setCalibK(e.target.value.replace(',', '.'))} />
                     </div>
                   </div>
                   <div>
@@ -2244,15 +2244,15 @@ export default function App() {
                     <div className="grid3">
                       <div>
                         <div className="label">Min EV% <span style={{ color: 'var(--accent2)' }}>(default 4)</span></div>
-                        <input className="inp" inputMode="decimal" placeholder="12" value={evMin} onChange={e => setEvMin(e.target.value)} />
+                        <input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="12" value={evMin} onChange={e => setEvMin(e.target.value.replace(',', '.'))} />
                       </div>
                       <div>
                         <div className="label">Min kurz</div>
-                        <input className="inp" inputMode="decimal" placeholder="1.4" value={oddsLow} onChange={e => setOddsLow(e.target.value)} />
+                        <input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="1.4" value={oddsLow} onChange={e => setOddsLow(e.target.value.replace(',', '.'))} />
                       </div>
                       <div>
                         <div className="label">Max kurz</div>
-                        <input className="inp" inputMode="decimal" placeholder="3.5" value={oddsHigh} onChange={e => setOddsHigh(e.target.value)} />
+                        <input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="3.5" value={oddsHigh} onChange={e => setOddsHigh(e.target.value.replace(',', '.'))} />
                       </div>
                     </div>
                   </div>
@@ -2263,8 +2263,8 @@ export default function App() {
             {/* Stake / komisia */}
             <div className="card">
               <div className="grid2">
-                <div><div className="label">Stake (€)</div><input className="inp" inputMode="decimal" placeholder="10" value={stake} onChange={e => setStake(e.target.value)} /></div>
-                <div><div className="label">Komisia (%)</div><input className="inp" inputMode="decimal" placeholder="5" value={commission} onChange={e => setCommission(e.target.value)} /></div>
+                <div><div className="label">Stake (€)</div><input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="10" value={stake} onChange={e => setStake(e.target.value.replace(',', '.'))} /></div>
+                <div><div className="label">Komisia (%)</div><input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="5" value={commission} onChange={e => setCommission(e.target.value.replace(',', '.'))} /></div>
               </div>
             </div>
 
@@ -2382,7 +2382,7 @@ export default function App() {
 
                     <div style={{ marginTop: 10, marginBottom: 8 }}>
                       <div className="label">Best Back</div>
-                      <input className="inp inp-sm" inputMode="decimal" placeholder="1.85"
+                      <input className="inp inp-sm" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="1.85"
                         value={isOver ? backOver : backUnder}
                         onChange={e => {
                           const val = e.target.value
@@ -2392,15 +2392,15 @@ export default function App() {
                     </div>
                     <div style={{ marginBottom: 8 }}>
                       <div className="label">Môj kurz <span style={{color:'var(--accent2)'}}>(opt — ak líši od back)</span></div>
-                      <input className="inp inp-sm" inputMode="decimal" placeholder="napr. 2.08"
+                      <input className="inp inp-sm" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="napr. 2.08"
                         value={isOver ? myOddsOver : myOddsUnder}
-                        onChange={e => isOver ? setMyOddsOver(e.target.value) : setMyOddsUnder(e.target.value)} />
+                        onChange={e => isOver ? setMyOddsOver(e.target.value) : setMyOddsUnder(e.target.value.replace(',', '.'))} />
                     </div>
                     <div style={{ marginBottom: 8 }}>
                       <div className="label">Pinnacle kurz <span style={{ color: 'var(--text3)' }}>(opt — uloží sa s betom)</span></div>
-                      <input className="inp inp-sm" inputMode="decimal" placeholder="napr. 1.90"
+                      <input className="inp inp-sm" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="napr. 1.90"
                         value={isOver ? pinnOver25 : pinnUnder25}
-                        onChange={e => isOver ? setPinnOver25(e.target.value) : setPinnUnder25(e.target.value)} />
+                        onChange={e => isOver ? setPinnOver25(e.target.value) : setPinnUnder25(e.target.value.replace(',', '.'))} />
                       {(() => {
                         const pinnO = pf(isOver ? pinnOver25 : pinnUnder25)
                         const myO = pf(isOver ? myOddsOver : myOddsUnder)
@@ -2488,17 +2488,17 @@ export default function App() {
                     </div>
                     <div style={{ marginTop: 10, marginBottom: 8 }}>
                       <div className="label">Best Back</div>
-                      <input className="inp inp-sm" inputMode="decimal" placeholder="1.85" value={backVal} onChange={e => setBack(e.target.value)} />
+                      <input className="inp inp-sm" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="1.85" value={backVal} onChange={e => setBack(e.target.value.replace(',', '.'))} />
                     </div>
                     <div style={{ marginBottom: 8 }}>
                       <div className="label">Môj kurz <span style={{ color: 'var(--accent2)' }}>(opt — ak líši od back)</span></div>
-                      <input className="inp inp-sm" inputMode="decimal" placeholder="napr. 2.08" value={myOddsVal} onChange={e => setMyOdds(e.target.value)} />
+                      <input className="inp inp-sm" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="napr. 2.08" value={myOddsVal} onChange={e => setMyOdds(e.target.value.replace(',', '.'))} />
                     </div>
                     <div style={{ marginBottom: 8 }}>
                       <div className="label">Pinnacle kurz <span style={{ color: 'var(--text3)' }}>(opt)</span></div>
-                      <input className="inp inp-sm" inputMode="decimal" placeholder="napr. 1.90"
+                      <input className="inp inp-sm" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="napr. 1.90"
                         value={isOver ? pinnOver30 : pinnUnder30}
-                        onChange={e => isOver ? setPinnOver30(e.target.value) : setPinnUnder30(e.target.value)} />
+                        onChange={e => isOver ? setPinnOver30(e.target.value) : setPinnUnder30(e.target.value.replace(',', '.'))} />
                       {(() => {
                         const pinnO = pf(isOver ? pinnOver30 : pinnUnder30)
                         if (!pinnO || pinnO <= 1 || !actualOdds) return null
@@ -2571,11 +2571,11 @@ export default function App() {
                         <div>P(Half — {halfLabel}): <b style={{ color: 'var(--yellow)' }}>{fmtPct(halfProb * 100)}</b></div>
                         <div>P(Lose — {loseLabel}): <b style={{ color: 'var(--red)' }}>{fmtPct(loseProb * 100)}</b></div>
                       </div>
-                      <div style={{ marginTop: 10, marginBottom: 8 }}><div className="label">Best Back</div><input className="inp inp-sm" inputMode="decimal" placeholder="1.85" value={backVal} onChange={e => setBack(e.target.value)} /></div>
-                      <div style={{ marginBottom: 8 }}><div className="label">Môj kurz <span style={{ color: 'var(--accent2)' }}>(opt)</span></div><input className="inp inp-sm" inputMode="decimal" placeholder="napr. 2.08" value={myOddsVal} onChange={e => setMyOdds(e.target.value)} /></div>
+                      <div style={{ marginTop: 10, marginBottom: 8 }}><div className="label">Best Back</div><input className="inp inp-sm" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="1.85" value={backVal} onChange={e => setBack(e.target.value.replace(',', '.'))} /></div>
+                      <div style={{ marginBottom: 8 }}><div className="label">Môj kurz <span style={{ color: 'var(--accent2)' }}>(opt)</span></div><input className="inp inp-sm" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="napr. 2.08" value={myOddsVal} onChange={e => setMyOdds(e.target.value.replace(',', '.'))} /></div>
                       <div style={{ marginBottom: 8 }}>
                         <div className="label">Pinnacle kurz <span style={{ color: 'var(--text3)' }}>(opt)</span></div>
-                        <input className="inp inp-sm" inputMode="decimal" placeholder="napr. 1.90"
+                        <input className="inp inp-sm" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="napr. 1.90"
                           value={is275 ? (isOver ? pinnOver275 : pinnUnder275) : (isOver ? pinnOver225 : pinnUnder225)}
                           onChange={e => { const val = e.target.value; if (is275) { isOver ? setPinnOver275(val) : setPinnUnder275(val) } else { isOver ? setPinnOver225(val) : setPinnUnder225(val) } }} />
                         {(() => {
@@ -2647,15 +2647,15 @@ export default function App() {
           </div>}
           <div style={{ marginBottom: 8 }}>
             <div className="label">Best Back</div>
-            <input className="inp inp-sm" placeholder="napr. 1.85" value={back} onChange={e => setBack(e.target.value)} />
+            <input className="inp inp-sm" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="napr. 1.85" value={back} onChange={e => setBack(e.target.value.replace(',', '.'))} />
           </div>
           <div style={{ marginBottom: 8 }}>
             <div className="label">Môj kurz <span style={{ color: 'var(--accent2)' }}>(opt — ak líši od mid)</span></div>
-            <input className="inp inp-sm" placeholder="napr. 1.85" value={myOdds} onChange={e => setMyOdds(e.target.value)} />
+            <input className="inp inp-sm" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="napr. 1.85" value={myOdds} onChange={e => setMyOdds(e.target.value.replace(',', '.'))} />
           </div>
           <div style={{ marginBottom: 8 }}>
             <div className="label">Pinnacle kurz <span style={{ color: 'var(--text3)' }}>(opt — uloží sa s betom)</span></div>
-            <input className="inp inp-sm" placeholder="napr. 1.80" value={pinnOdds} onChange={e => setPinnOdds(e.target.value)} />
+            <input className="inp inp-sm" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="napr. 1.80" value={pinnOdds} onChange={e => setPinnOdds(e.target.value.replace(',', '.'))} />
             {(() => {
               const pinnO = pf(pinnOdds)
               const refOdds = usingMyOdds ? pf(myOdds) : mid
@@ -2822,13 +2822,13 @@ export default function App() {
                   <div className="clv-box">
                     <div style={{ fontSize: 11, color: 'var(--accent2)', marginBottom: 8 }}>📌 Closing kurz (5 min pred zápasom)</div>
                     <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                      <input className="inp" inputMode="decimal" placeholder="Exchange closing (napr. 1.82)" value={settleClose} onChange={e => setSettleClose(e.target.value)} style={{ flex: 1 }} />
+                      <input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="Exchange closing (napr. 1.82)" value={settleClose} onChange={e => setSettleClose(e.target.value.replace(',', '.'))} style={{ flex: 1 }} />
                       <button className="btn btn-primary" style={{ width: 'auto', padding: '10px 16px' }} onClick={() => handleSaveCLV(b.id)}>Uložiť CLV</button>
                     </div>
                     {b.pinnacle_open != null && (
                       <div style={{ marginBottom: 8 }}>
                         <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 4 }}>Pinnacle open bol {fmt3(b.pinnacle_open)} — zadaj Pinnacle closing:</div>
-                        <input className="inp" inputMode="decimal" placeholder="Pinnacle closing (napr. 1.78)" value={settlePinnClose} onChange={e => setSettlePinnClose(e.target.value)} />
+                        <input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="Pinnacle closing (napr. 1.78)" value={settlePinnClose} onChange={e => setSettlePinnClose(e.target.value.replace(',', '.'))} />
                         {pf(settlePinnClose) > 1 && (
                           <div style={{ fontSize: 11, marginTop: 4, fontWeight: 700, color: (b.pinnacle_open / pf(settlePinnClose) - 1) > 0 ? 'var(--green)' : 'var(--red)' }}>
                             Pinnacle CLV: {((b.pinnacle_open / pf(settlePinnClose) - 1) * 100) > 0 ? '+' : ''}{((b.pinnacle_open / pf(settlePinnClose) - 1) * 100).toFixed(1)}%
@@ -2851,7 +2851,7 @@ export default function App() {
                     <div style={{ fontSize: 11, color: 'var(--yellow)', marginBottom: 8 }}>🏁 Výsledok zápasu</div>
                     {b.clv != null && <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 4 }}>Exchange CLV: <b className={b.clv > 0 ? 'pos' : 'neg'}>{fmtSignPct(b.clv)}</b></div>}
                     {b.pinnacle_clv != null && <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 8 }}>Pinnacle CLV: <b className={b.pinnacle_clv > 0 ? 'pos' : 'neg'}>{fmtSignPct(b.pinnacle_clv)}</b></div>}
-                    <select className="inp" value={settleResult} onChange={e => setSettleResult(e.target.value)} style={{ marginBottom: 8 }}>
+                    <select className="inp" value={settleResult} onChange={e => setSettleResult(e.target.value.replace(',', '.'))} style={{ marginBottom: 8 }}>
                       <option value="">— vyber výsledok —</option>
                       <option value="1">{b.bet_type === 'lay' ? '✅ Lay Won (event NOT happened)' : '✅ Back Won'}</option>
                       <option value="0">{b.bet_type === 'lay' ? '❌ Lay Lost (event happened)' : '❌ Back Lost'}</option>
@@ -2870,21 +2870,21 @@ export default function App() {
                     {b.pinnacle_open != null && b.pinnacle_close == null && (
                       <div style={{ marginBottom: 8 }}>
                         <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 4 }}>Pinnacle open bol {fmt3(b.pinnacle_open)} — zadaj Pinnacle closing:</div>
-                        <input className='inp' inputMode="decimal" placeholder='Pinnacle closing (napr. 1.78)' value={settlePinnClose} onChange={e => setSettlePinnClose(e.target.value)} />
+                        <input className='inp' inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder='Pinnacle closing (napr. 1.78)' value={settlePinnClose} onChange={e => setSettlePinnClose(e.target.value.replace(',', '.'))} />
                       </div>
                     )}
                     <div style={{ marginBottom: 8 }}>
                       <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 4 }}>⚽ Výsledok zápasu — góly</div>
                       <div style={{ display: 'flex', gap: 8 }}>
-                        <input className="inp" inputMode="numeric" pattern="[0-9]*" placeholder="Góly domáci" value={settleHomeGoals} onChange={e => setSettleHomeGoals(e.target.value)} style={{ flex: 1 }} />
-                        <input className="inp" inputMode="numeric" pattern="[0-9]*" placeholder="Góly hostia" value={settleAwayGoals} onChange={e => setSettleAwayGoals(e.target.value)} style={{ flex: 1 }} />
+                        <input className="inp" inputMode="numeric" pattern="[0-9]*" placeholder="Góly domáci" value={settleHomeGoals} onChange={e => setSettleHomeGoals(e.target.value.replace(',', '.'))} style={{ flex: 1 }} />
+                        <input className="inp" inputMode="numeric" pattern="[0-9]*" placeholder="Góly hostia" value={settleAwayGoals} onChange={e => setSettleAwayGoals(e.target.value.replace(',', '.'))} style={{ flex: 1 }} />
                       </div>
                     </div>
                     <div style={{ marginBottom: 8 }}>
                       <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 4 }}>🔬 xG Brier (opt) — zadaj skutočné xG zo zápasu</div>
                       <div style={{ display: 'flex', gap: 8 }}>
-                        <input className="inp" inputMode="decimal" placeholder="xG Home" value={settleXgHome} onChange={e => setSettleXgHome(e.target.value)} style={{ flex: 1 }} />
-                        <input className="inp" inputMode="decimal" placeholder="xG Away" value={settleXgAway} onChange={e => setSettleXgAway(e.target.value)} style={{ flex: 1 }} />
+                        <input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="xG Home" value={settleXgHome} onChange={e => setSettleXgHome(e.target.value.replace(',', '.'))} style={{ flex: 1 }} />
+                        <input className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="xG Away" value={settleXgAway} onChange={e => setSettleXgAway(e.target.value.replace(',', '.'))} style={{ flex: 1 }} />
                       </div>
                     </div>
                     <button className="btn btn-primary" style={{ padding: '10px' }} onClick={() => handleSettle(b.id)}>Potvrdiť výsledok</button>
@@ -2921,7 +2921,7 @@ export default function App() {
                                 <div style={{ flex: 1 }}>
                                   <div style={{ fontSize: 9, color: 'var(--text3)', marginBottom: 3 }}>Exchange</div>
                                   <input
-                                    className="inp" inputMode="decimal" placeholder="—"
+                                    className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="—"
                                     defaultValue={snap.exchange ?? ''}
                                     key={`${b.id}-${key}-ex-${snap.exchange}`}
                                     onBlur={e => saveSnapshot(b.id, key, 'exchange', e.target.value, snaps)}
@@ -2931,7 +2931,7 @@ export default function App() {
                                 <div style={{ flex: 1 }}>
                                   <div style={{ fontSize: 9, color: 'var(--text3)', marginBottom: 3 }}>Pinnacle</div>
                                   <input
-                                    className="inp" inputMode="decimal" placeholder="—"
+                                    className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="—"
                                     defaultValue={snap.pinnacle ?? ''}
                                     key={`${b.id}-${key}-pn-${snap.pinnacle}`}
                                     onBlur={e => saveSnapshot(b.id, key, 'pinnacle', e.target.value, snaps)}
