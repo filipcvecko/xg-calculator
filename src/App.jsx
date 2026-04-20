@@ -307,10 +307,15 @@ const css = `
 const INITIAL_BANKROLL = 132.80
 const BANKROLL_KEY = 'xgcalc_bankroll'
 
+const SNAP_KEYS = ['t180', 't120', 't90', 't60', 't30', 't10', 'close']
+const SNAP_LABELS = { t180: 'T-180', t120: 'T-120', t90: 'T-90', t60: 'T-60', t30: 'T-30', t10: 'T-10', close: 'Close' }
+const SNAP_MINUTES = { t180: 180, t120: 120, t90: 90, t60: 60, t30: 30, t10: 10, close: 0 }
+
 export default function App() {
   const [tab, setTab] = useState('calc')
   const [statsMarket, setStatsMarket] = useState('all')
   const [statsVersion, setStatsVersion] = useState('all')
+  const [expandedSnapshots, setExpandedSnapshots] = useState(new Set())
   const [bets, setBets] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -441,6 +446,29 @@ export default function App() {
     try { localStorage.setItem(BANKROLL_KEY, String(val)) } catch {}
   }
 
+  function getCurrentSnapKey(matchTime, snapshots) {
+    if (!matchTime) return null
+    const kickoff = new Date(matchTime).getTime()
+    const now = Date.now()
+    const reversed = [...SNAP_KEYS].reverse()
+    for (const key of reversed) {
+      const snapTime = kickoff - SNAP_MINUTES[key] * 60 * 1000
+      if (now >= snapTime && !snapshots?.[key]?.exchange && !snapshots?.[key]?.pinnacle) return key
+    }
+    return null
+  }
+
+  async function saveSnapshot(betId, key, field, rawVal, currentSnapshots) {
+    const num = rawVal === '' ? null : parseFloat(rawVal)
+    const val = (num == null || isNaN(num)) ? null : num
+    const updated = {
+      ...(currentSnapshots || {}),
+      [key]: { ...(currentSnapshots?.[key] || {}), [field]: val, timestamp: new Date().toISOString() },
+    }
+    await supabase.from('bets').update({ snapshots: updated }).eq('id', betId)
+    setBets(prev => prev.map(b => b.id === betId ? { ...b, snapshots: updated } : b))
+  }
+
   async function requestNotifPermission() {
     if (typeof Notification === 'undefined') return
     const perm = await Notification.requestPermission()
@@ -467,6 +495,29 @@ export default function App() {
       })
       n.onclick = () => { window.focus(); n.close() }
     }, delay)
+  }
+
+  function scheduleSnapshotNotifications(bet) {
+    if (!bet.match_time || typeof Notification === 'undefined' || Notification.permission !== 'granted') return
+    const kickoff = new Date(bet.match_time).getTime()
+    SNAP_KEYS.forEach(key => {
+      const snapTime = kickoff - SNAP_MINUTES[key] * 60 * 1000
+      const notifTime = snapTime - 60 * 1000
+      const delay = notifTime - Date.now()
+      if (delay < 0) return
+      if (bet.snapshots?.[key]?.exchange != null || bet.snapshots?.[key]?.pinnacle != null) return
+      const sessionKey = `snap_notif_${bet.id}_${key}`
+      if (sessionStorage.getItem(sessionKey)) return
+      sessionStorage.setItem(sessionKey, '1')
+      setTimeout(() => {
+        const n = new Notification(`📸 Snapshot ${SNAP_LABELS[key]}`, {
+          body: `${bet.match_name || 'Zápas'} [${bet.market || ''}]\nZadaj kurz pre snapshot ${SNAP_LABELS[key]}`,
+          icon: '/favicon.ico',
+          tag: `snap-${bet.id}-${key}`,
+        })
+        n.onclick = () => { window.focus(); n.close() }
+      }, delay)
+    })
   }
 
   useEffect(() => {
@@ -546,6 +597,7 @@ export default function App() {
     const { data, error } = await supabase.from('bets').select('*').order('created_at', { ascending: false })
     if (!error) {
       setBets(data || [])
+      ;(data || []).filter(b => b.result == null && b.match_time).forEach(b => scheduleSnapshotNotifications(b))
     }
     setLoading(false)
   }
@@ -1081,6 +1133,7 @@ export default function App() {
       setSavedKey(market + '-' + betType)
       if (kickoff && inserted?.[0]?.id) {
         scheduleClvNotification(inserted[0].id, calc.matchName, kickoff, market, league)
+        scheduleSnapshotNotifications({ ...inserted[0], match_name: calc.matchName, market, snapshots: null })
       }
     }
     setSaving(false)
@@ -2662,6 +2715,17 @@ export default function App() {
                   </div>
                   <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                     {b.result == null && (
+                      <button className="btn-ghost" style={{ fontSize: 10 }} onClick={() => {
+                        setExpandedSnapshots(prev => {
+                          const next = new Set(prev)
+                          next.has(b.id) ? next.delete(b.id) : next.add(b.id)
+                          return next
+                        })
+                      }}>
+                        📸 Snapshoty
+                      </button>
+                    )}
+                    {b.result == null && (
                       <button className="btn-ghost" onClick={() => {
                         if (settlingId === b.id) { setSettlingId(null) }
                         else { setSettlingId(b.id); setSettleMode(b.odds_close ? 'result' : 'clv'); setSettleClose(''); setSettleResult('') }
@@ -2773,6 +2837,62 @@ export default function App() {
                     <button className="btn btn-primary" style={{ padding: '10px' }} onClick={() => handleSettle(b.id)}>Potvrdiť výsledok</button>
                   </div>
                 )}
+
+                {expandedSnapshots.has(b.id) && (() => {
+                  const snaps = b.snapshots || {}
+                  const curKey = getCurrentSnapKey(b.match_time, snaps)
+                  return (
+                    <div style={{ marginTop: 10, padding: '10px 12px', background: 'var(--bg3)', borderRadius: 6 }}>
+                      <div style={{ fontSize: 11, color: 'var(--accent2)', fontWeight: 600, marginBottom: 10 }}>📸 Odds snapshoty</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {SNAP_KEYS.map(key => {
+                          const snap = snaps[key] || {}
+                          const isFilled = snap.exchange != null || snap.pinnacle != null
+                          const isCurrent = key === curKey
+                          const kickoff = b.match_time ? new Date(b.match_time).getTime() : null
+                          const snapTime = kickoff ? kickoff - SNAP_MINUTES[key] * 60 * 1000 : null
+                          const isDue = snapTime ? Date.now() >= snapTime : false
+                          const borderColor = isCurrent ? 'var(--yellow)' : isFilled ? 'var(--green)' : 'var(--border)'
+                          const bg = isCurrent ? 'rgba(253,203,110,0.06)' : isFilled ? 'rgba(0,184,148,0.05)' : 'transparent'
+                          return (
+                            <div key={key} style={{ border: `1px solid ${borderColor}`, borderRadius: 6, padding: '6px 10px', background: bg }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: isCurrent ? 'var(--yellow)' : isFilled ? 'var(--green)' : isDue ? 'var(--text2)' : 'var(--text3)', minWidth: 48 }}>
+                                  {SNAP_LABELS[key]}
+                                </span>
+                                {isCurrent && <span style={{ fontSize: 9, background: 'rgba(253,203,110,0.2)', color: 'var(--yellow)', padding: '1px 5px', borderRadius: 3 }}>AKTUÁLNY</span>}
+                                {isFilled && !isCurrent && <span style={{ fontSize: 9, background: 'rgba(0,184,148,0.15)', color: 'var(--green)', padding: '1px 5px', borderRadius: 3 }}>✓</span>}
+                                {snap.timestamp && <span style={{ fontSize: 9, color: 'var(--text3)', marginLeft: 'auto' }}>{new Date(snap.timestamp).toLocaleTimeString('sk', { hour: '2-digit', minute: '2-digit' })}</span>}
+                              </div>
+                              <div style={{ display: 'flex', gap: 8 }}>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontSize: 9, color: 'var(--text3)', marginBottom: 3 }}>Exchange</div>
+                                  <input
+                                    className="inp" inputMode="decimal" placeholder="—"
+                                    defaultValue={snap.exchange ?? ''}
+                                    key={`${b.id}-${key}-ex-${snap.exchange}`}
+                                    onBlur={e => saveSnapshot(b.id, key, 'exchange', e.target.value, snaps)}
+                                    style={{ fontSize: 12, padding: '5px 8px' }}
+                                  />
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontSize: 9, color: 'var(--text3)', marginBottom: 3 }}>Pinnacle</div>
+                                  <input
+                                    className="inp" inputMode="decimal" placeholder="—"
+                                    defaultValue={snap.pinnacle ?? ''}
+                                    key={`${b.id}-${key}-pn-${snap.pinnacle}`}
+                                    onBlur={e => saveSnapshot(b.id, key, 'pinnacle', e.target.value, snaps)}
+                                    style={{ fontSize: 12, padding: '5px 8px' }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })()}
               </div>
             ))}
           </div>
@@ -3705,6 +3825,75 @@ export default function App() {
                 </div>
               </div>
             )}
+
+              {(() => {
+                const snapBets = settled.filter(b => b.snapshots && b.odds_open)
+                if (snapBets.length < 1) return null
+                const isBack = b => b.bet_type !== 'lay'
+                const favorable = (entry, snap, back) => snap != null && entry != null && (back ? entry > snap : entry < snap)
+                const avgMove = (bets, snapKey, source) => {
+                  const valid = bets.filter(b => b.snapshots?.[snapKey]?.[source] != null && b.odds_open != null)
+                  if (!valid.length) return null
+                  return valid.reduce((s, b) => s + (b.odds_open - b.snapshots[snapKey][source]), 0) / valid.length
+                }
+                const pctFav = (bets, snapKey, source) => {
+                  const valid = bets.filter(b => b.snapshots?.[snapKey]?.[source] != null && b.odds_open != null)
+                  if (!valid.length) return null
+                  const fav = valid.filter(b => favorable(b.odds_open, b.snapshots[snapKey][source], isBack(b))).length
+                  return { pct: (fav / valid.length) * 100, n: valid.length }
+                }
+                const timingBuckets = [
+                  { label: '180+ min', test: b => (b.hours_to_ko || 0) >= 3 },
+                  { label: '60–180 min', test: b => (b.hours_to_ko || 0) >= 1 && (b.hours_to_ko || 0) < 3 },
+                  { label: '0–60 min', test: b => (b.hours_to_ko || 0) < 1 },
+                ]
+                return (
+                  <div className="card" style={{ marginTop: 12 }}>
+                    <div className="section-title">⏱ TIMING / MARKET MOVEMENT</div>
+                    <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 12 }}>Entry kurz vs snapshoty · {snapBets.length} betov so snapshotmi</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 16 }}>
+                      {[['t60', 'Entry → T-60'], ['t10', 'Entry → T-10'], ['close', 'Entry → Close']].map(([key, label]) => {
+                        const exFav = pctFav(snapBets, key, 'exchange')
+                        const pnFav = pctFav(snapBets, key, 'pinnacle')
+                        const exAvg = avgMove(snapBets, key, 'exchange')
+                        return (
+                          <div key={key} className="card" style={{ padding: 10 }}>
+                            <div className="label">{label}</div>
+                            {exFav ? (
+                              <>
+                                <div className="stat-val" style={{ color: exFav.pct >= 50 ? 'var(--green)' : 'var(--red)', fontSize: 20 }}>{exFav.pct.toFixed(0)}%</div>
+                                <div className="hint">v prospech (Exchange) · {exFav.n}b</div>
+                                {exAvg != null && <div className="hint" style={{ color: exAvg > 0 ? 'var(--green)' : 'var(--red)' }}>avg Δ {exAvg > 0 ? '+' : ''}{exAvg.toFixed(3)}</div>}
+                                {pnFav && <div className="hint">Pinnacle: {pnFav.pct.toFixed(0)}% · {pnFav.n}b</div>}
+                              </>
+                            ) : <div className="hint">—</div>}
+                          </div>
+                        )
+                      })}
+                    </div>
+                    <div className="label" style={{ marginBottom: 8 }}>TIMING PROFIL</div>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      {timingBuckets.map(({ label, test }) => {
+                        const grp = settled.filter(test)
+                        if (!grp.length) return null
+                        const pnl = grp.reduce((s, b) => s + (b.pnl || 0), 0)
+                        const roi = grp.reduce((s, b) => s + b.stake, 0) > 0 ? pnl / grp.reduce((s, b) => s + b.stake, 0) * 100 : null
+                        const clvGrp = grp.filter(b => b.clv != null)
+                        const avgClv = clvGrp.length ? clvGrp.reduce((s, b) => s + b.clv, 0) / clvGrp.length : null
+                        return (
+                          <div key={label} className="card" style={{ flex: 1, minWidth: 90, padding: 10, textAlign: 'center' }}>
+                            <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 4 }}>{label}</div>
+                            <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text2)' }}>{grp.length}</div>
+                            <div style={{ fontSize: 10, color: 'var(--text3)' }}>betov</div>
+                            {roi != null && <div style={{ fontSize: 11, color: roi >= 0 ? 'var(--green)' : 'var(--red)', marginTop: 4 }}>ROI {roi >= 0 ? '+' : ''}{roi.toFixed(1)}%</div>}
+                            {avgClv != null && <div style={{ fontSize: 10, color: avgClv > 0 ? 'var(--green)' : 'var(--red)' }}>CLV {avgClv >= 0 ? '+' : ''}{avgClv.toFixed(1)}%</div>}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })()}
               </div>
               </>
             )}
