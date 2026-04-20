@@ -491,8 +491,10 @@ export default function App() {
       [key]: { ...(currentSnapshots?.[key] || {}), [field]: val, timestamp: new Date().toISOString() },
     }
     console.log('[saveSnapshot]', { betId, key, field, rawVal, val, updated })
-    const { error } = await supabase.from('bets').update({ snapshots: updated }).eq('id', betId)
-    if (error) console.error('[saveSnapshot] Supabase error:', error)
+    const response = await supabase.from('bets').update({ snapshots: updated }).eq('id', betId)
+    const { data, error, status } = response
+    console.log('[saveSnapshot] Supabase response:', { data, error, status })
+    if (error) console.error('[saveSnapshot] Supabase error detail:', error)
     else console.log('[saveSnapshot] OK — uložené do Supabase')
     setBets(prev => prev.map(b => b.id === betId ? { ...b, snapshots: updated } : b))
   }
