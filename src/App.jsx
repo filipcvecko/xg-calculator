@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Skener from './Skener'
 import { supabase } from './supabase'
 import {
@@ -319,6 +319,7 @@ export default function App() {
   const [bets, setBets] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const scheduledNotifs = useRef(new Set())
 
   const [xgH, setXgH] = useState('')
   const [xgA, setXgA] = useState('')
@@ -485,51 +486,61 @@ export default function App() {
   function scheduleClvNotification(betId, betMatchName, kickoffStr, market, league) {
     if (!kickoffStr || typeof Notification === 'undefined' || Notification.permission !== 'granted') return
     const kickoff = new Date(kickoffStr).getTime()
-    const notifTime = kickoff - 5 * 60 * 1000
-    const delay = notifTime - Date.now()
+    const delay = (kickoff - 5 * 60 * 1000) - Date.now()
     if (delay < 0) return
-    const sessionKey = `notif_scheduled_${betId}`
-    if (sessionStorage.getItem(sessionKey)) return
-    sessionStorage.setItem(sessionKey, '1')
-    const marketLabels = { 'over2.5': 'Over 2.5', 'under2.5': 'Under 2.5', 'over3.0': 'Over 3.0', 'under3.0': 'Under 3.0', 'over2.75': 'Over 2.75', 'under2.75': 'Under 2.75', 'over2.25': 'Over 2.25', 'under2.25': 'Under 2.25', 'Over 2.5': 'Over 2.5', 'Under 2.5': 'Under 2.5', 'Over 3.0': 'Over 3.0', 'Under 3.0': 'Under 3.0', 'Over 2.75': 'Over 2.75', 'Under 2.75': 'Under 2.75', 'Over 2.25': 'Over 2.25', 'Under 2.25': 'Under 2.25' }
-    const marketLabel = marketLabels[market] || market || ''
+    const key = `clv_${betId}`
+    if (scheduledNotifs.current.has(key)) return
+    scheduledNotifs.current.add(key)
+    const marketLabel = market || ''
     const leagueStr = league ? ` · ${league}` : ''
     setTimeout(() => {
-      const n = new Notification('⏰ CLV pripomienka', {
+      new Notification('⏰ CLV pripomienka', {
         body: `${betMatchName || 'Zápas'} [${marketLabel}]${leagueStr}\nZačína o 5 min — skontroluj kurz!`,
         icon: '/favicon.ico',
         tag: `clv-${betId}`,
-      })
-      n.onclick = () => { window.focus(); n.close() }
+      }).onclick = () => window.focus()
     }, delay)
   }
 
   function scheduleSnapshotNotifications(bet) {
     if (!bet.match_time || typeof Notification === 'undefined' || Notification.permission !== 'granted') return
     const kickoff = new Date(bet.match_time).getTime()
+    const now = Date.now()
+    let scheduled = 0
     SNAP_KEYS.forEach(key => {
+      if (key === 'close') return
       const snapTime = kickoff - SNAP_MINUTES[key] * 60 * 1000
-      const notifTime = snapTime - 60 * 1000
-      const delay = notifTime - Date.now()
+      const delay = snapTime - now
       if (delay < 0) return
-      if (bet.snapshots?.[key]?.exchange != null || bet.snapshots?.[key]?.pinnacle != null) return
-      const sessionKey = `snap_notif_${bet.id}_${key}`
-      if (sessionStorage.getItem(sessionKey)) return
-      sessionStorage.setItem(sessionKey, '1')
+      const filled = (bet.snapshots?.[key]?.exchange ?? null) !== null || (bet.snapshots?.[key]?.pinnacle ?? null) !== null
+      if (filled) return
+      const dedupKey = `snap_${bet.id}_${key}`
+      if (scheduledNotifs.current.has(dedupKey)) return
+      scheduledNotifs.current.add(dedupKey)
+      scheduled++
+      const fireAt = new Date(now + delay).toLocaleTimeString('sk', { hour: '2-digit', minute: '2-digit' })
+      console.log(`[Notif] Naplánovaná: ${bet.match_name} ${SNAP_LABELS[key]} o ${fireAt} (za ${Math.round(delay / 60000)} min)`)
       setTimeout(() => {
-        const n = new Notification(`📸 Snapshot ${SNAP_LABELS[key]}`, {
-          body: `${bet.match_name || 'Zápas'} [${bet.market || ''}]\nZadaj kurz pre snapshot ${SNAP_LABELS[key]}`,
+        console.log(`[Notif] Spustená: ${bet.match_name} ${SNAP_LABELS[key]}`)
+        new Notification(`📸 ${SNAP_LABELS[key]} — ${bet.match_name || 'Zápas'}`, {
+          body: `${bet.market || ''}\nČas na zápis snapshot ${SNAP_LABELS[key]}`,
           icon: '/favicon.ico',
           tag: `snap-${bet.id}-${key}`,
-        })
-        n.onclick = () => { window.focus(); n.close() }
+        }).onclick = () => window.focus()
       }, delay)
     })
+    if (scheduled > 0) console.log(`[Notif] Celkom naplánovaných pre "${bet.match_name}": ${scheduled}`)
   }
 
   useEffect(() => {
-    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
-      Notification.requestPermission().then(perm => setNotifPermission(perm))
+    if (typeof Notification === 'undefined') return
+    if (Notification.permission !== 'granted') {
+      Notification.requestPermission().then(perm => {
+        console.log('[Notif] Permission:', perm)
+        setNotifPermission(perm)
+      })
+    } else {
+      console.log('[Notif] Permission already granted')
     }
   }, [])
 
