@@ -451,14 +451,15 @@ export default function App() {
     const kickoff = new Date(matchTime).getTime()
     const now = Date.now()
     let bestKey = null
-    let bestSnapTime = -Infinity
+    let bestDist = Infinity
     for (const key of SNAP_KEYS) {
       const snapTime = kickoff - SNAP_MINUTES[key] * 60 * 1000
-      if (now < snapTime) continue
       const filled = (snapshots?.[key]?.exchange ?? null) !== null || (snapshots?.[key]?.pinnacle ?? null) !== null
-      if (!filled && snapTime > bestSnapTime) {
+      if (filled) continue
+      const dist = Math.abs(now - snapTime)
+      if (dist < bestDist) {
+        bestDist = dist
         bestKey = key
-        bestSnapTime = snapTime
       }
     }
     return bestKey
