@@ -311,6 +311,22 @@ const SNAP_KEYS = ['t180', 't120', 't90', 't60', 't30', 't10', 'close']
 const SNAP_LABELS = { t180: 'T-180', t120: 'T-120', t90: 'T-90', t60: 'T-60', t30: 'T-30', t10: 'T-10', close: 'Close' }
 const SNAP_MINUTES = { t180: 180, t120: 120, t90: 90, t60: 60, t30: 30, t10: 10, close: 0 }
 
+async function sendTelegram(message) {
+  try {
+    console.log('[Telegram] Posielam:', message.slice(0, 60))
+    const res = await fetch('/api/notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message }),
+    })
+    const data = await res.json()
+    if (!data.ok) console.warn('[Telegram] API chyba:', data)
+    else console.log('[Telegram] OK')
+  } catch (e) {
+    console.error('[Telegram] fetch zlyhal:', e)
+  }
+}
+
 export default function App() {
   const [tab, setTab] = useState('calc')
   const [statsMarket, setStatsMarket] = useState('all')
@@ -481,16 +497,6 @@ export default function App() {
     if (typeof Notification === 'undefined') return
     const perm = await Notification.requestPermission()
     setNotifPermission(perm)
-  }
-
-  async function sendTelegram(message) {
-    try {
-      await fetch('/api/notify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message }),
-      })
-    } catch {}
   }
 
   function scheduleClvNotification(betId, betMatchName, kickoffStr, market, league) {
