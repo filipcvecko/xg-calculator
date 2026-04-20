@@ -3917,7 +3917,7 @@ export default function App() {
 
 
         {tab === 'timing' && (() => {
-          const allActive = activeBets
+          const allActive = activeBets.filter(b => (b.calibration_version || 'v1') === 'v3')
           const settledAll = allActive.filter(b => b.result != null)
           const pendingAll = allActive.filter(b => b.result == null)
           const isBack = b => b.bet_type !== 'lay'
