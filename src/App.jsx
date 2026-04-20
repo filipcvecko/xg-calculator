@@ -450,12 +450,18 @@ export default function App() {
     if (!matchTime) return null
     const kickoff = new Date(matchTime).getTime()
     const now = Date.now()
-    const reversed = [...SNAP_KEYS].reverse()
-    for (const key of reversed) {
+    let bestKey = null
+    let bestSnapTime = -Infinity
+    for (const key of SNAP_KEYS) {
       const snapTime = kickoff - SNAP_MINUTES[key] * 60 * 1000
-      if (now >= snapTime && !snapshots?.[key]?.exchange && !snapshots?.[key]?.pinnacle) return key
+      if (now < snapTime) continue
+      const filled = (snapshots?.[key]?.exchange ?? null) !== null || (snapshots?.[key]?.pinnacle ?? null) !== null
+      if (!filled && snapTime > bestSnapTime) {
+        bestKey = key
+        bestSnapTime = snapTime
+      }
     }
-    return null
+    return bestKey
   }
 
   async function saveSnapshot(betId, key, field, rawVal, currentSnapshots) {
