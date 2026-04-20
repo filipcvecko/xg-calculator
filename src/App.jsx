@@ -2774,8 +2774,7 @@ export default function App() {
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                    {b.result == null && (
-                      <button className="btn-ghost" style={{ fontSize: 10 }} onClick={() => {
+                    <button className="btn-ghost" style={{ fontSize: 10 }} onClick={() => {
                         setExpandedSnapshots(prev => {
                           const next = new Set(prev)
                           next.has(b.id) ? next.delete(b.id) : next.add(b.id)
@@ -2784,7 +2783,6 @@ export default function App() {
                       }}>
                         📸 Snapshoty
                       </button>
-                    )}
                     {b.result == null && (
                       <button className="btn-ghost" onClick={() => {
                         if (settlingId === b.id) { setSettlingId(null) }
@@ -2927,29 +2925,37 @@ export default function App() {
                               <div style={{ display: 'flex', gap: 8 }}>
                                 <div style={{ flex: 1 }}>
                                   <div style={{ fontSize: 9, color: 'var(--text3)', marginBottom: 3 }}>Exchange</div>
-                                  <input
-                                    className="inp" type="number" step="0.01" placeholder="—"
-                                    value={String(snapInputs[b.id]?.[key]?.exchange ?? (snap.exchange ?? ''))}
-                                    onChange={e => {
-                                      const v = e.target.value.replace(',', '.')
-                                      setSnapInputs(prev => ({ ...prev, [b.id]: { ...(prev[b.id] || {}), [key]: { ...(prev[b.id]?.[key] || {}), exchange: v } } }))
-                                    }}
-                                    onBlur={e => saveSnapshot(b.id, key, 'exchange', e.target.value, snaps)}
-                                    style={{ fontSize: 12, padding: '5px 8px' }}
-                                  />
+                                  {b.result != null ? (
+                                    <div style={{ fontSize: 12, padding: '5px 8px', color: snap.exchange != null ? 'var(--text1)' : 'var(--text3)' }}>{snap.exchange ?? '—'}</div>
+                                  ) : (
+                                    <input
+                                      className="inp" type="number" step="0.01" placeholder="—"
+                                      value={String(snapInputs[b.id]?.[key]?.exchange ?? (snap.exchange ?? ''))}
+                                      onChange={e => {
+                                        const v = e.target.value.replace(',', '.')
+                                        setSnapInputs(prev => ({ ...prev, [b.id]: { ...(prev[b.id] || {}), [key]: { ...(prev[b.id]?.[key] || {}), exchange: v } } }))
+                                      }}
+                                      onBlur={e => saveSnapshot(b.id, key, 'exchange', e.target.value, snaps)}
+                                      style={{ fontSize: 12, padding: '5px 8px' }}
+                                    />
+                                  )}
                                 </div>
                                 <div style={{ flex: 1 }}>
                                   <div style={{ fontSize: 9, color: 'var(--text3)', marginBottom: 3 }}>Pinnacle</div>
-                                  <input
-                                    className="inp" type="number" step="0.01" placeholder="—"
-                                    value={String(snapInputs[b.id]?.[key]?.pinnacle ?? (snap.pinnacle ?? ''))}
-                                    onChange={e => {
-                                      const v = e.target.value.replace(',', '.')
-                                      setSnapInputs(prev => ({ ...prev, [b.id]: { ...(prev[b.id] || {}), [key]: { ...(prev[b.id]?.[key] || {}), pinnacle: v } } }))
-                                    }}
-                                    onBlur={e => saveSnapshot(b.id, key, 'pinnacle', e.target.value, snaps)}
-                                    style={{ fontSize: 12, padding: '5px 8px' }}
-                                  />
+                                  {b.result != null ? (
+                                    <div style={{ fontSize: 12, padding: '5px 8px', color: snap.pinnacle != null ? 'var(--text1)' : 'var(--text3)' }}>{snap.pinnacle ?? '—'}</div>
+                                  ) : (
+                                    <input
+                                      className="inp" type="number" step="0.01" placeholder="—"
+                                      value={String(snapInputs[b.id]?.[key]?.pinnacle ?? (snap.pinnacle ?? ''))}
+                                      onChange={e => {
+                                        const v = e.target.value.replace(',', '.')
+                                        setSnapInputs(prev => ({ ...prev, [b.id]: { ...(prev[b.id] || {}), [key]: { ...(prev[b.id]?.[key] || {}), pinnacle: v } } }))
+                                      }}
+                                      onBlur={e => saveSnapshot(b.id, key, 'pinnacle', e.target.value, snaps)}
+                                      style={{ fontSize: 12, padding: '5px 8px' }}
+                                    />
+                                  )}
                                 </div>
                               </div>
                             </div>
