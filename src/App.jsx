@@ -313,7 +313,7 @@ const SNAP_MINUTES = { t180: 180, t120: 120, t90: 90, t60: 60, t30: 30, t10: 10,
 
 async function sendTelegram(message) {
   try {
-    console.log('[Telegram] Posielam:', message.slice(0, 60))
+    console.log('[Telegram] Posielam:', String(message ?? '').slice(0, 60))
     const res = await fetch('/api/notify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
