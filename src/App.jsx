@@ -503,33 +503,43 @@ export default function App() {
   }
 
   function scheduleSnapshotNotifications(bet) {
-    if (!bet.match_time || typeof Notification === 'undefined' || Notification.permission !== 'granted') return
+    if (!bet || !bet.match_time || typeof Notification === 'undefined' || Notification.permission !== 'granted') return
     const kickoff = new Date(bet.match_time).getTime()
+    if (isNaN(kickoff)) return
     const now = Date.now()
+    const matchName = String(bet.match_name || 'Zápas')
+    const market = String(bet.market || '')
+    const betId = bet.id
     let scheduled = 0
     SNAP_KEYS.forEach(key => {
       if (key === 'close') return
+      const label = SNAP_LABELS[key]
+      if (!label) return
       const snapTime = kickoff - SNAP_MINUTES[key] * 60 * 1000
       const delay = snapTime - now
       if (delay < 0) return
       const filled = (bet.snapshots?.[key]?.exchange ?? null) !== null || (bet.snapshots?.[key]?.pinnacle ?? null) !== null
       if (filled) return
-      const dedupKey = `snap_${bet.id}_${key}`
+      const dedupKey = `snap_${betId}_${key}`
       if (scheduledNotifs.current.has(dedupKey)) return
       scheduledNotifs.current.add(dedupKey)
       scheduled++
       const fireAt = new Date(now + delay).toLocaleTimeString('sk', { hour: '2-digit', minute: '2-digit' })
-      console.log(`[Notif] Naplánovaná: ${bet.match_name} ${SNAP_LABELS[key]} o ${fireAt} (za ${Math.round(delay / 60000)} min)`)
+      console.log(`[Notif] Naplánovaná: ${matchName} ${label} o ${fireAt} (za ${Math.round(delay / 60000)} min)`)
       setTimeout(() => {
-        console.log(`[Notif] Spustená: ${bet.match_name} ${SNAP_LABELS[key]}`)
-        new Notification(`📸 ${SNAP_LABELS[key]} — ${bet.match_name || 'Zápas'}`, {
-          body: `${bet.market || ''}\nČas na zápis snapshot ${SNAP_LABELS[key]}`,
-          icon: '/favicon.ico',
-          tag: `snap-${bet.id}-${key}`,
-        }).onclick = () => window.focus()
+        try {
+          console.log(`[Notif] Spustená: ${matchName} ${label}`)
+          const n = new Notification(`📸 ${label} — ${matchName}`, {
+            body: `${market}\nČas na zápis snapshot ${label}`,
+            tag: String(`snap-${betId}-${key}`),
+          })
+          n.onclick = () => window.focus()
+        } catch (e) {
+          console.warn('[Notif] Chyba pri vytvorení notifikácie:', e)
+        }
       }, delay)
     })
-    if (scheduled > 0) console.log(`[Notif] Celkom naplánovaných pre "${bet.match_name}": ${scheduled}`)
+    if (scheduled > 0) console.log(`[Notif] Celkom naplánovaných pre "${matchName}": ${scheduled}`)
   }
 
   useEffect(() => {
