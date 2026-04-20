@@ -483,6 +483,16 @@ export default function App() {
     setNotifPermission(perm)
   }
 
+  async function sendTelegram(message) {
+    try {
+      await fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message }),
+      })
+    } catch {}
+  }
+
   function scheduleClvNotification(betId, betMatchName, kickoffStr, market, league) {
     if (!kickoffStr || typeof Notification === 'undefined' || Notification.permission !== 'granted') return
     const kickoff = new Date(kickoffStr).getTime()
@@ -527,8 +537,8 @@ export default function App() {
       const fireAt = new Date(now + delay).toLocaleTimeString('sk', { hour: '2-digit', minute: '2-digit' })
       console.log(`[Notif] Naplánovaná: ${matchName} ${label} o ${fireAt} (za ${Math.round(delay / 60000)} min)`)
       setTimeout(() => {
+        console.log(`[Notif] Spustená: ${matchName} ${label}`)
         try {
-          console.log(`[Notif] Spustená: ${matchName} ${label}`)
           const n = new Notification(`📸 ${label} — ${matchName}`, {
             body: `${market}\nČas na zápis snapshot ${label}`,
             tag: String(`snap-${betId}-${key}`),
@@ -537,6 +547,8 @@ export default function App() {
         } catch (e) {
           console.warn('[Notif] Chyba pri vytvorení notifikácie:', e)
         }
+        const msg = `📸 <b>Snapshot ${label}</b>\n<b>${matchName}</b>\n${market ? `<i>${market}</i>\n` : ''}Čas na zápis snapshot <b>${label}</b>`
+        sendTelegram(msg)
       }, delay)
     })
     if (scheduled > 0) console.log(`[Notif] Celkom naplánovaných pre "${matchName}": ${scheduled}`)
