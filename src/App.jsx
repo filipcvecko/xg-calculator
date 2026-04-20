@@ -490,12 +490,13 @@ export default function App() {
       ...(currentSnapshots || {}),
       [key]: { ...(currentSnapshots?.[key] || {}), [field]: val, timestamp: new Date().toISOString() },
     }
-    console.log('[saveSnapshot]', { betId, key, field, rawVal, val, updated })
-    const response = await supabase.from('bets').update({ snapshots: updated }).eq('id', betId)
+    console.log('[saveSnapshot]', { betId, betIdType: typeof betId, key, field, rawVal, val, updated })
+    const response = await supabase.from('bets').update({ snapshots: updated }).eq('id', betId).select('id, snapshots')
     const { data, error, status } = response
-    console.log('[saveSnapshot] Supabase response:', { data, error, status })
+    console.log('[saveSnapshot] Supabase response:', { data, error, status, matchedRows: data?.length ?? 0 })
     if (error) console.error('[saveSnapshot] Supabase error detail:', error)
-    else console.log('[saveSnapshot] OK — uložené do Supabase')
+    else if (!data || data.length === 0) console.warn('[saveSnapshot] ⚠️ 0 riadkov updatovaných — betId nezodpovedá žiadnemu záznamu:', betId)
+    else console.log('[saveSnapshot] OK — updatovaný riadok:', data[0]?.id, '| snapshots v DB:', data[0]?.snapshots)
     setBets(prev => prev.map(b => b.id === betId ? { ...b, snapshots: updated } : b))
   }
 
