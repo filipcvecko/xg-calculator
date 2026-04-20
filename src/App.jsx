@@ -2928,7 +2928,7 @@ export default function App() {
                                 <div style={{ flex: 1 }}>
                                   <div style={{ fontSize: 9, color: 'var(--text3)', marginBottom: 3 }}>Exchange</div>
                                   <input
-                                    className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="—"
+                                    className="inp" type="number" step="0.01" placeholder="—"
                                     value={String(snapInputs[b.id]?.[key]?.exchange ?? (snap.exchange ?? ''))}
                                     onChange={e => {
                                       const v = e.target.value.replace(',', '.')
@@ -2941,7 +2941,7 @@ export default function App() {
                                 <div style={{ flex: 1 }}>
                                   <div style={{ fontSize: 9, color: 'var(--text3)', marginBottom: 3 }}>Pinnacle</div>
                                   <input
-                                    className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="—"
+                                    className="inp" type="number" step="0.01" placeholder="—"
                                     value={String(snapInputs[b.id]?.[key]?.pinnacle ?? (snap.pinnacle ?? ''))}
                                     onChange={e => {
                                       const v = e.target.value.replace(',', '.')
