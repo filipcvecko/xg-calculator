@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/snapshot-reminders",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}
