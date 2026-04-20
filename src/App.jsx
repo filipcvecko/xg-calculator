@@ -2795,7 +2795,7 @@ export default function App() {
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 600, letterSpacing: 1 }}>VERZIA:</span>
-              {[['all', 'Všetky'], ['v1', 'V1 (starý Platt)'], ['v2', 'V2 (nový Platt)']].map(([id, lbl]) => (
+              {[['all', 'Všetky'], ['v1', 'V1 (starý Platt)'], ['v2', 'V2 (nový Platt)'], ['v3', 'V3 (aktuálny)']].map(([id, lbl]) => (
                 <button key={id} onClick={() => setStatsVersion(id)} style={{
                   fontSize: 11, padding: '3px 10px', borderRadius: 6, border: '1px solid',
                   borderColor: statsVersion === id ? 'var(--accent2)' : 'var(--border)',
