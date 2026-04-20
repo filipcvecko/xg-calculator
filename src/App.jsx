@@ -2929,7 +2929,7 @@ export default function App() {
                                   <div style={{ fontSize: 9, color: 'var(--text3)', marginBottom: 3 }}>Exchange</div>
                                   <input
                                     className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="—"
-                                    value={snapInputs[b.id]?.[key]?.exchange ?? (snap.exchange != null ? String(snap.exchange) : '')}
+                                    value={String(snapInputs[b.id]?.[key]?.exchange ?? (snap.exchange ?? ''))}
                                     onChange={e => {
                                       const v = e.target.value.replace(',', '.')
                                       setSnapInputs(prev => ({ ...prev, [b.id]: { ...(prev[b.id] || {}), [key]: { ...(prev[b.id]?.[key] || {}), exchange: v } } }))
@@ -2942,7 +2942,7 @@ export default function App() {
                                   <div style={{ fontSize: 9, color: 'var(--text3)', marginBottom: 3 }}>Pinnacle</div>
                                   <input
                                     className="inp" inputMode="decimal" pattern="[0-9]*[.,][0-9]*" placeholder="—"
-                                    value={snapInputs[b.id]?.[key]?.pinnacle ?? (snap.pinnacle != null ? String(snap.pinnacle) : '')}
+                                    value={String(snapInputs[b.id]?.[key]?.pinnacle ?? (snap.pinnacle ?? ''))}
                                     onChange={e => {
                                       const v = e.target.value.replace(',', '.')
                                       setSnapInputs(prev => ({ ...prev, [b.id]: { ...(prev[b.id] || {}), [key]: { ...(prev[b.id]?.[key] || {}), pinnacle: v } } }))
