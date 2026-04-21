@@ -1332,7 +1332,7 @@ export default function Skener({ onBetSaved }) {
       pinnacle_close: null,
       pinnacle_clv:   null,
       is_archived: false,
-      calibration_version: 'v2',
+      calibration_version: 'v3',
     })
 
     setSaving(prev => { const next = { ...prev }; delete next[matchId]; return next })

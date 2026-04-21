@@ -1353,7 +1353,9 @@ export default function App() {
   const halfLoses = settled.filter(b => b.result === 4).length
   const wins = settled.filter(b => b.result === 1).length
   const nonPushSettled = settled.filter(b => b.result === 0 || b.result === 1)
-  const hitRate = nonPushSettled.length > 0 ? wins / nonPushSettled.length : null
+  const effectiveWins = wins + 0.5 * halfWins
+  const effectiveTotal = nonPushSettled.length + halfWins + halfLoses
+  const hitRate = effectiveTotal > 0 ? effectiveWins / effectiveTotal : null
   const avgProb = nonPushSettled.length > 0 ? nonPushSettled.reduce((s, b) => s + b.sel_prob, 0) / nonPushSettled.length : null
   const avgBrier = settled.length > 0 ? settled.reduce((s, b) => s + (b.brier || 0), 0) / settled.length : null
   const avgLL = settled.length > 0 ? settled.reduce((s, b) => s + (b.log_loss || 0), 0) / settled.length : null
@@ -1482,7 +1484,11 @@ export default function App() {
     )
     const nonPush = bb.filter(b => b.result === 0 || b.result === 1)
     const wins = nonPush.filter(b => b.result === 1).length
-    const hitRate = nonPush.length > 0 ? wins / nonPush.length * 100 : null
+    const halfW = bb.filter(b => b.result === 3).length
+    const halfL = bb.filter(b => b.result === 4).length
+    const effectiveWins = wins + 0.5 * halfW
+    const effectiveTotal = nonPush.length + halfW + halfL
+    const hitRate = effectiveTotal > 0 ? effectiveWins / effectiveTotal * 100 : null
     const clvs = bb.map(b => (b.odds_open / b.pinnacle_close - 1) * 100)
     const avgClv = clvs.length > 0 ? clvs.reduce((s, v) => s + v, 0) / clvs.length : null
     const totalStake = bb.reduce((s, b) => s + b.stake, 0)
@@ -1507,12 +1513,15 @@ export default function App() {
   const calibByOdds = CALIB_ODDS_BUCKETS.map(bk => {
     const bb = settled.filter(b =>
       b.odds_open >= bk.min && b.odds_open < bk.max &&
-      (b.result === 0 || b.result === 1) &&
+      (b.result === 0 || b.result === 1 || b.result === 3 || b.result === 4) &&
       b.sel_prob != null
     )
     if (bb.length === 0) return { ...bk, count: 0, avgProb: null, hitRate: null, diff: null }
     const w = bb.filter(b => b.result === 1).length
-    const hitRate = w / bb.length * 100
+    const halfW = bb.filter(b => b.result === 3).length
+    const halfL = bb.filter(b => b.result === 4).length
+    const effectiveWins = w + 0.5 * halfW
+    const hitRate = bb.length > 0 ? effectiveWins / bb.length * 100 : null
     const avgProb = bb.reduce((s, b) => s + b.sel_prob, 0) / bb.length * 100
     return { ...bk, count: bb.length, avgProb, hitRate, diff: hitRate - avgProb }
   })
@@ -1538,7 +1547,11 @@ export default function App() {
         const totalPnl = bets.reduce((s, b) => s + (b.pnl || 0), 0)
         const roi = totalStake > 0 ? totalPnl / totalStake * 100 : null
         const nonPush = bets.filter(b => b.result === 0 || b.result === 1)
-        const hitRate = nonPush.length > 0 ? nonPush.filter(b => b.result === 1).length / nonPush.length * 100 : null
+        const halfW = bets.filter(b => b.result === 3).length
+        const halfL = bets.filter(b => b.result === 4).length
+        const effectiveWins = nonPush.filter(b => b.result === 1).length + 0.5 * halfW
+        const effectiveTotal = nonPush.length + halfW + halfL
+        const hitRate = effectiveTotal > 0 ? effectiveWins / effectiveTotal * 100 : null
         const tier = avgClv >= 4 ? 1 : avgClv >= 2 ? 2 : avgClv >= 0 ? 3 : 0
         return { league, count: bets.length, avgClv, avgPinnClv, roi, hitRate, tier }
       })
@@ -1557,7 +1570,11 @@ export default function App() {
     const posC = clvB.length > 0 ? (clvB.filter(b => b.clv > 0).length / clvB.length) * 100 : null
     const nonPush = betsArr.filter(b => b.result === 0 || b.result === 1)
     const wins_ = nonPush.filter(b => b.result === 1).length
-    const hr = nonPush.length > 0 ? wins_ / nonPush.length : null
+    const halfW_ = betsArr.filter(b => b.result === 3).length
+    const halfL_ = betsArr.filter(b => b.result === 4).length
+    const effectiveWins_ = wins_ + 0.5 * halfW_
+    const effectiveTotal_ = nonPush.length + halfW_ + halfL_
+    const hr = effectiveTotal_ > 0 ? effectiveWins_ / effectiveTotal_ : null
     const ap = nonPush.length > 0 ? nonPush.reduce((s, b) => s + b.sel_prob, 0) / nonPush.length : null
     const cal = hr != null && ap != null ? Math.abs((hr - ap) * 100) : null
     const brierB = betsArr.filter(b => b.brier != null)
@@ -3135,7 +3152,10 @@ export default function App() {
                           </div>
                         )
                         const bWins = bb.filter(b => b.result === 1).length
-                        const bHR = bWins / bb.length * 100
+                        const bHalfW = bb.filter(b => b.result === 3).length
+                        const bHalfL = bb.filter(b => b.result === 4).length
+                        const bEffective = bb.filter(b => b.result === 0 || b.result === 1).length + bHalfW + bHalfL
+                        const bHR = bEffective > 0 ? (bWins + 0.5 * bHalfW) / bEffective * 100 : null
                         const bPnL = bb.reduce((s, b) => s + (b.pnl || 0), 0)
                         const bStake = bb.reduce((s, b) => s + b.stake, 0)
                         const bROI = bStake > 0 ? bPnL / bStake * 100 : null
