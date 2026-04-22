@@ -307,9 +307,9 @@ const css = `
 const INITIAL_BANKROLL = 132.80
 const BANKROLL_KEY = 'xgcalc_bankroll'
 
-const SNAP_KEYS = ['t180', 't120', 't90', 't60', 't30', 't10', 'close']
-const SNAP_LABELS = { t180: 'T-180', t120: 'T-120', t90: 'T-90', t60: 'T-60', t30: 'T-30', t10: 'T-10', close: 'Close' }
-const SNAP_MINUTES = { t180: 180, t120: 120, t90: 90, t60: 60, t30: 30, t10: 10, close: 0 }
+const SNAP_KEYS = ['t180', 't120', 't90', 't60', 't30', 'close']
+const SNAP_LABELS = { t180: 'T-180', t120: 'T-120', t90: 'T-90', t60: 'T-60', t30: 'T-30', close: 'Close' }
+const SNAP_MINUTES = { t180: 180, t120: 120, t90: 90, t60: 60, t30: 30, close: 0 }
 
 async function sendTelegram(message) {
   try {
@@ -1356,6 +1356,7 @@ export default function App() {
   const effectiveWins = wins + 0.5 * halfWins
   const effectiveTotal = nonPushSettled.length + halfWins + halfLoses
   const hitRate = effectiveTotal > 0 ? effectiveWins / effectiveTotal : null
+  console.log('HITRATE DEBUG:', { wins, halfWins, halfLoses, nonPushSettledLen: nonPushSettled.length, effectiveTotal, hitRate })
   const avgProb = nonPushSettled.length > 0 ? nonPushSettled.reduce((s, b) => s + b.sel_prob, 0) / nonPushSettled.length : null
   const avgBrier = settled.length > 0 ? settled.reduce((s, b) => s + (b.brier || 0), 0) / settled.length : null
   const avgLL = settled.length > 0 ? settled.reduce((s, b) => s + (b.log_loss || 0), 0) / settled.length : null
@@ -2945,41 +2946,22 @@ export default function App() {
                                 {isFilled && !isCurrent && <span style={{ fontSize: 9, background: 'rgba(0,184,148,0.15)', color: 'var(--green)', padding: '1px 5px', borderRadius: 3 }}>✓</span>}
                                 {snap.timestamp && <span style={{ fontSize: 9, color: 'var(--text3)', marginLeft: 'auto' }}>{new Date(snap.timestamp).toLocaleTimeString('sk', { hour: '2-digit', minute: '2-digit' })}</span>}
                               </div>
-                              <div style={{ display: 'flex', gap: 8 }}>
-                                <div style={{ flex: 1 }}>
-                                  <div style={{ fontSize: 9, color: 'var(--text3)', marginBottom: 3 }}>Exchange</div>
-                                  {b.result != null ? (
-                                    <div style={{ fontSize: 12, padding: '5px 8px', color: snap.exchange != null ? 'var(--text1)' : 'var(--text3)' }}>{snap.exchange ?? '—'}</div>
-                                  ) : (
-                                    <input
-                                      className="inp" type="number" step="0.01" placeholder="—"
-                                      value={String(snapInputs[b.id]?.[key]?.exchange ?? (snap.exchange ?? ''))}
-                                      onChange={e => {
-                                        const v = e.target.value.replace(',', '.')
-                                        setSnapInputs(prev => ({ ...prev, [b.id]: { ...(prev[b.id] || {}), [key]: { ...(prev[b.id]?.[key] || {}), exchange: v } } }))
-                                      }}
-                                      onBlur={e => saveSnapshot(b.id, key, 'exchange', e.target.value, snaps)}
-                                      style={{ fontSize: 12, padding: '5px 8px' }}
-                                    />
-                                  )}
-                                </div>
-                                <div style={{ flex: 1 }}>
-                                  <div style={{ fontSize: 9, color: 'var(--text3)', marginBottom: 3 }}>Pinnacle</div>
-                                  {b.result != null ? (
-                                    <div style={{ fontSize: 12, padding: '5px 8px', color: snap.pinnacle != null ? 'var(--text1)' : 'var(--text3)' }}>{snap.pinnacle ?? '—'}</div>
-                                  ) : (
-                                    <input
-                                      className="inp" type="number" step="0.01" placeholder="—"
-                                      value={String(snapInputs[b.id]?.[key]?.pinnacle ?? (snap.pinnacle ?? ''))}
-                                      onChange={e => {
-                                        const v = e.target.value.replace(',', '.')
-                                        setSnapInputs(prev => ({ ...prev, [b.id]: { ...(prev[b.id] || {}), [key]: { ...(prev[b.id]?.[key] || {}), pinnacle: v } } }))
-                                      }}
-                                      onBlur={e => saveSnapshot(b.id, key, 'pinnacle', e.target.value, snaps)}
-                                      style={{ fontSize: 12, padding: '5px 8px' }}
-                                    />
-                                  )}
-                                </div>
+                              <div>
+                                <div style={{ fontSize: 9, color: 'var(--text3)', marginBottom: 3 }}>Pinnacle</div>
+                                {b.result != null ? (
+                                  <div style={{ fontSize: 12, padding: '5px 8px', color: snap.pinnacle != null ? 'var(--text1)' : 'var(--text3)' }}>{snap.pinnacle ?? '—'}</div>
+                                ) : (
+                                  <input
+                                    className="inp" type="number" step="0.01" placeholder="—"
+                                    value={String(snapInputs[b.id]?.[key]?.pinnacle ?? (snap.pinnacle ?? ''))}
+                                    onChange={e => {
+                                      const v = e.target.value.replace(',', '.')
+                                      setSnapInputs(prev => ({ ...prev, [b.id]: { ...(prev[b.id] || {}), [key]: { ...(prev[b.id]?.[key] || {}), pinnacle: v } } }))
+                                    }}
+                                    onBlur={e => saveSnapshot(b.id, key, 'pinnacle', e.target.value, snaps)}
+                                    style={{ fontSize: 12, padding: '5px 8px' }}
+                                  />
+                                )}
                               </div>
                             </div>
                           )
@@ -3949,8 +3931,8 @@ export default function App() {
                   <div className="card" style={{ marginTop: 12 }}>
                     <div className="section-title">⏱ TIMING / MARKET MOVEMENT</div>
                     <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 12 }}>Entry kurz vs snapshoty · {snapBets.length} betov so snapshotmi</div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 16 }}>
-                      {[['t60', 'Entry → T-60'], ['t10', 'Entry → T-10'], ['close', 'Entry → Close']].map(([key, label]) => {
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginBottom: 16 }}>
+                      {[['t60', 'Entry → T-60'], ['close', 'Entry → Close']].map(([key, label]) => {
                         const exFav = pctFav(snapBets, key, 'exchange')
                         const pnFav = pctFav(snapBets, key, 'pinnacle')
                         const exAvg = avgMove(snapBets, key, 'exchange')
@@ -4077,8 +4059,8 @@ export default function App() {
                   <div className="card" style={{ borderLeft: '3px solid var(--accent)' }}>
                     <div className="section-title" style={{ marginBottom: 12 }}>📈 Market movement — Entry vs snapshot</div>
                     <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 12 }}>Back: v prospech ak entry &gt; snapshot (kurz klesol). Lay: opačne.</div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
-                      {[['t60', 'Entry → T-60'], ['t10', 'Entry → T-10'], ['close', 'Entry → Close']].map(([key, label]) => {
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 8 }}>
+                      {[['t60', 'Entry → T-60'], ['close', 'Entry → Close']].map(([key, label]) => {
                         const exFav = pctFav(settledAll, key, 'exchange')
                         const pnFav = pctFav(settledAll, key, 'pinnacle')
                         const exAvg = avgMove(settledAll, key, 'exchange')
