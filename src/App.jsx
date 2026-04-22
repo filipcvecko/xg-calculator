@@ -3931,8 +3931,8 @@ export default function App() {
                   <div className="card" style={{ marginTop: 12 }}>
                     <div className="section-title">⏱ TIMING / MARKET MOVEMENT</div>
                     <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 12 }}>Entry kurz vs snapshoty · {snapBets.length} betov so snapshotmi</div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginBottom: 16 }}>
-                      {[['t60', 'Entry → T-60'], ['close', 'Entry → Close']].map(([key, label]) => {
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 16 }}>
+                      {[['t180', 'Entry → T-180'], ['t120', 'Entry → T-120'], ['t90', 'Entry → T-90'], ['t60', 'Entry → T-60'], ['t30', 'Entry → T-30'], ['close', 'Entry → Close']].map(([key, label]) => {
                         const exFav = pctFav(snapBets, key, 'exchange')
                         const pnFav = pctFav(snapBets, key, 'pinnacle')
                         const exAvg = avgMove(snapBets, key, 'exchange')
@@ -4059,8 +4059,8 @@ export default function App() {
                   <div className="card" style={{ borderLeft: '3px solid var(--accent)' }}>
                     <div className="section-title" style={{ marginBottom: 12 }}>📈 Market movement — Entry vs snapshot</div>
                     <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 12 }}>Back: v prospech ak entry &gt; snapshot (kurz klesol). Lay: opačne.</div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 8 }}>
-                      {[['t60', 'Entry → T-60'], ['close', 'Entry → Close']].map(([key, label]) => {
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                      {[['t180', 'Entry → T-180'], ['t120', 'Entry → T-120'], ['t90', 'Entry → T-90'], ['t60', 'Entry → T-60'], ['t30', 'Entry → T-30'], ['close', 'Entry → Close']].map(([key, label]) => {
                         const exFav = pctFav(settledAll, key, 'exchange')
                         const pnFav = pctFav(settledAll, key, 'pinnacle')
                         const exAvg = avgMove(settledAll, key, 'exchange')
