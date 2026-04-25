@@ -3,10 +3,11 @@ import { supabase } from './supabase'
 import {
   calcOverUnder, calcOU30, calcOU275, calcOU225, calcBTTS,
   calcEVOU275, calcEVOU225,
-  blendLambda, fairOdds, plattCalibrate,
-  dynamicRho, timeDecayBlend, extractLastXStats,
+  fairOdds, plattCalibrate,
+  dynamicRho, extractLastXStats,
   fmt2, fmt3, fmtPct, fmtSign,
 } from './math'
+import { lambdaPipeline } from './utils/lambdaPipeline'
 
 // ─── constants ────────────────────────────────────────────────────────────────
 const COMM        = 0.05
@@ -18,25 +19,10 @@ const FORM_WINDOW = 5
 const EV_MIN     = 0.08   // 8% — threshold for Telegram notification
 const WATCH_INTERVAL_MS = 30_000
 
-// ─── math helpers (identical to App.jsx) ─────────────────────────────────────
+// ─── math helpers ─────────────────────────────────────────────────────────────
 function calcBackEV(prob, odds, comm = COMM) {
   if (!prob || !odds || odds <= 1) return null
   return prob * (odds - 1) * (1 - comm) - (1 - prob)
-}
-
-function blendWithGoals(xgH, xgA, xgaH, xgaA, gfH, gaH, gfA, gaA, alpha) {
-  const a = alpha
-  const lH = Math.sqrt((a * xgH + (1 - a) * gfH) * (a * xgaA + (1 - a) * gaA))
-  const lA = Math.sqrt((a * xgA + (1 - a) * gfA) * (a * xgaH + (1 - a) * gaH))
-  return { lH, lA }
-}
-
-function applyShrinkage(lH, lA, lgAvgH, lgAvgA) {
-  const rawTotal  = lH + lA
-  const lgTotal   = lgAvgH + lgAvgA
-  if (rawTotal <= 0) return { lH, lA }
-  const ratio = ((1 - SHRINKAGE) * rawTotal + SHRINKAGE * lgTotal) / rawTotal
-  return { lH: lH * ratio, lA: lA * ratio }
 }
 
 function extractTeamStats(team) {
@@ -73,71 +59,50 @@ function calcMatchFromStats(homeRaw, awayRaw, lgAvg, homeLastXRaw = null, awayLa
   const hs  = extractTeamStats(homeRaw)
   const as_ = extractTeamStats(awayRaw)
 
-  const h  = (hs.xgH  ?? hs.gfH  ?? 0) * XG_SCALER
-  const a  = (as_.xgA ?? as_.gfA ?? 0) * XG_SCALER
-  if (!h || !a) return null
-
-  const ha = (hs.xgaH ?? hs.gaH ?? 0) * XG_SCALER
-  const aa = (as_.xgaA ?? as_.gaA ?? 0) * XG_SCALER
-
-  const gfHv = hs.gfH ?? 0, gaHv = hs.gaH ?? 0
-  const gfAv = as_.gfA ?? 0, gaAv = as_.gaA ?? 0
-
-  const hasGoals = gfHv > 0 && gaHv > 0 && gfAv > 0 && gaAv > 0
-  const hasXGA   = ha > 0 && aa > 0
-
-  let lH, lA
-  if (hasGoals && hasXGA) {
-    const r = blendWithGoals(h, a, ha, aa, gfHv, gaHv, gfAv, gaAv, ALPHA)
-    lH = r.lH; lA = r.lA
-  } else if (hasGoals) {
-    const r = blendWithGoals(h, a, h, a, gfHv, gaHv, gfAv, gaAv, ALPHA)
-    lH = r.lH; lA = r.lA
-  } else if (hasXGA) {
-    lH = blendLambda(h, aa); lA = blendLambda(a, ha)
-  } else {
-    lH = h; lA = a
-  }
-
-  const lH_blend = lH, lA_blend = lA
-
-  // form blend — identical to App.jsx handleCalc
   const homeForm = homeLastXRaw ? extractLastXStats(homeLastXRaw, FORM_WINDOW) : null
   const awayForm = awayLastXRaw ? extractLastXStats(awayLastXRaw, FORM_WINDOW) : null
-  let formLH = null, formLA = null
-  if (homeForm || awayForm) {
-    if (homeForm) {
-      const fxgH  = homeForm.xgH ?? homeForm.gfH ?? null
-      const fxgaA = awayForm?.xgaA ?? awayForm?.gaA ?? null
-      if (fxgH != null) {
-        formLH = fxgaA != null ? Math.sqrt(fxgH * fxgaA) : fxgH
-        lH = timeDecayBlend(lH, formLH, FORM_WEIGHT)
-      }
+
+  // POZNÁMKA: Ak FootyStats nevráti xG (hs.xgH = null), používame gfH
+  // ako fallback. Tento fallback ide do pipeline ako xgH parameter,
+  // ALE gfH sa posiela aj samostatne. To znamená že v
+  // blendWithGoals_full vetve sa blenduje gfH samý so sebou cez alpha
+  // (nemá to efekt). Toto správanie zachováva pôvodnú logiku Skenera,
+  // ale stojí za zaznamenanie pre budúce vyšetrovanie.
+  // (Pôvodný App.jsx tento edge case nemá lebo má separate UI inputy
+  // pre xgH a gfH.)
+  const pipeline = lambdaPipeline(
+    {
+      xgH:  hs.xgH  ?? hs.gfH  ?? 0,
+      xgA:  as_.xgA ?? as_.gfA ?? 0,
+      xgaH: hs.xgaH ?? hs.gaH  ?? 0,
+      xgaA: as_.xgaA ?? as_.gaA ?? 0,
+      gfH:  hs.gfH  ?? 0,
+      gaH:  hs.gaH  ?? 0,
+      gfA:  as_.gfA ?? 0,
+      gaA:  as_.gaA ?? 0,
+    },
+    { homeForm, awayForm },
+    {
+      xgScaler:   XG_SCALER,
+      alpha:      ALPHA,
+      formWeight: FORM_WEIGHT,
+      shrinkage:  SHRINKAGE,
+      leagueAvg:  lgAvg,
     }
-    if (awayForm) {
-      const fxgA  = awayForm.xgA ?? awayForm.gfA ?? null
-      const fxgaH = homeForm?.xgaH ?? homeForm?.gaH ?? null
-      if (fxgA != null) {
-        formLA = fxgaH != null ? Math.sqrt(fxgA * fxgaH) : fxgA
-        lA = timeDecayBlend(lA, formLA, FORM_WEIGHT)
-      }
-    }
-  }
+  )
 
-  const lH_form = lH, lA_form = lA
+  if (pipeline.error) return null
 
-  const lgH = lgAvg?.avgHome ?? 0
-  const lgA = lgAvg?.avgAway ?? 0
-  if (lgH > 0 && lgA > 0) {
-    const r = applyShrinkage(lH, lA, lgH, lgA)
-    lH = r.lH; lA = r.lA
-  }
+  const lH = pipeline.lambda_h
+  const lA = pipeline.lambda_a
 
+  const lgH    = lgAvg?.avgHome ?? 0
+  const lgA    = lgAvg?.avgAway ?? 0
   const rhoVal = (lgH > 0 && lgA > 0) ? dynamicRho(lgH, lgA) : -0.10
   const { pOver: pOverRaw, pUnder: pUnderRaw } = calcOverUnder(lH, lA, rhoVal)
-  const ou30       = calcOU30(lH, lA, rhoVal)
-  const pOver      = plattCalibrate(pOverRaw)
-  const pUnder     = 1 - pOver
+  const ou30   = calcOU30(lH, lA, rhoVal)
+  const pOver  = plattCalibrate(pOverRaw)
+  const pUnder = 1 - pOver
 
   if (_label) {
     const hxRaw = homeLastXRaw?.data?.[0]?.stats
@@ -149,13 +114,11 @@ function calcMatchFromStats(homeRaw, awayRaw, lgAvg, homeLastXRaw = null, awayLa
   lastX raw away xg_for_avg_away=${axRaw?.xg_for_avg_away} xg_against_avg_home=${axRaw?.xg_against_avg_home}
   homeForm: xgH=${homeForm?.xgH} xgaH=${homeForm?.xgaH} gfH=${homeForm?.gfH} gaH=${homeForm?.gaH}
   awayForm: xgA=${awayForm?.xgA} xgaA=${awayForm?.xgaA} gfA=${awayForm?.gfA} gaA=${awayForm?.gaA}
-  formLH=${formLH?.toFixed(4)}  formLA=${formLA?.toFixed(4)}
   xgH=${hs.xgH}  xgA=${as_.xgA}  xgaH=${hs.xgaH}  xgaA=${as_.xgaA}
-  gfH=${gfHv}  gaH=${gaHv}  gfA=${gfAv}  gaA=${gaAv}
-  h=${h.toFixed(4)}  a=${a.toFixed(4)}  ha=${ha.toFixed(4)}  aa=${aa.toFixed(4)}
-  hasGoals=${hasGoals}  hasXGA=${hasXGA}
-  lH_blend=${lH_blend.toFixed(4)}  lA_blend=${lA_blend.toFixed(4)}
-  lH_form=${lH_form.toFixed(4)}  lA_form=${lA_form.toFixed(4)}
+  gfH=${hs.gfH}  gaH=${hs.gaH}  gfA=${as_.gfA}  gaA=${as_.gaA}
+  blendMode=${pipeline.model_params.blendMode}
+  lH_blend=${pipeline.lambda_blended_h.toFixed(4)}  lA_blend=${pipeline.lambda_blended_a.toFixed(4)}
+  lH_form=${pipeline.lambda_form_h.toFixed(4)}  lA_form=${pipeline.lambda_form_a.toFixed(4)}
   lgH=${lgH}  lgA=${lgA}
   lH_shrink=${lH.toFixed(4)}  lA_shrink=${lA.toFixed(4)}
   rho=${rhoVal.toFixed(4)}  pOverRaw=${pOverRaw.toFixed(4)}  pOver(platt)=${pOver.toFixed(4)}`)
@@ -170,8 +133,9 @@ function calcMatchFromStats(homeRaw, awayRaw, lgAvg, homeLastXRaw = null, awayLa
     ou275: calcOU275(lH, lA, rhoVal),
     ou225: calcOU225(lH, lA, rhoVal),
     btts: calcBTTS(lH, lA, rhoVal),
-    modelType: hasGoals ? (hasXGA ? 'full' : 'goals') : (hasXGA ? 'xga' : 'basic'),
+    modelType: { 'blendWithGoals_full': 'full', 'blendWithGoals_xGA_only': 'goals', 'blendLambda': 'xga', 'no_blend': 'basic' }[pipeline.model_params.blendMode],
     mp_h: hs.mp_h, mp_a: as_.mp_a,
+    pipeline,
   }
 }
 
@@ -1306,6 +1270,15 @@ export default function Skener({ onBetSaved }) {
       bet_type:    'back',
       lambda_h:    calc.lH,
       lambda_a:    calc.lA,
+      lambda_xg_raw_h:  calc.pipeline?.lambda_xg_raw_h  ?? null,
+      lambda_xg_raw_a:  calc.pipeline?.lambda_xg_raw_a  ?? null,
+      lambda_scaled_h:  calc.pipeline?.lambda_scaled_h  ?? null,
+      lambda_scaled_a:  calc.pipeline?.lambda_scaled_a  ?? null,
+      lambda_blended_h: calc.pipeline?.lambda_blended_h ?? null,
+      lambda_blended_a: calc.pipeline?.lambda_blended_a ?? null,
+      lambda_form_h:    calc.pipeline?.lambda_form_h    ?? null,
+      lambda_form_a:    calc.pipeline?.lambda_form_a    ?? null,
+      model_params:     calc.pipeline?.model_params     ?? null,
       p_over:      calc.pOver,
       p_under:     calc.pUnder,
       sel_prob:    prob,

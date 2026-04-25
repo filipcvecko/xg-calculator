@@ -11,6 +11,7 @@ import {
   fmt2, fmt3, fmtPct, fmtSign, fmtSignPct
 } from './math'
 import leagueCoefData from '../league-coefficients.json'
+import { lambdaPipeline } from './utils/lambdaPipeline'
 
 function midPrice(back, lay) {
   if (!back || !lay || back <= 1 || lay <= 1) return null
@@ -924,88 +925,74 @@ export default function App() {
   }
 
   function handleCalc() {
-    const sc = pf(xgScaler) || 0.90
     const { stability_coef } = getLeagueCoefs(selectedLeague?.id ?? null, leagueCoefData?.leagues)
-    let h = pf(xgH) * sc, a = pf(xgA) * sc
-    if (!h || !a) return
-    const ha = pf(xgaH) * sc, aa = pf(xgaA) * sc
-    const gfHv = pf(gfH), gaHv = pf(gaH), gfAv = pf(gfA), gaAv = pf(gaA)
-    const alph = pf(alpha) || 0.70
-    let lH, lA
 
-    const hasGoals = gfHv > 0 && gaHv > 0 && gfAv > 0 && gaAv > 0
-    const hasXGA = ha > 0 && aa > 0
-
-    if (hasGoals && hasXGA) {
-      const res = blendWithGoals(h, a, ha, aa, gfHv, gaHv, gfAv, gaAv, alph)
-      lH = res.lH; lA = res.lA
-    } else if (hasGoals) {
-      const res = blendWithGoals(h, a, h, a, gfHv, gaHv, gfAv, gaAv, alph)
-      lH = res.lH; lA = res.lA
-    } else if (hasXGA) {
-      lH = blendLambda(h, aa); lA = blendLambda(a, ha)
-    } else {
-      lH = h; lA = a
-    }
-
-    const fw = pf(formWeight) || 0.40
     const homeForm = homeLastX ? extractLastXStats(homeLastX, formWindow) : null
     const awayForm = awayLastX ? extractLastXStats(awayLastX, formWindow) : null
+
+    const lgH = pf(leagueAvgH)
+    const lgA = pf(leagueAvgA)
+
+    const pipeline = lambdaPipeline(
+      {
+        xgH:  pf(xgH),  xgA:  pf(xgA),
+        xgaH: pf(xgaH), xgaA: pf(xgaA),
+        gfH:  pf(gfH),  gaH:  pf(gaH),
+        gfA:  pf(gfA),  gaA:  pf(gaA),
+      },
+      { homeForm, awayForm },
+      {
+        xgScaler:   pf(xgScaler)   || 0.90,
+        alpha:      pf(alpha)      || 0.70,
+        formWeight: pf(formWeight) || 0.40,
+        shrinkage:  pf(shrinkage)  || 0.15,
+        leagueAvg:  lgH > 0 && lgA > 0 ? { avgHome: lgH, avgAway: lgA } : null,
+      }
+    )
+
+    if (pipeline.error) return
+
+    let lH = pipeline.lambda_h
+    let lA = pipeline.lambda_a
+    // SoT a market calibration môžu nasledovne MUTOVAŤ lH, lA.
+    // Preto v DB:
+    //   lambda_form_h/a   = pred shrinkage
+    //   lambda_h/lambda_a = FINAL (po shrinkage + SoT + market calib)
+    //   compression_ratio = total_final / total_raw, takže obsahuje
+    //                       aj SoT/market efekty (nie čisto shrinkage)
+
     let formInfo = null
-
     if (homeForm || awayForm) {
-      const lHbefore = lH
-      const lAbefore = lA
-
-      if (homeForm) {
-        const formXgH = homeForm.xgH ?? homeForm.gfH ?? null
-        const formXgaA = awayForm?.xgaA ?? awayForm?.gaA ?? null
-        if (formXgH != null) {
-          const formLH = formXgaA != null ? Math.sqrt(formXgH * formXgaA) : formXgH
-          lH = timeDecayBlend(lH, formLH, fw)
-        }
-      }
-
-      if (awayForm) {
-        const formXgA = awayForm.xgA ?? awayForm.gfA ?? null
-        const formXgaH = homeForm?.xgaH ?? homeForm?.gaH ?? null
-        if (formXgA != null) {
-          const formLA = formXgaH != null ? Math.sqrt(formXgA * formXgaH) : formXgA
-          lA = timeDecayBlend(lA, formLA, fw)
-        }
-      }
-
       formInfo = {
-        window: formWindow,
-        weight: fw,
-        lHbefore: lHbefore.toFixed(3),
-        lAbefore: lAbefore.toFixed(3),
-        lHafter: lH.toFixed(3),
-        lAafter: lA.toFixed(3),
-        homeFormMp: homeForm?.mp ?? null,
-        awayFormMp: awayForm?.mp ?? null,
-        homeFormXg: homeForm?.xgH ?? homeForm?.gfH ?? null,
-        awayFormXg: awayForm?.xgA ?? awayForm?.gfA ?? null,
+        window:      formWindow,
+        weight:      pipeline.model_params.formWeight,
+        lHbefore:    pipeline.lambda_blended_h.toFixed(3),
+        lAbefore:    pipeline.lambda_blended_a.toFixed(3),
+        lHafter:     pipeline.lambda_form_h.toFixed(3),
+        lAafter:     pipeline.lambda_form_a.toFixed(3),
+        homeFormMp:  homeForm?.mp ?? null,
+        awayFormMp:  awayForm?.mp ?? null,
+        homeFormXg:  homeForm?.xgH ?? homeForm?.gfH ?? null,
+        awayFormXg:  awayForm?.xgA ?? awayForm?.gfA ?? null,
         hasHomeForm: !!homeForm,
         hasAwayForm: !!awayForm,
       }
     }
 
-    const lgH = pf(leagueAvgH)
-    const lgA = pf(leagueAvgA)
-    const shr = pf(shrinkage) || 0.15
     let shrinkInfo = null
-    if (lgH > 0 && lgA > 0) {
-      const result = applyShrinkage(lH, lA, lgH, lgA, shr)
+    if (pipeline.model_params.shrinkage !== null) {
+      const lHraw     = pipeline.lambda_form_h
+      const lAraw     = pipeline.lambda_form_a
+      const rawTotal  = lHraw + lAraw
+      const shrunkTotal = pipeline.lambda_h + pipeline.lambda_a
+      const ratio     = rawTotal > 0 ? shrunkTotal / rawTotal : 1
       shrinkInfo = {
-        lHraw: lH.toFixed(3), lAraw: lA.toFixed(3),
-        rawTotal: result.rawTotal, shrunkTotal: result.shrunkTotal,
-        ratio: result.ratio,
+        lHraw: lHraw.toFixed(3), lAraw: lAraw.toFixed(3),
+        rawTotal: rawTotal.toFixed(3), shrunkTotal: shrunkTotal.toFixed(3),
+        ratio: ratio.toFixed(4),
         leagueAvgH: lgH.toFixed(3), leagueAvgA: lgA.toFixed(3),
         source: leagueAvgSource,
       }
-      lH = result.lH
-      lA = result.lA
     }
 
     let sotInfo = null
@@ -1071,8 +1058,8 @@ export default function App() {
       evOBack: midO ? calcBackEV(pOverFinal, midO, comm) : null,
       evUBack: midU ? calcBackEV(pUnderFinal, midU, comm) : null,
       matchName: matchName.trim() || null,
-      modelType: hasGoals ? (hasXGA ? 'full' : 'goals') : (hasXGA ? 'xga' : 'basic'),
-      alpha: alph.toFixed(2),
+      modelType: { 'blendWithGoals_full': 'full', 'blendWithGoals_xGA_only': 'goals', 'blendLambda': 'xga', 'no_blend': 'basic' }[pipeline.model_params.blendMode],
+      alpha: pipeline.model_params.alpha.toFixed(2),
       shrinkInfo,
       sotInfo,
       rho: rhoVal,
@@ -1081,7 +1068,8 @@ export default function App() {
       evMinVal,
       oLow, oHigh,
       formInfo,
-      xgScaler: pf(xgScaler) || 0.90,
+      xgScaler: pipeline.model_params.xgScaler,
+      pipeline,
       ou30,
       ou275,
       ou225,
@@ -1169,6 +1157,15 @@ export default function App() {
     const { data: inserted, error } = await supabase.from('bets').insert({
       match_name: matchName.trim() || calc.matchName || null, market: marketLabel, bet_type: betType,
       lambda_h: calc.lH, lambda_a: calc.lA,
+      lambda_xg_raw_h:  calc.pipeline?.lambda_xg_raw_h  ?? null,
+      lambda_xg_raw_a:  calc.pipeline?.lambda_xg_raw_a  ?? null,
+      lambda_scaled_h:  calc.pipeline?.lambda_scaled_h  ?? null,
+      lambda_scaled_a:  calc.pipeline?.lambda_scaled_a  ?? null,
+      lambda_blended_h: calc.pipeline?.lambda_blended_h ?? null,
+      lambda_blended_a: calc.pipeline?.lambda_blended_a ?? null,
+      lambda_form_h:    calc.pipeline?.lambda_form_h    ?? null,
+      lambda_form_a:    calc.pipeline?.lambda_form_a    ?? null,
+      model_params:     calc.pipeline?.model_params     ?? null,
       p_over: calc.pOver, p_under: calc.pUnder,
       sel_prob: selProb, fer_odds: ferO,
       odds_open: actualOdds, odds_close: null,
