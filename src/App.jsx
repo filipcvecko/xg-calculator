@@ -332,6 +332,7 @@ export default function App() {
   const [tab, setTab] = useState('calc')
   const [statsMarket, setStatsMarket] = useState('all')
   const [statsVersion, setStatsVersion] = useState('all')
+  const [pathDiagFilter, setPathDiagFilter] = useState('30d')
   const [expandedSnapshots, setExpandedSnapshots] = useState(new Set())
   const [snapInputs, setSnapInputs] = useState({})
   const [bets, setBets] = useState([])
@@ -3891,6 +3892,154 @@ export default function App() {
                   <span>posledný</span>
                 </div>
               </div>
+
+              {/* ── Market Path Diagnostics ──────────────────────── */}
+              {(() => {
+                const now = Date.now()
+                const daysMap = { '30d': 30, '60d': 60, '90d': 90 }
+                const diagBets = pathDiagFilter === 'all'
+                  ? activeBets
+                  : activeBets.filter(b =>
+                      b.created_at &&
+                      new Date(b.created_at).getTime() >= now - daysMap[pathDiagFilter] * 86400_000
+                    )
+
+                const withEAS = diagBets.filter(b => b.early_agreement_score != null)
+                const avgEAS  = withEAS.length > 0
+                  ? withEAS.reduce((s, b) => s + b.early_agreement_score, 0) / withEAS.length
+                  : null
+
+                const withPCS = diagBets.filter(b => b.path_consistency_score != null)
+                const avgPCS  = withPCS.length > 0
+                  ? withPCS.reduce((s, b) => s + b.path_consistency_score, 0) / withPCS.length
+                  : null
+
+                const withLCS = diagBets.filter(b => b.late_correction_score != null)
+                const avgLCS  = withLCS.length > 0
+                  ? withLCS.reduce((s, b) => s + b.late_correction_score, 0) / withLCS.length
+                  : null
+
+                const PATH_TYPES = ['TRUE_EDGE', 'NOISE', 'WRONG_WAY', 'FAKE_CLV', 'UNKNOWN']
+
+                const pathRows = PATH_TYPES.map(pt => {
+                  const group   = diagBets.filter(b => (b.timing_path_type ?? 'UNKNOWN') === pt)
+                  const settled = group.filter(b => b.result != null && b.result !== 2)
+
+                  const fullWins   = settled.filter(b => b.result === 1).length
+                  const halfWins   = settled.filter(b => b.result === 3).length
+                  const halfLosses = settled.filter(b => b.result === 4).length
+                  const hitRate    = settled.length > 0
+                    ? (fullWins + halfWins * 0.5 + halfLosses * 0.5) / settled.length * 100
+                    : null
+
+                  const clvGroup = settled.filter(b => b.pinnacle_clv != null)
+                  const avgClv   = clvGroup.length > 0
+                    ? clvGroup.reduce((s, b) => s + b.pinnacle_clv, 0) / clvGroup.length
+                    : null
+
+                  const totalPnl   = settled.reduce((s, b) => s + (b.pnl ?? 0), 0)
+                  const totalStake = settled.reduce((s, b) => s + (b.stake ?? 0), 0)
+                  const roi        = totalStake > 0 ? totalPnl / totalStake * 100 : null
+
+                  return { pt, total: group.length, settled: settled.length, hitRate, avgClv, roi }
+                })
+
+                const ROW_STYLE = {
+                  TRUE_EDGE: { background: 'rgba(0,184,148,0.08)',   border: 'rgba(0,184,148,0.25)' },
+                  WRONG_WAY: { background: 'rgba(214,48,49,0.08)',   border: 'rgba(214,48,49,0.25)' },
+                  FAKE_CLV:  { background: 'rgba(253,203,110,0.08)', border: 'rgba(253,203,110,0.25)' },
+                  NOISE:     { background: 'transparent',             border: 'transparent' },
+                  UNKNOWN:   { background: 'transparent',             border: 'transparent' },
+                }
+
+                const fmtScore = v => v != null ? (v >= 0 ? '+' : '') + v.toFixed(2) + '%' : '—'
+
+                return (
+                  <div className="card" style={{ padding: 16, borderLeft: '3px solid var(--accent2)' }}>
+                    <div className="section-title" style={{ marginBottom: 12 }}>📊 Market Path Diagnostics</div>
+
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+                      {[['30d', 'Last 30 days'], ['60d', 'Last 60 days'], ['90d', 'Last 90 days'], ['all', 'All time']].map(([id, lbl]) => (
+                        <button key={id} onClick={() => setPathDiagFilter(id)} style={{
+                          fontSize: 11, padding: '3px 10px', borderRadius: 6, border: '1px solid',
+                          borderColor: pathDiagFilter === id ? 'var(--accent2)' : 'var(--border)',
+                          background:  pathDiagFilter === id ? 'var(--accent2)' : 'transparent',
+                          color:       pathDiagFilter === id ? '#fff' : 'var(--text3)',
+                          cursor: 'pointer', fontWeight: pathDiagFilter === id ? 700 : 400
+                        }}>{lbl}</button>
+                      ))}
+                    </div>
+
+                    <div className="grid3" style={{ marginBottom: 16 }}>
+                      {[
+                        { l: 'Avg EAS', v: fmtScore(avgEAS), cls: avgEAS != null ? (avgEAS >= 0 ? 'pos' : 'neg') : '', hint: 'Early agreement · pozitívne = kurz šiel za tebou' },
+                        { l: 'Avg PCS', v: avgPCS != null ? avgPCS.toFixed(1) + '%' : '—', cls: avgPCS != null ? (avgPCS >= 60 ? 'pos' : avgPCS >= 40 ? '' : 'neg') : '', hint: 'Path consistency · >60% = konzistentný pohyb' },
+                        { l: 'Avg LCS', v: fmtScore(avgLCS), cls: avgLCS != null ? (avgLCS <= 0 ? 'pos' : 'neg') : '', hint: 'Late correction · blízko 0 = trh nezmenil názor neskoro' },
+                      ].map(({ l, v, cls, hint }) => (
+                        <div key={l} className="card" style={{ padding: 14 }}>
+                          <div className="label">{l}</div>
+                          <div className={`stat-val ${cls}`}>{v}</div>
+                          <div className="hint">{hint}</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                            {['Path Type', 'Bety', 'Settled', 'Hit Rate', 'Avg CLV', 'ROI'].map(h => (
+                              <th key={h} style={{
+                                padding: '6px 10px',
+                                textAlign: h === 'Path Type' ? 'left' : 'right',
+                                color: 'var(--text3)', fontWeight: 600,
+                                fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase'
+                              }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {pathRows.map(({ pt, total, settled, hitRate, avgClv, roi }) => {
+                            const rs = ROW_STYLE[pt]
+                            return (
+                              <tr key={pt} style={{
+                                borderBottom: '1px solid var(--border)',
+                                background: rs.background,
+                                outline: rs.border !== 'transparent' ? `1px solid ${rs.border}` : 'none',
+                                outlineOffset: '-1px'
+                              }}>
+                                <td style={{ padding: '8px 10px', fontWeight: 700, color: 'var(--text2)', fontFamily: 'var(--mono)', fontSize: 11 }}>{pt}</td>
+                                <td style={{ padding: '8px 10px', textAlign: 'right', color: 'var(--text3)' }}>{total}</td>
+                                <td style={{ padding: '8px 10px', textAlign: 'right', color: 'var(--text3)' }}>{settled}</td>
+                                <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 600 }}>
+                                  {hitRate != null
+                                    ? <span style={{ color: hitRate >= 50 ? 'var(--green)' : 'var(--text2)' }}>{hitRate.toFixed(1)}%</span>
+                                    : <span style={{ color: 'var(--text3)' }}>—</span>}
+                                </td>
+                                <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 600 }}>
+                                  {avgClv != null
+                                    ? <span style={{ color: avgClv >= 0 ? 'var(--green)' : 'var(--red)' }}>{avgClv >= 0 ? '+' : ''}{avgClv.toFixed(2)}%</span>
+                                    : <span style={{ color: 'var(--text3)' }}>—</span>}
+                                </td>
+                                <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 700 }}>
+                                  {roi != null
+                                    ? <span style={{ color: roi >= 0 ? 'var(--green)' : 'var(--red)' }}>{roi >= 0 ? '+' : ''}{roi.toFixed(2)}%</span>
+                                    : <span style={{ color: 'var(--text3)' }}>—</span>}
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div style={{ marginTop: 10, fontSize: 10, color: 'var(--text3)', lineHeight: 1.5 }}>
+                      Hit rate includes half-wins as 0.5. Bets without timing snapshots are classified as UNKNOWN.
+                    </div>
+                  </div>
+                )
+              })()}
+
 {pinnBets.length >= 1 && (
               <div className="card" style={{ marginTop: 12 }}>
                 <div className="section-title">📌 PINNACLE CLV — MODEL VS TIMING</div>
